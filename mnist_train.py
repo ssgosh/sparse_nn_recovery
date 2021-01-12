@@ -6,8 +6,17 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
+import matplotlib.pyplot as plot
+from matplotlib.pyplot import imshow
+from PIL import Image
+import numpy as np
 
 from mnist_model import Net
+
+def undo_transform(image):
+    mean = 0.1307
+    std = 0.3081
+    return mean + image * std
 
 def train(args, model, device, train_loader, optimizer, epoch):
     model.train()
@@ -89,8 +98,24 @@ def main():
         transforms.ToTensor(),
         transforms.Normalize((0.1307,), (0.3081,))
         ])
+    #dataset1 = datasets.MNIST('./data', train=True, download=True)
+    #pilimage, label = dataset1[0]
+    #print(label)
+    #pilimage.show()
     dataset1 = datasets.MNIST('./data', train=True, download=True,
                        transform=transform)
+    # Show one image
+    image, label = dataset1[0]
+
+    # imshow(image[0], cmap='gray')
+    # plot.show()
+    # imshow(undo_transform(image)[0], cmap='gray')
+    # plot.show()
+    np_img = undo_transform(image)[0].numpy()
+    img = Image.fromarray(np.uint8(np_img * 255), 'L')
+    img.show()
+    sys.exit(1)
+
     dataset2 = datasets.MNIST('./data', train=False,
                        transform=transform)
     train_loader = torch.utils.data.DataLoader(dataset1,**train_kwargs)
