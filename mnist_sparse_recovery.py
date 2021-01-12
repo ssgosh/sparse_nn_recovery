@@ -27,33 +27,46 @@ def recover_image(model, num_steps):
             image.min().item(), image.max().item())
     #print("Initial image: ", torch.sum(image[0][0]))
     imshow(image[0][0], cmap='gray')
+    plot.colorbar()
     plot.show()
     #imshow(undo_transform(image)[0][0], cmap='gray')
     #plot.show()
     image.requires_grad = True
-    optimizer = optim.SGD([image], lr=0.1)
+    optimizer = optim.Adam([image], lr=0.01)
+    #optimizer = optim.SGD([image], lr=0.1)
 
     # Target is the "0" digit
-    target = torch.tensor([5])
+    target = torch.tensor([0])
 
-    lambd = 1.
+    lambd = 0.1
+    #lambd2 = 1.
     for i in range(1, num_steps+1):
+        optimizer.zero_grad()
         output = model(image)
-        loss = F.nll_loss(output, target) + lambd * torch.norm(image + 2, 1)
+        nll_loss = F.nll_loss(output, target)
+        l1_loss = lambd * (torch.norm(image + 2, 1)
+                / torch.numel(image))
+        #l2_loss = lambd2 * (torch.norm(image, + 2) ** 2
+        #        / torch.numel(image))
+
+        loss = nll_loss + l1_loss
         loss.backward()
-        print("Loss: ", loss.item(), "image mean, std, min, max: ",
+        print("Iter: ", i,", Loss: %.3f" % loss.item(),
+                "image mean, std, min, max: %.3f, %.3f, %.3f, %.3f" % (
                 image.mean().item(), image.std().item(), image.min().item(),
-                image.max().item())
+                image.max().item()))
         optimizer.step()
 
     #print("Final image: ", torch.sum(image[0][0]))
     image.requires_grad = False
-    image[image <= -1.95] = -1.95
-    image[image >=  1.95] =  1.95
-    print("Final image mean, std, min, max: ", image.mean().item(),
-            image.std().item(),
-            image.min().item(), image.max().item())
+    mean = image.mean()
+    #image[image <= -2] = -2.
+    #image[image >=  1] =  1.
+    print("Final image mean, std, min, max: %.3f, %.3f, %.3f, %.3f" % (
+        image.mean().item(), image.std().item(), image.min().item(),
+        image.max().item()))
     imshow(image[0][0], cmap='gray')
+    plot.colorbar()
     plot.show()
     #imshow(undo_transform(image)[0][0], cmap='gray')
     #np_img = undo_transform(image)[0][0].numpy()
@@ -69,5 +82,5 @@ model.load_state_dict(model_state_dict)
 #print(model)
 #summary(model, (1, 28, 28))
 
-recover_image(model, 100)
+recover_image(model, 10000)
 
