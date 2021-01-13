@@ -8,6 +8,7 @@ import torch.optim as optim
 from torchsummary import summary
 import matplotlib.pyplot as plot
 from matplotlib.pyplot import imshow
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from PIL import Image
 import numpy as np
 import math
@@ -21,13 +22,43 @@ def undo_transform(image):
     std = 0.3081
     return mean + image * std
 
-# Plot images in a 3x4 grid
-def plot_multiple_images(filename, original, images, targets):
-    images.requires_grad = False
-    fig, axes = plot.subplots(nrows=3, ncols=4, figsize=(8, 8))
+def plot_image_on_axis(ax, image, title, fig)
+    im = ax.imshow(image, cmap='gray')
+    ax.set_title(title)
+
+    # Add colorbar for this image
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    fig.colorbar(im, cax=cax, orientation='vertical')
+
+# 1 col each for:
+#
+# no penalty
+# input
+# layer 1
+# layer 2
+# layer 3
+# all
+#
+# 6 rows, 10 cols
+def plot_multiple_images_varying_penalty(filename, images_list, targets,
+        labels):
+    nrows = len(images_list)
+    ncols = len(targets)
+    assert len(labels) == nrows
+    fig, axes = plot.subplots(nrows=nrows, ncols=ncols, figsize=(8, 14))
+    for i, images in enumerate(images_list):
+        assert images.shape[0] == ncols
+        for j in range(ncols):
+            image = images[j][0]
+            ax = axes[i][j]
+            title = "%d : %s" % (targets[j], labels[i])
+            plot_image_on_axis(ax, image, title, fig)
+
     for idx, ax in enumerate(axes.flat):
-        if idx == 11:
-            break
+        if idx >= 11:
+            fig.delaxes(ax)
+            continue
         if idx != 0:
             image = images[idx-1][0]
             title = "%d" % targets[idx-1]
@@ -35,12 +66,38 @@ def plot_multiple_images(filename, original, images, targets):
             image = original
             title = "original"
 
-        ax.imshow(image, cmap='gray')
+
+    plot.tight_layout(pad=0.)
+    plot.savefig(filename)
+    plot.clf()
+
+
+# Plot images in a 3x4 grid
+def plot_multiple_images(filename, original, images, targets):
+    images.requires_grad = False
+    fig, axes = plot.subplots(nrows=3, ncols=4, figsize=(8, 8))
+    for idx, ax in enumerate(axes.flat):
+        if idx >= 11:
+            fig.delaxes(ax)
+            continue
+        if idx != 0:
+            image = images[idx-1][0]
+            title = "%d" % targets[idx-1]
+        else:
+            image = original
+            title = "original"
+
+        im = ax.imshow(image, cmap='gray')
         ax.set_title(title)
 
-    plot.tight_layout(True)
+        # Add colorbar for this image
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes('right', size='5%', pad=0.05)
+        fig.colorbar(im, cax=cax, orientation='vertical')
+
+    plot.tight_layout(pad=0.)
     plot.savefig(filename)
-    plot.show()
+    plot.clf()
 
 def show_image(image):
     save_requires_grad = image.requires_grad
@@ -67,23 +124,6 @@ def post_process_images(images):
         median = image.median()
         image[image <= (median + mean) / 2] = (median + mean) / 2
 
-    #image[image >=  1] =  1.
-    #image[image <= -2] = -2.
-    #image[image >=  1] =  1.
-    #print("Final image mean, std, min, max: %.3f, %.3f, %.3f, %.3f" % (
-    #    image.mean().item(), image.std().item(), image.min().item(),
-    #    image.max().item()))
-
-    #imshow(image[0][0], cmap='gray')
-    #plot.colorbar()
-    #plot.show()
-    #imshow(undo_transform(image)[0][0], cmap='gray')
-    #np_img = undo_transform(image)[0][0].numpy()
-    #np_img[np_img < 0.] = 0.
-    #print(image.mean())
-    #print(image.std())
-    #img = Image.fromarray(np.uint8(np_img * 255), 'L')
-    #img.show()
 
 def recover_image(model, images, targets, num_steps):
     images.requires_grad = True
@@ -98,7 +138,7 @@ def recover_image(model, images, targets, num_steps):
         optimizer.zero_grad()
         output = model(images)
         nll_loss = F.nll_loss(output, targets)
-        l1_loss = lambd * (torch.norm(images + .5, 1)
+        l1_loss = lambd * (torch.norm(images + 0.5, 1)
                 / torch.numel(images))
         l1_layers = sum([ (lamb * l1) for lamb, l1 in zip(lambd_layers,
             model.all_l1) ])
@@ -119,15 +159,6 @@ def recover_image(model, images, targets, num_steps):
                 images.max().item()))
         optimizer.step()
 
-        # Code to display the image on each iteration
-        #image.requires_grad = False
-        #plot.clf()
-        #imshow(image[0][0], cmap='gray')
-        #plot.colorbar()
-        #plot.draw()
-        #plot.pause(0.0001)
-        #image.requires_grad = True
-
     images.requires_grad = False
 
 
@@ -142,13 +173,14 @@ n = 10
 images = torch.zeros(n, 1, 28, 28)
 images += initial_image  # Use same initial image for each digit
 targets = torch.tensor(range(n))
-show_image(images[0][0])
-recover_image(model, images, targets, 2000)
+#show_image(images[0][0])
+recover_image(model, images, targets, 10000)
 #for idx in range(n):
 #    show_image(images[idx][0])
 #    post_process_images(images)
 #    show_image(images[idx][0])
 
-plot_multiple_images('./output/2k/unfiltered_2k_all_penalty.png', initial_image[0][0], images, targets)
+plot_multiple_images('./output/mean_0.5/10k/unfiltered_10k_all_penalty.png', initial_image[0][0], images, targets)
 post_process_images(images)
-plot_multiple_images('./output/2k/filtered_2k_all_penalty.png', initial_image[0][0], images, targets)
+plot_multiple_images('./output/mean_0.5/10k/filtered_10k_all_penalty.png', initial_image[0][0], images, targets)
+
