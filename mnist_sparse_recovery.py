@@ -10,6 +10,7 @@ import matplotlib.pyplot as plot
 from matplotlib.pyplot import imshow
 from PIL import Image
 import numpy as np
+import math
 
 from mnist_model import Net
 
@@ -56,11 +57,15 @@ def recover_image(model, num_steps):
         #l2_loss = lambd2 * (torch.norm(image, + 2) ** 2
         #        / torch.numel(image))
 
+        #loss = nll_loss + l1_loss
         #loss = nll_loss + l1_layers 
         loss = nll_loss + l1_loss + l1_layers
         #loss = l1_layers
+        #loss = nll_loss
         loss.backward()
         print("Iter: ", i,", Loss: %.3f" % loss.item(),
+                f"Prob of {target[0]} %.3f" %
+                pow(math.e, output[0][target[0].item()].item()),
                 "image mean, std, min, max: %.3f, %.3f, %.3f, %.3f" % (
                 image.mean().item(), image.std().item(), image.min().item(),
                 image.max().item()))
