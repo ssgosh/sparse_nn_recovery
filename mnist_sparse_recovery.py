@@ -21,8 +21,18 @@ def undo_transform(image):
     std = 0.3081
     return mean + image * std
 
-def plot_multiple_images(images):
-    pass
+# Plot images in a 10x1 grid
+def plot_multiple_images(images, targets):
+    images.requires_grad = False
+    fig, axes = plot.subplots(nrows=3, ncols=4)#, figsize=figsize)
+    for idx, ax in enumerate(axes.flat):
+        if idx == 10:
+            break
+        image = images[idx][0]
+        ax.imshow(image, cmap='gray')
+        ax.set_title("%d" % targets[idx])
+    #plot.tight_layout(True)
+    plot.show()
 
 def show_image(image):
     save_requires_grad = image.requires_grad
@@ -119,14 +129,17 @@ model.load_state_dict(model_state_dict)
 #summary(model, (1, 28, 28))
 
 initial_image = torch.randn(1, 1, 28, 28)
-images = torch.zeros(1, 1, 28, 28)
+n = 10
+images = torch.zeros(n, 1, 28, 28)
 images += initial_image  # Use same initial image for each digit
-targets = torch.tensor(range(1))
+targets = torch.tensor(range(n))
 show_image(images[0][0])
-recover_image(model, images, targets, 1000)
-for idx in range(1):
-    show_image(images[idx][0])
-    post_process_images(images)
-    show_image(images[idx][0])
+recover_image(model, images, targets, 100)
+#for idx in range(n):
+#    show_image(images[idx][0])
+#    post_process_images(images)
+#    show_image(images[idx][0])
 
-#plot_multiple_images(images)
+plot_multiple_images(images, targets)
+post_process_images(images)
+plot_multiple_images(images, targets)
