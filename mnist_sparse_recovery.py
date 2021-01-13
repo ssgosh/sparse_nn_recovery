@@ -21,25 +21,54 @@ def undo_transform(image):
     std = 0.3081
     return mean + image * std
 
-def recover_image(model, num_steps):
-    image = torch.randn(1, 1, 28, 28)
-    print("Initial image mean, std, min, max: ", image.mean().item(),
+def plot_multiple_images(images):
+    pass
+
+def show_image(image):
+    save_requires_grad = image.requires_grad
+    image.requires_grad = False
+    print("Image mean, std, min, max: ", image.mean().item(),
             image.std().item(),
             image.min().item(), image.max().item())
     #print("Initial image: ", torch.sum(image[0][0]))
-    imshow(image[0][0], cmap='gray')
+    imshow(image, cmap='gray')
     plot.colorbar()
     #plot.draw()
     #plot.pause(0.0001)
     #plot.show()
     #imshow(undo_transform(image)[0][0], cmap='gray')
     plot.show()
-    image.requires_grad = True
-    optimizer = optim.Adam([image], lr=0.05)
-    #optimizer = optim.SGD([image], lr=0.1)
+    image.requires_grad = save_requires_grad
 
-    # Target is the "0" digit
-    target = torch.tensor([0])
+def post_process_images(images):
+    n = images.shape[0]
+    channel = 0
+    for idx in range(n):
+        image = images[idx][channel]
+        mean = image.mean()
+        median = image.median()
+        image[image <= (median + mean) / 2] = (median + mean) / 2
+
+    #image[image >=  1] =  1.
+    #image[image <= -2] = -2.
+    #image[image >=  1] =  1.
+    #print("Final image mean, std, min, max: %.3f, %.3f, %.3f, %.3f" % (
+    #    image.mean().item(), image.std().item(), image.min().item(),
+    #    image.max().item()))
+
+    #imshow(image[0][0], cmap='gray')
+    #plot.colorbar()
+    #plot.show()
+    #imshow(undo_transform(image)[0][0], cmap='gray')
+    #np_img = undo_transform(image)[0][0].numpy()
+    #np_img[np_img < 0.] = 0.
+    #print(image.mean())
+    #print(image.std())
+    #img = Image.fromarray(np.uint8(np_img * 255), 'L')
+    #img.show()
+def recover_image(model, images, targets, num_steps):
+    images.requires_grad = True
+    optimizer = optim.Adam([images], lr=0.05)
 
     # lambda for input
     lambd = 0.1
@@ -48,14 +77,14 @@ def recover_image(model, num_steps):
     #lambd2 = 1.
     for i in range(1, num_steps+1):
         optimizer.zero_grad()
-        output = model(image)
-        nll_loss = F.nll_loss(output, target)
-        l1_loss = lambd * (torch.norm(image + 2., 1)
-                / torch.numel(image))
+        output = model(images)
+        nll_loss = F.nll_loss(output, targets)
+        l1_loss = lambd * (torch.norm(images + .5, 1)
+                / torch.numel(images))
         l1_layers = sum([ (lamb * l1) for lamb, l1 in zip(lambd_layers,
             model.all_l1) ])
-        #l2_loss = lambd2 * (torch.norm(image, + 2) ** 2
-        #        / torch.numel(image))
+        #l2_loss = lambd2 * (torch.norm(images, + 2) ** 2
+        #        / torch.numel(images))
 
         #loss = nll_loss + l1_loss
         #loss = nll_loss + l1_layers 
@@ -64,12 +93,14 @@ def recover_image(model, num_steps):
         #loss = nll_loss
         loss.backward()
         print("Iter: ", i,", Loss: %.3f" % loss.item(),
-                f"Prob of {target[0]} %.3f" %
-                pow(math.e, output[0][target[0].item()].item()),
-                "image mean, std, min, max: %.3f, %.3f, %.3f, %.3f" % (
-                image.mean().item(), image.std().item(), image.min().item(),
-                image.max().item()))
+                f"Prob of {targets[0]} %.3f" %
+                pow(math.e, output[0][targets[0].item()].item()),
+                "images median, mean, std, min, max: %.3f, %.3f, %.3f, %.3f, %.3f" % (
+                images.median().item(), images.mean().item(), images.std().item(), images.min().item(),
+                images.max().item()))
         optimizer.step()
+
+        # Code to display the image on each iteration
         #image.requires_grad = False
         #plot.clf()
         #imshow(image[0][0], cmap='gray')
@@ -78,26 +109,8 @@ def recover_image(model, num_steps):
         #plot.pause(0.0001)
         #image.requires_grad = True
 
-    #print("Final image: ", torch.sum(image[0][0]))
-    image.requires_grad = False
-    mean = image.mean()
-    image[image <= mean] = mean
-    #image[image >=  1] =  1.
-    #image[image <= -2] = -2.
-    #image[image >=  1] =  1.
-    print("Final image mean, std, min, max: %.3f, %.3f, %.3f, %.3f" % (
-        image.mean().item(), image.std().item(), image.min().item(),
-        image.max().item()))
-    imshow(image[0][0], cmap='gray')
-    plot.colorbar()
-    plot.show()
-    #imshow(undo_transform(image)[0][0], cmap='gray')
-    #np_img = undo_transform(image)[0][0].numpy()
-    #np_img[np_img < 0.] = 0.
-    #print(image.mean())
-    #print(image.std())
-    #img = Image.fromarray(np.uint8(np_img * 255), 'L')
-    #img.show()
+    images.requires_grad = False
+
 
 model = Net()
 model_state_dict = torch.load('mnist_cnn.pt')
@@ -105,5 +118,15 @@ model.load_state_dict(model_state_dict)
 #print(model)
 #summary(model, (1, 28, 28))
 
-recover_image(model, 10000)
+initial_image = torch.randn(1, 1, 28, 28)
+images = torch.zeros(1, 1, 28, 28)
+images += initial_image  # Use same initial image for each digit
+targets = torch.tensor(range(1))
+show_image(images[0][0])
+recover_image(model, images, targets, 1000)
+for idx in range(1):
+    show_image(images[idx][0])
+    post_process_images(images)
+    show_image(images[idx][0])
 
+#plot_multiple_images(images)
