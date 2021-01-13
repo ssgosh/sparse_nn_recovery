@@ -28,15 +28,17 @@ def recover_image(model, num_steps):
     #print("Initial image: ", torch.sum(image[0][0]))
     imshow(image[0][0], cmap='gray')
     plot.colorbar()
-    plot.show()
-    #imshow(undo_transform(image)[0][0], cmap='gray')
+    #plot.draw()
+    #plot.pause(0.0001)
     #plot.show()
+    #imshow(undo_transform(image)[0][0], cmap='gray')
+    plot.show()
     image.requires_grad = True
-    optimizer = optim.Adam([image], lr=0.01)
+    optimizer = optim.Adam([image], lr=0.05)
     #optimizer = optim.SGD([image], lr=0.1)
 
     # Target is the "0" digit
-    target = torch.tensor([0])
+    target = torch.tensor([9])
 
     lambd = 0.1
     #lambd2 = 1.
@@ -44,7 +46,7 @@ def recover_image(model, num_steps):
         optimizer.zero_grad()
         output = model(image)
         nll_loss = F.nll_loss(output, target)
-        l1_loss = lambd * (torch.norm(image + 2, 1)
+        l1_loss = lambd * (torch.norm(image + 2., 1)
                 / torch.numel(image))
         #l2_loss = lambd2 * (torch.norm(image, + 2) ** 2
         #        / torch.numel(image))
@@ -56,10 +58,19 @@ def recover_image(model, num_steps):
                 image.mean().item(), image.std().item(), image.min().item(),
                 image.max().item()))
         optimizer.step()
+        image.requires_grad = False
+        #plot.clf()
+        #imshow(image[0][0], cmap='gray')
+        #plot.colorbar()
+        #plot.draw()
+        #plot.pause(0.0001)
+        image.requires_grad = True
 
     #print("Final image: ", torch.sum(image[0][0]))
     image.requires_grad = False
     mean = image.mean()
+    #image[image <= mean] = mean
+    #image[image >=  1] =  1.
     #image[image <= -2] = -2.
     #image[image >=  1] =  1.
     print("Final image mean, std, min, max: %.3f, %.3f, %.3f, %.3f" % (
@@ -82,5 +93,5 @@ model.load_state_dict(model_state_dict)
 #print(model)
 #summary(model, (1, 28, 28))
 
-recover_image(model, 10000)
+recover_image(model, 2000)
 
