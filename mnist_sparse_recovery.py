@@ -38,7 +38,7 @@ def recover_image(model, num_steps):
     #optimizer = optim.SGD([image], lr=0.1)
 
     # Target is the "0" digit
-    target = torch.tensor([9])
+    target = torch.tensor([0])
 
     # lambda for input
     lambd = 0.1
@@ -56,25 +56,27 @@ def recover_image(model, num_steps):
         #l2_loss = lambd2 * (torch.norm(image, + 2) ** 2
         #        / torch.numel(image))
 
+        #loss = nll_loss + l1_layers 
         loss = nll_loss + l1_loss + l1_layers
+        #loss = l1_layers
         loss.backward()
         print("Iter: ", i,", Loss: %.3f" % loss.item(),
                 "image mean, std, min, max: %.3f, %.3f, %.3f, %.3f" % (
                 image.mean().item(), image.std().item(), image.min().item(),
                 image.max().item()))
         optimizer.step()
-        image.requires_grad = False
+        #image.requires_grad = False
         #plot.clf()
         #imshow(image[0][0], cmap='gray')
         #plot.colorbar()
         #plot.draw()
         #plot.pause(0.0001)
-        image.requires_grad = True
+        #image.requires_grad = True
 
     #print("Final image: ", torch.sum(image[0][0]))
     image.requires_grad = False
     mean = image.mean()
-    #image[image <= mean] = mean
+    image[image <= mean] = mean
     #image[image >=  1] =  1.
     #image[image <= -2] = -2.
     #image[image >=  1] =  1.
@@ -98,5 +100,5 @@ model.load_state_dict(model_state_dict)
 #print(model)
 #summary(model, (1, 28, 28))
 
-recover_image(model, 2000)
+recover_image(model, 10000)
 

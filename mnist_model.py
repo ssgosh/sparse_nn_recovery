@@ -40,7 +40,9 @@ class Net(nn.Module):
         x = F.relu(x)
 
         # NOTE: This works regardless of batch size or number of channels
-        self.conv1_l1 = torch.norm(x, 1) / torch.numelem(x)
+        # Could also have computed the norm per-channel and taken the average
+        # of that.
+        self.conv1_l1 = torch.norm(x, 1) / torch.numel(x)
         self.all_l1.clear()
         self.all_l1.append(self.conv1_l1)
 
@@ -49,7 +51,7 @@ class Net(nn.Module):
         x = F.max_pool2d(x, 2)
 
         # Compute l1 here
-        self.max_pool2_l1 = torch.norm(x, 1) / torch.numelem(x)
+        self.max_pool2_l1 = torch.norm(x, 1) / torch.numel(x)
         self.all_l1.append(self.max_pool2_l1)
 
         x = self.dropout1(x)
@@ -58,7 +60,7 @@ class Net(nn.Module):
         x = F.relu(x)
 
         # Compute l1 here
-        self.fc1_l1 = torch.norm(x, 1) / torch.numelem(x)
+        self.fc1_l1 = torch.norm(x, 1) / torch.numel(x)
         self.all_l1.append(self.fc1_l1)
 
         x = self.dropout2(x)
