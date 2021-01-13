@@ -21,17 +21,25 @@ def undo_transform(image):
     std = 0.3081
     return mean + image * std
 
-# Plot images in a 10x1 grid
-def plot_multiple_images(images, targets):
+# Plot images in a 3x4 grid
+def plot_multiple_images(filename, original, images, targets):
     images.requires_grad = False
-    fig, axes = plot.subplots(nrows=3, ncols=4)#, figsize=figsize)
+    fig, axes = plot.subplots(nrows=3, ncols=4, figsize=(8, 8))
     for idx, ax in enumerate(axes.flat):
-        if idx == 10:
+        if idx == 11:
             break
-        image = images[idx][0]
+        if idx != 0:
+            image = images[idx-1][0]
+            title = "%d" % targets[idx-1]
+        else:
+            image = original
+            title = "original"
+
         ax.imshow(image, cmap='gray')
-        ax.set_title("%d" % targets[idx])
-    #plot.tight_layout(True)
+        ax.set_title(title)
+
+    plot.tight_layout(True)
+    plot.savefig(filename)
     plot.show()
 
 def show_image(image):
@@ -76,6 +84,7 @@ def post_process_images(images):
     #print(image.std())
     #img = Image.fromarray(np.uint8(np_img * 255), 'L')
     #img.show()
+
 def recover_image(model, images, targets, num_steps):
     images.requires_grad = True
     optimizer = optim.Adam([images], lr=0.05)
@@ -134,12 +143,12 @@ images = torch.zeros(n, 1, 28, 28)
 images += initial_image  # Use same initial image for each digit
 targets = torch.tensor(range(n))
 show_image(images[0][0])
-recover_image(model, images, targets, 100)
+recover_image(model, images, targets, 2000)
 #for idx in range(n):
 #    show_image(images[idx][0])
 #    post_process_images(images)
 #    show_image(images[idx][0])
 
-plot_multiple_images(images, targets)
+plot_multiple_images('./output/2k/unfiltered_2k_all_penalty.png', initial_image[0][0], images, targets)
 post_process_images(images)
-plot_multiple_images(images, targets)
+plot_multiple_images('./output/2k/filtered_2k_all_penalty.png', initial_image[0][0], images, targets)
