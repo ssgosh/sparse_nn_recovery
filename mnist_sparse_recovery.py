@@ -40,7 +40,10 @@ def recover_image(model, num_steps):
     # Target is the "0" digit
     target = torch.tensor([9])
 
+    # lambda for input
     lambd = 0.1
+    # lambda for each layer
+    lambd_layers = [0.1, 0.1, 0.1]
     #lambd2 = 1.
     for i in range(1, num_steps+1):
         optimizer.zero_grad()
@@ -48,10 +51,12 @@ def recover_image(model, num_steps):
         nll_loss = F.nll_loss(output, target)
         l1_loss = lambd * (torch.norm(image + 2., 1)
                 / torch.numel(image))
+        l1_layers = sum([ (lamb * l1) for lamb, l1 in zip(lambd_layers,
+            model.all_l1) ])
         #l2_loss = lambd2 * (torch.norm(image, + 2) ** 2
         #        / torch.numel(image))
 
-        loss = nll_loss + l1_loss
+        loss = nll_loss + l1_loss + l1_layers
         loss.backward()
         print("Iter: ", i,", Loss: %.3f" % loss.item(),
                 "image mean, std, min, max: %.3f, %.3f, %.3f, %.3f" % (
