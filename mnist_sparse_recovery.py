@@ -58,7 +58,7 @@ def plot_multiple_images_varying_penalty(filename, images_list, targets,
             title = "%d : %s" % (targets[j], labels[i])
             plot_image_on_axis(ax, image, title, fig)
 
-    plot.tight_layout(pad=0.)
+    plot.tight_layout(pad=2.)
     plot.savefig(filename)
     #plot.show()
     plot.clf()
@@ -120,6 +120,8 @@ def plot_multiple_images_varying_penalty_single_digit(filename, images_list, tar
     plot.close() 
 
 # Plot images in a 3x4 grid
+# All digits, 0-9
+# deprecated
 def plot_multiple_images(filename, original, images, targets):
     images.requires_grad = False
     fig, axes = plot.subplots(nrows=3, ncols=4, figsize=(8, 8))
