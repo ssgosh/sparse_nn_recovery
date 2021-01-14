@@ -115,7 +115,8 @@ def post_process_images(images):
         image[image <= (median + mean) / 2] = (median + mean) / 2
 
 
-def recover_image(model, images, targets, num_steps):
+# include_layer: boolean vector of whether to include a layer's l1 penalty
+def recover_image(model, images, targets, num_steps, include_layer):
     images.requires_grad = True
     optimizer = optim.Adam([images], lr=0.05)
 
@@ -128,18 +129,25 @@ def recover_image(model, images, targets, num_steps):
         optimizer.zero_grad()
         output = model(images)
         nll_loss = F.nll_loss(output, targets)
-        l1_loss = lambd * (torch.norm(images + 0.5, 1)
-                / torch.numel(images))
-        l1_layers = sum([ (lamb * l1) for lamb, l1 in zip(lambd_layers,
-            model.all_l1) ])
+
+        # include l1 penalty only if it's given as true for that layer
+        l1_loss = 0.
+        if include_layer[0]:
+            l1_loss = lambd * (torch.norm(images + 0.5, 1)
+                    / torch.numel(images))
+
+        l1_layers = 0.
+        for include, lamb, l1 in zip(include_layer[1:], lambd_layers,
+                model.all_l1):
+            if include:
+                l1_layers += lamb * l1
+
+        #l1_layers = sum([ (lamb * l1) for lamb, l1 in zip(lambd_layers,
+        #    model.all_l1) ])
         #l2_loss = lambd2 * (torch.norm(images, + 2) ** 2
         #        / torch.numel(images))
 
-        #loss = nll_loss + l1_loss
-        #loss = nll_loss + l1_layers 
         loss = nll_loss + l1_loss + l1_layers
-        #loss = l1_layers
-        #loss = nll_loss
         loss.backward()
         print("Iter: ", i,", Loss: %.3f" % loss.item(),
                 f"Prob of {targets[0]} %.3f" %
@@ -160,23 +168,29 @@ model.load_state_dict(model_state_dict)
 
 initial_image = torch.randn(1, 1, 28, 28)
 n = 10
-images = torch.zeros(n, 1, 28, 28)
-images += initial_image  # Use same initial image for each digit
 targets = torch.tensor(range(n))
-#show_image(images[0][0])
-recover_image(model, images, targets, 2000)
-#for idx in range(n):
-#    show_image(images[idx][0])
-#    post_process_images(images)
-#    show_image(images[idx][0])
+include_layer = {
+        "no penalty"    : [ False, False, False, False],
+        "input only"    : [ True, False, False, False],
+        "all layers"    : [ True, True, True, True],
+        "layer 1 only"  : [ False, True, False, False],
+        "layer 2 only"  : [ False, False, True, False],
+        "layer 3 only"  : [ False, False, False, True],
+        "all but input" : [ False, True, True, True],
+        }
+labels = list(include_layer.keys())
+images_list = []
+for label in labels:
+    images = torch.zeros(n, 1, 28, 28)
+    images += initial_image  # Use same initial image for each digit
+    images_list.append(images)
+    recover_image(model, images, targets, 2000, include_layer[label])
 
 #plot_multiple_images('./output/mean_0.5/10k/unfiltered_10k_all_penalty.png', initial_image[0][0], images, targets)
 #post_process_images(images)
 #plot_multiple_images('./output/mean_0.5/10k/filtered_10k_all_penalty.png', initial_image[0][0], images, targets)
 
 images_list = [images]*7
-labels = ["no penalty", "input only", "layer 1 only", "layer 2 only",
-        "layer 3 only", "all but input", "all layers"]
 filename = "./output/mean_0.5/10k/unfiltered_10k_varying_penalty.jpg"
 plot_multiple_images_varying_penalty(filename, images_list, targets,
         labels)
@@ -186,3 +200,4 @@ post_process_images(images)
 filename = "./output/mean_0.5/10k/filtered_10k_varying_penalty.jpg"
 plot_multiple_images_varying_penalty(filename, images_list, targets,
         labels)
+
