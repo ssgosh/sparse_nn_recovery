@@ -12,6 +12,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from PIL import Image
 import numpy as np
 import math
+import pathlib
 
 from mnist_model import Net
 
@@ -63,6 +64,63 @@ def plot_multiple_images_varying_penalty(filename, images_list, targets,
     plot.clf()
     plot.rcParams.update({'font.size' : 10 })
 
+def generate_multi_plot_all_digits(images_list, targets, labels):
+    filename = "./output/mean_0.5/10k/unfiltered_10k_varying_penalty.jpg"
+    #filename = "./output/mean_0.5/2k/unfiltered_2k_varying_penalty.jpg"
+    plot_multiple_images_varying_penalty(filename, images_list, targets,
+            labels)
+
+    for images in images_list:
+        post_process_images(images)
+
+    filename = "./output/mean_0.5/10k/filtered_10k_varying_penalty.jpg"
+    #filename = "./output/mean_0.5/2k/filtered_2k_varying_penalty.jpg"
+    plot_multiple_images_varying_penalty(filename, images_list, targets,
+            labels)
+
+def generate_multi_plots_separate_digits(images_list, targets, labels):
+    for i in range(len(targets)):
+        digit = targets[i]
+        filename = f"./output/mean_0.5/10k/{digit}/unfiltered_10k_varying_penalty.jpg"
+        path = pathlib.Path(filename)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        #filename = "./output/mean_0.5/2k/unfiltered_2k_varying_penalty.jpg"
+        plot_multiple_images_varying_penalty_single_digit(filename, images_list, targets,
+                labels, i)
+
+        for images in images_list:
+            post_process_images(images)
+
+        filename = f"./output/mean_0.5/10k/{digit}/filtered_10k_varying_penalty.jpg"
+        #filename = "./output/mean_0.5/2k/filtered_2k_varying_penalty.jpg"
+        plot_multiple_images_varying_penalty_single_digit(filename, images_list, targets,
+                labels, i)
+
+# 7 items to plot
+# 3 rows, 3 cols
+def plot_multiple_images_varying_penalty_single_digit(filename, images_list, targets,
+        labels, index):
+    assert len(images_list) == 7
+    assert index < len(targets)
+    nrows = 3
+    ncols = 3
+    assert len(labels) == 7
+    plot.rcParams.update({'font.size' : 40 })
+    fig, axes = plot.subplots(nrows=nrows, ncols=ncols, figsize=(24, 24))
+    for i, ax in enumerate(axes.flat):
+        if i >= 7:
+            fig.delaxes(ax)
+            continue
+        images = images_list[i]
+        image = images[index][0]
+        title = "%d : %s" % (targets[index], labels[i])
+        plot_image_on_axis(ax, image, title, fig)
+
+    plot.tight_layout(pad=0.)
+    plot.savefig(filename)
+    #plot.show()
+    plot.clf()
+    plot.rcParams.update({'font.size' : 10 })
 
 # Plot images in a 3x4 grid
 def plot_multiple_images(filename, original, images, targets):
@@ -107,14 +165,25 @@ def show_image(image):
     plot.show()
     image.requires_grad = save_requires_grad
 
-def post_process_images(images):
+# high-pass and low-pass filter for images
+def post_process_images(images, mode='mean_median', low=None, high=None):
     n = images.shape[0]
     channel = 0
     for idx in range(n):
         image = images[idx][channel]
-        mean = image.mean()
-        median = image.median()
-        image[image <= (median + mean) / 2] = (median + mean) / 2
+        if mode == 'mean_median':
+            mean = image.mean()
+            median = image.median()
+            low = (median + mean) / 2
+        elif mode == 'low_high':
+            assert low is not None or high is not None
+        else:
+            raise ValueError("Invalid value provided for mode %s" % mode)
+
+        if low:
+            image[image <= low] = low
+        if high:
+            image[image >= high] = high
 
 
 # include_layer: boolean vector of whether to include a layer's l1 penalty
@@ -162,6 +231,24 @@ def recover_image(model, images, targets, num_steps, include_layer):
     images.requires_grad = False
 
 
+def recover_and_plot_images_varying_penalty(initial_image):
+    images_list = []
+    for label in labels:
+        images = torch.zeros(n, 1, 28, 28)
+        images += initial_image  # Use same initial image for each digit
+        images_list.append(images)
+        recover_image(model, images, targets, 10000, include_layer[label])
+
+    generate_multi_plots_separate_digits(images_list, targets, labels)
+
+def recover_and_plot_single_image(initial_image, digit):
+    label = "input only"
+    targets = torch.tensor([digit])
+    recover_image(model, initial_image, targets, 2000, include_layer[label])
+    show_image(initial_image[0][0])
+    post_process_images(initial_image, mode='low_high', low=-0.5, high=2.0)
+    show_image(initial_image[0][0])
+
 model = Net()
 model_state_dict = torch.load('mnist_cnn.pt')
 model.load_state_dict(model_state_dict)
@@ -181,28 +268,17 @@ include_layer = {
         "all but input" : [ False, True, True, True],
         }
 labels = list(include_layer.keys())
-images_list = []
-for label in labels:
-    images = torch.zeros(n, 1, 28, 28)
-    images += initial_image  # Use same initial image for each digit
-    images_list.append(images)
-    recover_image(model, images, targets, 2000, include_layer[label])
+
+recover_and_plot_images_varying_penalty(initial_image)
+
+#recover_and_plot_single_image(initial_image, 0)
+#initial_image = torch.randn(1, 1, 28, 28)
+#recover_and_plot_single_image(initial_image, 1)
+#initial_image = torch.randn(1, 1, 28, 28)
+#recover_and_plot_single_image(initial_image, 4)
 
 #plot_multiple_images('./output/mean_0.5/10k/unfiltered_10k_all_penalty.png', initial_image[0][0], images, targets)
 #post_process_images(images)
 #plot_multiple_images('./output/mean_0.5/10k/filtered_10k_all_penalty.png', initial_image[0][0], images, targets)
 
 #images_list = [images]*7
-#filename = "./output/mean_0.5/10k/unfiltered_10k_varying_penalty.jpg"
-filename = "./output/mean_0.5/2k/unfiltered_2k_varying_penalty.jpg"
-plot_multiple_images_varying_penalty(filename, images_list, targets,
-        labels)
-
-for images in images_list:
-    post_process_images(images)
-
-#filename = "./output/mean_0.5/10k/filtered_10k_varying_penalty.jpg"
-filename = "./output/mean_0.5/2k/filtered_2k_varying_penalty.jpg"
-plot_multiple_images_varying_penalty(filename, images_list, targets,
-        labels)
-
