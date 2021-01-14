@@ -78,22 +78,19 @@ def generate_multi_plot_all_digits(images_list, targets, labels):
     plot_multiple_images_varying_penalty(filename, images_list, targets,
             labels)
 
-def generate_multi_plots_separate_digits(images_list, targets, labels):
+def generate_multi_plots_separate_digits(images_list,
+        post_processed_images_list, targets, labels):
     for i in range(len(targets)):
         digit = targets[i]
         filename = f"./output/mean_0.5/10k/{digit}/unfiltered_10k_varying_penalty.jpg"
         path = pathlib.Path(filename)
         path.parent.mkdir(parents=True, exist_ok=True)
-        #filename = "./output/mean_0.5/2k/unfiltered_2k_varying_penalty.jpg"
         plot_multiple_images_varying_penalty_single_digit(filename, images_list, targets,
                 labels, i)
 
-        for images in images_list:
-            post_process_images(images)
-
         filename = f"./output/mean_0.5/10k/{digit}/filtered_10k_varying_penalty.jpg"
-        #filename = "./output/mean_0.5/2k/filtered_2k_varying_penalty.jpg"
-        plot_multiple_images_varying_penalty_single_digit(filename, images_list, targets,
+        plot_multiple_images_varying_penalty_single_digit(filename,
+                post_processed_images_list, targets,
                 labels, i)
 
 # 7 items to plot
@@ -116,11 +113,13 @@ def plot_multiple_images_varying_penalty_single_digit(filename, images_list, tar
         title = "%d : %s" % (targets[index], labels[i])
         plot_image_on_axis(ax, image, title, fig)
 
-    plot.tight_layout(pad=0.)
+    plot.tight_layout(pad=2.)
     plot.savefig(filename)
-    #plot.show()
     plot.clf()
     plot.rcParams.update({'font.size' : 10 })
+    # Close this or we're gonna have a bad time with OOM if
+    # called from within ipython
+    plot.close() 
 
 # Plot images in a 3x4 grid
 def plot_multiple_images(filename, original, images, targets):
@@ -239,7 +238,16 @@ def recover_and_plot_images_varying_penalty(initial_image):
         images_list.append(images)
         recover_image(model, images, targets, 10000, include_layer[label])
 
-    generate_multi_plots_separate_digits(images_list, targets, labels)
+    post_processed_images_list = []
+    for images in images_list:
+        #post_process_images(images)
+        copied_images = images.clone().detach()
+        post_process_images(copied_images, mode='low_high', low=-0.5, high=2.0)
+        post_processed_images_list.append(copied_images)
+
+    generate_multi_plots_separate_digits(images_list,
+            post_processed_images_list, targets, labels)
+    return images_list, post_processed_images_list
 
 def recover_and_plot_single_image(initial_image, digit):
     label = "input only"
@@ -269,7 +277,7 @@ include_layer = {
         }
 labels = list(include_layer.keys())
 
-recover_and_plot_images_varying_penalty(initial_image)
+#recover_and_plot_images_varying_penalty(initial_image)
 
 #recover_and_plot_single_image(initial_image, 0)
 #initial_image = torch.randn(1, 1, 28, 28)
