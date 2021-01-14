@@ -63,19 +63,17 @@ def plot_multiple_images_varying_penalty(filename, images_list, targets,
     #plot.show()
     plot.clf()
     plot.rcParams.update({'font.size' : 10 })
+    plot.close()
 
-def generate_multi_plot_all_digits(images_list, targets, labels):
+def generate_multi_plot_all_digits(images_list, post_processed_images_list, targets, labels):
     filename = "./output/mean_0.5/10k/unfiltered_10k_varying_penalty.jpg"
     #filename = "./output/mean_0.5/2k/unfiltered_2k_varying_penalty.jpg"
     plot_multiple_images_varying_penalty(filename, images_list, targets,
             labels)
 
-    for images in images_list:
-        post_process_images(images)
-
     filename = "./output/mean_0.5/10k/filtered_10k_varying_penalty.jpg"
     #filename = "./output/mean_0.5/2k/filtered_2k_varying_penalty.jpg"
-    plot_multiple_images_varying_penalty(filename, images_list, targets,
+    plot_multiple_images_varying_penalty(filename, post_processed_images_list, targets,
             labels)
 
 def generate_multi_plots_separate_digits(images_list,
@@ -245,8 +243,16 @@ def recover_and_plot_images_varying_penalty(initial_image):
         post_process_images(copied_images, mode='low_high', low=-0.5, high=2.0)
         post_processed_images_list.append(copied_images)
 
+    # One folder per digit, containing filtered and unfiltered images for that
+    # digit
     generate_multi_plots_separate_digits(images_list,
             post_processed_images_list, targets, labels)
+
+    # One large image each (filtered and unfiltered) containing all digits,
+    # all penalties
+    generate_multi_plot_all_digits(images_list,
+            post_processed_images_list, targets, labels)
+
     return images_list, post_processed_images_list
 
 def recover_and_plot_single_image(initial_image, digit):
