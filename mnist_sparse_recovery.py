@@ -184,18 +184,19 @@ for label in labels:
     images = torch.zeros(n, 1, 28, 28)
     images += initial_image  # Use same initial image for each digit
     images_list.append(images)
-    recover_image(model, images, targets, 2000, include_layer[label])
+    recover_image(model, images, targets, 10000, include_layer[label])
 
 #plot_multiple_images('./output/mean_0.5/10k/unfiltered_10k_all_penalty.png', initial_image[0][0], images, targets)
 #post_process_images(images)
 #plot_multiple_images('./output/mean_0.5/10k/filtered_10k_all_penalty.png', initial_image[0][0], images, targets)
 
-images_list = [images]*7
+#images_list = [images]*7
 filename = "./output/mean_0.5/10k/unfiltered_10k_varying_penalty.jpg"
 plot_multiple_images_varying_penalty(filename, images_list, targets,
         labels)
 
-post_process_images(images)
+for images in images_list:
+    post_process_images(images)
 
 filename = "./output/mean_0.5/10k/filtered_10k_varying_penalty.jpg"
 plot_multiple_images_varying_penalty(filename, images_list, targets,
