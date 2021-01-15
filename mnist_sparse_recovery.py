@@ -109,7 +109,8 @@ def plot_multiple_images_varying_penalty_single_digit(filename, images_list, tar
         images = images_list[i]
         image = images[index][0]
         title = "%d : %s" % (targets[index], labels[i])
-        plot_image_on_axis(ax, image, title, fig, vmin=-0.5, vmax=2.0)
+        #plot_image_on_axis(ax, image, title, fig, vmin=-0.5, vmax=2.0)
+        plot_image_on_axis(ax, image, title, fig)#, vmin=-0.5, vmax=2.0)
 
     plot.tight_layout(pad=2.)
     plot.savefig(filename)
@@ -260,8 +261,8 @@ def recover_and_plot_images_varying_penalty(initial_image, include_likelihood):
 
     # One large image each (filtered and unfiltered) containing all digits,
     # all penalties
-    #generate_multi_plot_all_digits(images_list,
-    #        post_processed_images_list, targets, labels)
+    generate_multi_plot_all_digits(images_list,
+            post_processed_images_list, targets, labels)
 
     return images_list, post_processed_images_list
 
@@ -276,11 +277,13 @@ def recover_and_plot_single_image(initial_image, digit):
 model = Net()
 model_state_dict = torch.load('mnist_cnn.pt')
 model.load_state_dict(model_state_dict)
+# XXX: Must set this in order for dropout to go away
+model.eval()
 #print(model)
 #summary(model, (1, 28, 28))
 
 initial_image = torch.randn(1, 1, 28, 28)
-n = 1
+n = 10
 targets = torch.tensor(range(n))
 include_layer = {
         "no penalty"    : [ False, False, False, False],
@@ -292,10 +295,10 @@ include_layer = {
         "all but input" : [ False, True, True, True],
         }
 labels = list(include_layer.keys())
-labels.remove("no penalty")
+#labels.remove("no penalty")
 
 recover_and_plot_images_varying_penalty(initial_image,
-        include_likelihood=False)
+        include_likelihood=True)
 
 #recover_and_plot_single_image(initial_image, 0)
 #initial_image = torch.randn(1, 1, 28, 28)
