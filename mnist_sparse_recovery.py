@@ -23,8 +23,8 @@ def undo_transform(image):
     std = 0.3081
     return mean + image * std
 
-def plot_image_on_axis(ax, image, title, fig):
-    im = ax.imshow(image, cmap='gray')
+def plot_image_on_axis(ax, image, title, fig, vmin=None, vmax=None):
+    im = ax.imshow(image, cmap='gray', vmin=vmin, vmax=vmax)
     ax.set_title(title)
 
     # Add colorbar for this image
@@ -95,21 +95,21 @@ def generate_multi_plots_separate_digits(images_list,
 # 3 rows, 3 cols
 def plot_multiple_images_varying_penalty_single_digit(filename, images_list, targets,
         labels, index):
-    assert len(images_list) == 7
+    num_images = len(images_list)
     assert index < len(targets)
     nrows = 3
     ncols = 3
-    assert len(labels) == 7
+    assert len(labels) == num_images
     plot.rcParams.update({'font.size' : 40 })
     fig, axes = plot.subplots(nrows=nrows, ncols=ncols, figsize=(24, 24))
     for i, ax in enumerate(axes.flat):
-        if i >= 7:
+        if i >= num_images:
             fig.delaxes(ax)
             continue
         images = images_list[i]
         image = images[index][0]
         title = "%d : %s" % (targets[index], labels[i])
-        plot_image_on_axis(ax, image, title, fig)
+        plot_image_on_axis(ax, image, title, fig, vmin=-0.5, vmax=2.0)
 
     plot.tight_layout(pad=2.)
     plot.savefig(filename)
@@ -186,7 +186,8 @@ def post_process_images(images, mode='mean_median', low=None, high=None):
 
 
 # include_layer: boolean vector of whether to include a layer's l1 penalty
-def recover_image(model, images, targets, num_steps, include_layer):
+def recover_image(model, images, targets, num_steps, include_layer,
+        include_likelihood=True):
     images.requires_grad = True
     optimizer = optim.Adam([images], lr=0.05)
 
@@ -198,7 +199,10 @@ def recover_image(model, images, targets, num_steps, include_layer):
     for i in range(1, num_steps+1):
         optimizer.zero_grad()
         output = model(images)
-        nll_loss = F.nll_loss(output, targets)
+        if include_likelihood:
+            nll_loss = F.nll_loss(output, targets)
+        else:
+            nll_loss = 0.
 
         # include l1 penalty only if it's given as true for that layer
         l1_loss = 0.
@@ -229,14 +233,18 @@ def recover_image(model, images, targets, num_steps, include_layer):
 
     images.requires_grad = False
 
+def recover_and_plot_single_digit():
+    recover_image(model, images, targets, 10000, include_layer[label],
+            include_likelihood=False)
 
-def recover_and_plot_images_varying_penalty(initial_image):
+def recover_and_plot_images_varying_penalty(initial_image, include_likelihood):
     images_list = []
     for label in labels:
         images = torch.zeros(n, 1, 28, 28)
         images += initial_image  # Use same initial image for each digit
         images_list.append(images)
-        recover_image(model, images, targets, 10000, include_layer[label])
+        recover_image(model, images, targets, 10000, include_layer[label],
+                include_likelihood)
 
     post_processed_images_list = []
     for images in images_list:
@@ -252,8 +260,8 @@ def recover_and_plot_images_varying_penalty(initial_image):
 
     # One large image each (filtered and unfiltered) containing all digits,
     # all penalties
-    generate_multi_plot_all_digits(images_list,
-            post_processed_images_list, targets, labels)
+    #generate_multi_plot_all_digits(images_list,
+    #        post_processed_images_list, targets, labels)
 
     return images_list, post_processed_images_list
 
@@ -272,7 +280,7 @@ model.load_state_dict(model_state_dict)
 #summary(model, (1, 28, 28))
 
 initial_image = torch.randn(1, 1, 28, 28)
-n = 10
+n = 1
 targets = torch.tensor(range(n))
 include_layer = {
         "no penalty"    : [ False, False, False, False],
@@ -284,8 +292,10 @@ include_layer = {
         "all but input" : [ False, True, True, True],
         }
 labels = list(include_layer.keys())
+labels.remove("no penalty")
 
-#recover_and_plot_images_varying_penalty(initial_image)
+recover_and_plot_images_varying_penalty(initial_image,
+        include_likelihood=False)
 
 #recover_and_plot_single_image(initial_image, 0)
 #initial_image = torch.randn(1, 1, 28, 28)
