@@ -94,8 +94,18 @@ def main():
         train_kwargs.update(cuda_kwargs)
         test_kwargs.update(cuda_kwargs)
 
-    transform=transforms.Compose([
+    test_transform=transforms.Compose([
         transforms.ToTensor(),
+        transforms.Normalize((0.1307,), (0.3081,))
+        ])
+    # From this tutorial:
+    # https://pytorch.org/tutorials/beginner/data_loading_tutorial.html#iterating-through-the-dataset
+    # , transforms are applied on each batch dynamically. Hence data gets
+    # augmented due to random transforms.
+    train_transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.RandomAffine(degrees=5, translate=(0.1, 0.1), scale=(0.9,
+            1.1), shear=None),
         transforms.Normalize((0.1307,), (0.3081,))
         ])
     #dataset1 = datasets.MNIST('./data', train=True, download=True)
@@ -103,21 +113,23 @@ def main():
     #print(label)
     #pilimage.show()
     dataset1 = datasets.MNIST('./data', train=True, download=True,
-                       transform=transform)
-    # Show one image
-    image, label = dataset1[0]
+                       transform=train_transform)
+    for i in range(10):
+        # Show one image
+        image, label = dataset1[0]
 
-    # imshow(image[0], cmap='gray')
-    # plot.show()
+        imshow(image[0], cmap='gray')
+        plot.show()
     # imshow(undo_transform(image)[0], cmap='gray')
     # plot.show()
-    np_img = undo_transform(image)[0].numpy()
-    img = Image.fromarray(np.uint8(np_img * 255), 'L')
-    img.show()
-    sys.exit(1)
+    #np_img = undo_transform(image)[0].numpy()
+    #img = Image.fromarray(np.uint8(np_img * 255), 'L')
+    #img.show()
+    # Show one image
+    #sys.exit(1)
 
     dataset2 = datasets.MNIST('./data', train=False,
-                       transform=transform)
+                       transform=test_transform)
     train_loader = torch.utils.data.DataLoader(dataset1,**train_kwargs)
     test_loader = torch.utils.data.DataLoader(dataset2, **test_kwargs)
 
