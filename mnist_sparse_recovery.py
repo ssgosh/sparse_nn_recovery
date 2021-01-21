@@ -16,6 +16,7 @@ import math
 import pathlib
 
 from mnist_model import Net
+from mnist_mlp import MLPNet3Layer
 
 np.set_printoptions(precision = 3)
 
@@ -210,8 +211,10 @@ def recover_image(model, images, targets, num_steps, include_layer,
 
     # lambda for input
     lambd = 0.1
+    #lambd = 0.01
     # lambda for each layer
     lambd_layers = [0.1, 0.1, 0.1]
+    #lambd_layers = [0.01, 0.01, 0.01]
     #lambd2 = 1.
     for i in range(1, num_steps+1):
         optimizer.zero_grad()
@@ -254,14 +257,15 @@ def recover_and_plot_single_digit():
     recover_image(model, images, targets, 10000, include_layer[label],
             include_likelihood=False)
 
-def recover_and_plot_images_varying_penalty(initial_image, include_likelihood):
+def recover_and_plot_images_varying_penalty(initial_image, include_likelihood,
+        num_steps):
     images_list = []
     transformed_low, transformed_high = compute_mnist_transform_low_high()
     for label in labels:
         images = torch.zeros(n, 1, 28, 28)
         images += initial_image  # Use same initial image for each digit
         images_list.append(images)
-        recover_image(model, images, targets, 10000, include_layer[label],
+        recover_image(model, images, targets, num_steps, include_layer[label],
                 include_likelihood)
 
     post_processed_images_list = []
@@ -323,8 +327,10 @@ def recover_and_plot_single_image(initial_image, digit):
     post_process_images(initial_image, mode='low_high', low=-0.5, high=2.0)
     show_image(initial_image[0][0])
 
-model = Net()
-model_state_dict = torch.load('mnist_cnn.pt')
+#model = Net()
+model = MLPNet3Layer()
+#model_state_dict = torch.load('mnist_cnn.pt')
+model_state_dict = torch.load('mnist_mlp_3layer.pt')
 model.load_state_dict(model_state_dict)
 # XXX: Must set this in order for dropout to go away
 model.eval()
@@ -352,13 +358,13 @@ labels = list(include_layer.keys())
 #generate_multi_plot_all_digits(images_list,
 #        post_processed_images_list, targets, labels)
 
-#images_list, post_processed_images_list = recover_and_plot_images_varying_penalty(initial_image,
-#        include_likelihood=True)
+images_list, post_processed_images_list = recover_and_plot_images_varying_penalty(initial_image,
+        include_likelihood=True, num_steps=10000)
 
-#torch.save(images_list, "images_list.pt")
-#torch.save(post_processed_images_list, "post_processed_images_list.pt")
+torch.save(images_list, "images_list.pt")
+torch.save(post_processed_images_list, "post_processed_images_list.pt")
 
-load_and_plot_images_varying_penalty()
+#load_and_plot_images_varying_penalty()
 
 #recover_and_plot_single_image(initial_image, 0)
 #initial_image = torch.randn(1, 1, 28, 28)
