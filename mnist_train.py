@@ -114,14 +114,32 @@ def main():
     #pilimage.show()
     dataset1 = datasets.MNIST('./data', train=True, download=True,
                        transform=train_transform)
-    for i in range(10):
-        # Show one image
-        image, label = dataset1[0]
 
-        imshow(image[0], cmap='gray')
-        plot.show()
+    # Print out the l0 norm of the images
+    dataset1 = datasets.MNIST('./data', train=True, download=True,
+                       transform=transforms.Compose([transforms.ToTensor()]))
+    lst = []
+    for i in range(len(dataset1)):
+        image, label = dataset1[i]
+        l0_norm = torch.sum(image != 0.).item() / 784.
+        lst.append(l0_norm)
+        #print("%.3f" % l0_norm)
+    norms = np.array(lst)
+    print("mean = %.3f, median = %.3f, std = %.3f" % ( norms.mean(),
+        np.median(norms),
+        norms.std()))
+    sys.exit(1)
+    # Plot some images
+    #
+    #for i in range(10):
+    #    # Show one image
+    #    image, label = dataset1[0]
+    #
+    #    imshow(image[0], cmap='gray')
+    #    plot.show()
     # imshow(undo_transform(image)[0], cmap='gray')
     # plot.show()
+    
     #np_img = undo_transform(image)[0].numpy()
     #img = Image.fromarray(np.uint8(np_img * 255), 'L')
     #img.show()

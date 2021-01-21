@@ -4,6 +4,7 @@ import sys
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+from torchvision import transforms
 
 from torchsummary import summary
 import matplotlib.pyplot as plot
@@ -17,6 +18,21 @@ import pathlib
 from mnist_model import Net
 
 np.set_printoptions(precision = 3)
+
+def compute_mnist_transform_low_high():
+    mean = 0.1307
+    std = 0.3081
+    transform = transforms.Normalize(mean, std)
+    low = torch.zeros(1, 1, 1)
+    high = low + 1
+    print(torch.sum(low).item(), torch.sum(high).item())
+    transformed_low = transform(low).item()
+    transformed_high = transform(high).item()
+    print(transformed_low, transformed_high)
+    return transformed_low, transformed_high
+
+#compute_mnist_transform_low_high()
+#sys.exit(1)
 
 def undo_transform(image):
     mean = 0.1307
@@ -240,6 +256,7 @@ def recover_and_plot_single_digit():
 
 def recover_and_plot_images_varying_penalty(initial_image, include_likelihood):
     images_list = []
+    transformed_low, transformed_high = compute_mnist_transform_low_high()
     for label in labels:
         images = torch.zeros(n, 1, 28, 28)
         images += initial_image  # Use same initial image for each digit
@@ -251,7 +268,10 @@ def recover_and_plot_images_varying_penalty(initial_image, include_likelihood):
     for images in images_list:
         #post_process_images(images)
         copied_images = images.clone().detach()
-        post_process_images(copied_images, mode='low_high', low=-0.5, high=2.0)
+        #post_process_images(copied_images, mode='low_high', low=-0.5, high=2.0)
+        post_process_images(copied_images, mode='low_high',
+                low=transformed_low,
+                high=transformed_high)
         post_processed_images_list.append(copied_images)
 
     # One folder per digit, containing filtered and unfiltered images for that
@@ -265,6 +285,35 @@ def recover_and_plot_images_varying_penalty(initial_image, include_likelihood):
             post_processed_images_list, targets, labels)
 
     return images_list, post_processed_images_list
+
+
+# Load images_list from saved .pt files
+# Do post-processing only and plot
+def load_and_plot_images_varying_penalty():
+    transformed_low, transformed_high = compute_mnist_transform_low_high()
+    images_list = torch.load("images_list.pt")
+    assert len(labels) == len(images_list)
+    post_processed_images_list = []
+    for images in images_list:
+        copied_images = images.clone().detach()
+        assert targets.shape[0] == copied_images.shape[0]
+        post_process_images(copied_images, mode='low_high',
+                low=transformed_low,
+                high=transformed_high)
+        post_processed_images_list.append(copied_images)
+
+    # One folder per digit, containing filtered and unfiltered images for that
+    # digit
+    generate_multi_plots_separate_digits(images_list,
+            post_processed_images_list, targets, labels)
+
+    # One large image each (filtered and unfiltered) containing all digits,
+    # all penalties
+    generate_multi_plot_all_digits(images_list,
+            post_processed_images_list, targets, labels)
+
+    return images_list, post_processed_images_list
+
 
 def recover_and_plot_single_image(initial_image, digit):
     label = "input only"
@@ -297,8 +346,19 @@ include_layer = {
 labels = list(include_layer.keys())
 #labels.remove("no penalty")
 
-recover_and_plot_images_varying_penalty(initial_image,
-        include_likelihood=True)
+#images_list = torch.load("images_list.pt")
+#post_processed_images_list = torch.load("post_processed_images_list.pt")
+
+#generate_multi_plot_all_digits(images_list,
+#        post_processed_images_list, targets, labels)
+
+#images_list, post_processed_images_list = recover_and_plot_images_varying_penalty(initial_image,
+#        include_likelihood=True)
+
+#torch.save(images_list, "images_list.pt")
+#torch.save(post_processed_images_list, "post_processed_images_list.pt")
+
+load_and_plot_images_varying_penalty()
 
 #recover_and_plot_single_image(initial_image, 0)
 #initial_image = torch.randn(1, 1, 28, 28)
