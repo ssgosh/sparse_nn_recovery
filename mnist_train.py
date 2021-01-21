@@ -12,6 +12,7 @@ from PIL import Image
 import numpy as np
 
 from mnist_model import Net
+from mnist_mlp import MLPNet, MLPNet3Layer
 
 def undo_transform(image):
     mean = 0.1307
@@ -116,19 +117,19 @@ def main():
                        transform=train_transform)
 
     # Print out the l0 norm of the images
-    dataset1 = datasets.MNIST('./data', train=True, download=True,
-                       transform=transforms.Compose([transforms.ToTensor()]))
-    lst = []
-    for i in range(len(dataset1)):
-        image, label = dataset1[i]
-        l0_norm = torch.sum(image != 0.).item() / 784.
-        lst.append(l0_norm)
+    #dataset1 = datasets.MNIST('./data', train=True, download=True,
+    #                   transform=transforms.Compose([transforms.ToTensor()]))
+    #lst = []
+    #for i in range(len(dataset1)):
+    #    image, label = dataset1[i]
+    #    l0_norm = torch.sum(image != 0.).item() / 784.
+    #    lst.append(l0_norm)
         #print("%.3f" % l0_norm)
-    norms = np.array(lst)
-    print("mean = %.3f, median = %.3f, std = %.3f" % ( norms.mean(),
-        np.median(norms),
-        norms.std()))
-    sys.exit(1)
+    #norms = np.array(lst)
+    #print("mean = %.3f, median = %.3f, std = %.3f" % ( norms.mean(),
+    #    np.median(norms),
+    #    norms.std()))
+    #sys.exit(1)
     # Plot some images
     #
     #for i in range(10):
@@ -151,7 +152,9 @@ def main():
     train_loader = torch.utils.data.DataLoader(dataset1,**train_kwargs)
     test_loader = torch.utils.data.DataLoader(dataset2, **test_kwargs)
 
-    model = Net().to(device)
+    #model = Net().to(device)
+    #model = MLPNet().to(device)
+    model = MLPNet3Layer().to(device)
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
 
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
@@ -161,7 +164,7 @@ def main():
         scheduler.step()
 
     if args.save_model:
-        torch.save(model.state_dict(), "mnist_cnn.pt")
+        torch.save(model.state_dict(), "mnist_mlp_3layer.pt")
 
 
 if __name__ == '__main__':
