@@ -257,6 +257,20 @@ def recover_and_plot_single_digit():
     recover_image(model, images, targets, 10000, include_layer[label],
             include_likelihood=False)
 
+def post_process_images_list(images_list):
+    transformed_low, transformed_high = compute_mnist_transform_low_high()
+    post_processed_images_list = []
+    for images in images_list:
+        #post_process_images(images)
+        copied_images = images.clone().detach()
+        #post_process_images(copied_images, mode='low_high', low=-0.5, high=2.0)
+        post_process_images(copied_images, mode='low_high',
+                low=transformed_low,
+                high=transformed_high)
+        post_processed_images_list.append(copied_images)
+
+    return post_processed_images_list
+
 def recover_and_plot_images_varying_penalty(initial_image, include_likelihood,
         num_steps):
     images_list = []
@@ -358,11 +372,11 @@ labels = list(include_layer.keys())
 #generate_multi_plot_all_digits(images_list,
 #        post_processed_images_list, targets, labels)
 
-images_list, post_processed_images_list = recover_and_plot_images_varying_penalty(initial_image,
-        include_likelihood=True, num_steps=10000)
+#images_list, post_processed_images_list = recover_and_plot_images_varying_penalty(initial_image,
+#        include_likelihood=True, num_steps=10000)
 
-torch.save(images_list, "images_list.pt")
-torch.save(post_processed_images_list, "post_processed_images_list.pt")
+#torch.save(images_list, "images_list.pt")
+#torch.save(post_processed_images_list, "post_processed_images_list.pt")
 
 #load_and_plot_images_varying_penalty()
 
