@@ -89,13 +89,14 @@ def plot_multiple_images_varying_penalty(filename, images_list, targets,
     plot.close()
 
 def generate_multi_plot_all_digits(images_list, post_processed_images_list, targets, labels):
-    filename = "./output/mean_0.5/10k/unfiltered_10k_varying_penalty.jpg"
-    #filename = "./output/mean_0.5/2k/unfiltered_2k_varying_penalty.jpg"
+    #filename = "./output/mean_0.5/10k/unfiltered_10k_varying_penalty.jpg"
+    filename = "./output/all_digits_unfiltered_varying_penalty.jpg"
     plot_multiple_images_varying_penalty(filename, images_list, targets,
             labels)
 
-    filename = "./output/mean_0.5/10k/filtered_10k_varying_penalty.jpg"
+    #filename = "./output/mean_0.5/10k/filtered_10k_varying_penalty.jpg"
     #filename = "./output/mean_0.5/2k/filtered_2k_varying_penalty.jpg"
+    filename = "./output/all_digits_filtered_varying_penalty.jpg"
     plot_multiple_images_varying_penalty(filename, post_processed_images_list, targets,
             labels)
 
@@ -103,13 +104,15 @@ def generate_multi_plots_separate_digits(images_list,
         post_processed_images_list, targets, labels):
     for i in range(len(targets)):
         digit = targets[i]
-        filename = f"./output/mean_0.5/10k/{digit}/unfiltered_10k_varying_penalty.jpg"
+        #filename = f"./output/mean_0.5/10k/{digit}/unfiltered_10k_varying_penalty.jpg"
+        filename = f"./output/{digit}_unfiltered_varying_penalty.jpg"
         path = pathlib.Path(filename)
         path.parent.mkdir(parents=True, exist_ok=True)
         plot_multiple_images_varying_penalty_single_digit(filename, images_list, targets,
                 labels, i)
 
-        filename = f"./output/mean_0.5/10k/{digit}/filtered_10k_varying_penalty.jpg"
+        #filename = f"./output/mean_0.5/10k/{digit}/filtered_10k_varying_penalty.jpg"
+        filename = f"./output/{digit}_filtered_varying_penalty.jpg"
         plot_multiple_images_varying_penalty_single_digit(filename,
                 post_processed_images_list, targets,
                 labels, i)
