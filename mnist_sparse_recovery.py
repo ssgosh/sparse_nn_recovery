@@ -15,10 +15,16 @@ import numpy as np
 import math
 import pathlib
 
-from mnist_model import Net
+# For experiment management
+import wandb
+
+from mnist_model import ExampleCNNNet
 from mnist_mlp import MLPNet3Layer
 
 np.set_printoptions(precision = 3)
+
+def get_class(classname):
+    return getattr(sys.modules[__name__], classname)
 
 def compute_mnist_transform_low_high():
     mean = 0.1307
@@ -210,10 +216,10 @@ def recover_image(model, images, targets, num_steps, include_layer,
     optimizer = optim.Adam([images], lr=0.05)
 
     # lambda for input
-    lambd = 0.1
+    lambd = config.lambd
     #lambd = 0.01
     # lambda for each layer
-    lambd_layers = [0.1, 0.1, 0.1]
+    lambd_layers = config.lambd_layers #[0.1, 0.1, 0.1]
     #lambd_layers = [0.01, 0.01, 0.01]
     #lambd2 = 1.
     for i in range(1, num_steps+1):
@@ -271,6 +277,10 @@ def post_process_images_list(images_list):
 
     return post_processed_images_list
 
+
+# The main loop
+#
+# Uses recover_image() to perform sparse recovery of digit images from a model
 def recover_and_plot_images_varying_penalty(initial_image, include_likelihood,
         num_steps):
     images_list = []
@@ -341,13 +351,33 @@ def recover_and_plot_single_image(initial_image, digit):
     post_process_images(initial_image, mode='low_high', low=-0.5, high=2.0)
     show_image(initial_image[0][0])
 
+def load_model(config):
+    model_class = get_class(config.discriminator_model_class)
+    model = model_class()
+    #model_state_dict = torch.load('mnist_cnn.pt')
+    model_state_dict = torch.load(config.discriminator_model_file)
+    model.load_state_dict(model_state_dict)
+    # XXX: Must set this in order for dropout to go away
+    model.eval()
+    return model
+
+run = wandb.init(project='mnist_sparse_recovery')
+config = wandb.config
+
+config.discriminator_model_class = 'ExampleCNNNet'
+config.discriminator_model_file = 'mnist_cnn.pt'
+
+# Alternate model configuration
+#wandb.config.discriminator_model_class = 'MLPNet3Layer'
+#wandb.config.discriminator_model_file = 'mnist_mlp_3layer.pt'
+
+model = load_model(config)
+
 #model = Net()
-model = MLPNet3Layer()
+#model = MLPNet3Layer()
 #model_state_dict = torch.load('mnist_cnn.pt')
-model_state_dict = torch.load('mnist_mlp_3layer.pt')
-model.load_state_dict(model_state_dict)
-# XXX: Must set this in order for dropout to go away
-model.eval()
+#model_state_dict = torch.load('mnist_mlp_3layer.pt')
+#model.load_state_dict(model_state_dict)
 #print(model)
 #summary(model, (1, 28, 28))
 
@@ -364,6 +394,18 @@ include_layer = {
         "all but input" : [ False, True, True, True],
         }
 labels = list(include_layer.keys())
+
+config.num_targets = n
+config.targets = targets
+config.include_layer = include_layer
+config.labels = labels
+
+# Run-specific information
+config.num_steps = 100
+config.include_likelihood = True
+config.lambd = 0.1
+config.lambd_layers = [0.1, 0.1, 0.1]
+
 #labels.remove("no penalty")
 
 #images_list = torch.load("images_list.pt")
@@ -372,11 +414,14 @@ labels = list(include_layer.keys())
 #generate_multi_plot_all_digits(images_list,
 #        post_processed_images_list, targets, labels)
 
-#images_list, post_processed_images_list = recover_and_plot_images_varying_penalty(initial_image,
-#        include_likelihood=True, num_steps=10000)
+images_list, post_processed_images_list = recover_and_plot_images_varying_penalty(initial_image,
+        include_likelihood=config.include_likelihood, num_steps=config.num_steps)
 
-#torch.save(images_list, "images_list.pt")
-#torch.save(post_processed_images_list, "post_processed_images_list.pt")
+torch.save(images_list, "images_list.pt")
+torch.save(post_processed_images_list, "post_processed_images_list.pt")
+
+wandb.save(images_list)
+wandb.save(post_processed_images_list)
 
 #load_and_plot_images_varying_penalty()
 
@@ -391,3 +436,4 @@ labels = list(include_layer.keys())
 #plot_multiple_images('./output/mean_0.5/10k/filtered_10k_all_penalty.png', initial_image[0][0], images, targets)
 
 #images_list = [images]*7
+
