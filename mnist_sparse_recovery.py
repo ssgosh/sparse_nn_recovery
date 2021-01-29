@@ -423,8 +423,8 @@ images_list, post_processed_images_list = recover_and_plot_images_varying_penalt
 torch.save(images_list, "images_list.pt")
 torch.save(post_processed_images_list, "post_processed_images_list.pt")
 
-wandb.save(images_list)
-wandb.save(post_processed_images_list)
+#wandb.save(images_list)
+#wandb.save(post_processed_images_list)
 
 #load_and_plot_images_varying_penalty()
 
