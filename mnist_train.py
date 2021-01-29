@@ -20,13 +20,15 @@ def undo_transform(image):
     return mean + image * std
 
 
-def compute_generator_loss(config, model_all_l1, adv_output, adv_targetG): 
+# Penalized L1 Loss for training adversarial images
+def compute_generator_loss(config, adv_output, adv_targetG, model_all_l1): 
     lambd = config['lambd']
     lambd_layers = config['lambd_layers']
-    include_likelihood = config['include_likelihood']
-    include_layer = config['include_layer']
+    include_likelihood = config['generator_include_likelihood']
+    include_layer = config['generator_include_layer']
 
     if include_likelihood:
+        # Cross-entropy of adversarial image on real classes (0, 1, 2...)
         nll_loss = F.nll_loss(adv_output, adv_targetG)
     else:
         nll_loss = 0.
@@ -46,9 +48,11 @@ def compute_generator_loss(config, model_all_l1, adv_output, adv_targetG):
     loss = nll_loss + l1_loss + l1_layers
     return loss
 
-# Performs the training steps for the discriminator
-def training_step_discriminator(optD, data, target, adv_data, adv_targetF,
-        model, config):
+
+# Performs the training steps for the discriminator and the generator for
+# adversarial training
+def training_step_adversarial(config, model, optD, optG, data, target, adv_data, adv_targetD,
+        adv_targetG):
     #lambd = config['lambd']
     #lambd_layers = config['lambd_layers'] #[0.1, 0.1, 0.1]
 
@@ -56,32 +60,35 @@ def training_step_discriminator(optD, data, target, adv_data, adv_targetF,
     # Zero out gradients accumulated in the model's params
     optD.zero_grad()
     
-    # Real data output and losses
+    # Real data output and losses. Cross-entropy on real target
     output = model(data)
     lossDR = F.nll_loss(output, target)
 
-    # Fake data output and losses for discriminator
+    # Fake data output and losses for discriminator. Cross-entropy of
+    # adversarial images on fake-0, fake-1 etc classes
     adv_output = model(adv_data)
-    lossDF = F.nll_loss(adv_output, adv_targetF)
+    lossDF = F.nll_loss(adv_output, adv_targetD)
     
-    lossGF = compute_generator_loss(config, model_all_l1, adv_output, adv_targetR)
+    # Since we have adv_output here, better compute this as well instead of
+    # doing this twice
+    lossG = compute_generator_loss(config, adv_output, adv_targetG, model.all_l1)
 
     # Supervised loss is now for classifying real data correctly, as well
     # as adversarial data correctly
     supervised_loss = lossDR + lossDF
-    loss.backward()
+    supervised_loss.backward()
 
     # Step optD, which changes only the model's params
     optD.step()
 
-
-# Performs the training steps for "generator", which is really the
-# discriminator trained backwards
-def training_step_generator(optG, model, adv_data, adv_targetR):
-    # Zero-out gradients from previous loss computations
+    # Now train the "generator"
     optG.zero_grad()
-    
+
+    # Note that even though model's params have changed, lossG.backward()
+    # still uses cached values
+    lossG.backward()
     optG.step()
+
 
 # Adversarially train a single epoch
 #
@@ -91,15 +98,15 @@ def training_step_generator(optG, model, adv_data, adv_targetR):
 def adversarial_train(args, model, device, train_loader,
         adversarial_train_loader, optD, optG, epoch):
     model.train()
-    for batch_idx, (data, target), (adv_data, adv_targetR, adv_targetF) in \
+    for batch_idx, (data, target), (adv_data, adv_targetD, adv_targetG) in \
             enumerate(zip(train_loader, adversarial_train_loader)):
         # Some stupid pytorch things
         data, target = data.to(device), target.to(device)
-        adv_data, adv_targetR, adv_targetF = adv_data.to(device), \
-                adv_targetR.to(device), adv_targetF.to(device)
+        adv_data, adv_targetD, adv_targetG = adv_data.to(device), \
+                adv_targetD.to(device), adv_targetG.to(device)
 
-        training_step_discriminator(optD, model, data, target, adv_data, adv_targetF)
-        training_step_generator(optG, model, adv_data, adv_targetR):
+        training_step_adversarial(config, model, optD, optG, data, target, adv_data, adv_targetD,
+                adv_targetG)
 
         if batch_idx % args.log_interval == 0:
             sys.stdout.write('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
