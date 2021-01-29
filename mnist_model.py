@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class ExampleCNNNet(nn.Module):
-    def __init__(self):
+    def __init__(self, num_classes=10):
         #super(Net, self).__init__()
         super().__init__()
         self.conv1 = nn.Conv2d(1, 32, 3, 1)
@@ -11,7 +11,7 @@ class ExampleCNNNet(nn.Module):
         self.dropout1 = nn.Dropout(0.25)
         self.dropout2 = nn.Dropout(0.5)
         self.fc1 = nn.Linear(9216, 128)
-        self.fc2 = nn.Linear(128, 10)
+        self.fc2 = nn.Linear(128, num_classes)
 
         # Added for computing layer-wise l1 penalty
         # Will be computed during forward pass

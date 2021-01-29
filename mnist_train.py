@@ -33,9 +33,12 @@ def compute_mnist_transform_low_high():
     print(transformed_low, transformed_high)
     return transformed_low, transformed_high
 
+def get_mnist_zero():
+    mnist_zero, mnist_one = compute_mnist_transform_low_high()
+    return mnist_zero
 
 # Penalized L1 Loss for training adversarial images
-def compute_generator_loss(config, adv_output, adv_targetG, model_all_l1): 
+def compute_generator_loss(config, adv_data, adv_output, adv_targetG, model_all_l1): 
     lambd = config['lambd']
     lambd_layers = config['lambd_layers']
     include_likelihood = config['generator_include_likelihood']
@@ -50,8 +53,8 @@ def compute_generator_loss(config, adv_output, adv_targetG, model_all_l1):
     # include l1 penalty only if it's given as true for that layer
     l1_loss = 0.
     if include_layer[0]:
-        l1_loss = lambd * (torch.norm(images + 0.5, 1)
-                / torch.numel(images))
+        l1_loss = lambd * (torch.norm(adv_data - get_mnist_zero(), 1)
+                / torch.numel(adv_data))
 
     l1_layers = 0.
     for include, lamb, l1 in zip(include_layer[1:], lambd_layers,
@@ -67,8 +70,24 @@ def compute_generator_loss(config, adv_output, adv_targetG, model_all_l1):
 # adversarial training
 def training_step_adversarial(config, model, optD, optG, data, target, adv_data, adv_targetD,
         adv_targetG):
-    #lambd = config['lambd']
-    #lambd_layers = config['lambd_layers'] #[0.1, 0.1, 0.1]
+    # Now train the "generator"
+    optG.zero_grad()
+
+    # Fake data output and losses for discriminator. Cross-entropy of
+    # adversarial images on fake-0, fake-1 etc classes
+    adv_outputG = model(adv_data)
+
+    # This should be computed here before adv_data gets changed 
+    # Recomputation needed to separate out the two compute graphs
+    adv_outputD = model(adv_data.detach())
+    lossDF = F.nll_loss(adv_outputD, adv_targetD)
+    
+    # Since we have adv_output here, better compute this as well instead of
+    # doing this twice
+    lossG = compute_generator_loss(config, adv_data, adv_outputG, adv_targetG, model.all_l1)
+
+    lossG.backward()
+    optG.step()
 
     # Steps for training model on real data batch
     # Zero out gradients accumulated in the model's params
@@ -78,15 +97,6 @@ def training_step_adversarial(config, model, optD, optG, data, target, adv_data,
     output = model(data)
     lossDR = F.nll_loss(output, target)
 
-    # Fake data output and losses for discriminator. Cross-entropy of
-    # adversarial images on fake-0, fake-1 etc classes
-    adv_output = model(adv_data)
-    lossDF = F.nll_loss(adv_output, adv_targetD)
-    
-    # Since we have adv_output here, better compute this as well instead of
-    # doing this twice
-    lossG = compute_generator_loss(config, adv_output, adv_targetG, model.all_l1)
-
     # Supervised loss is now for classifying real data correctly, as well
     # as adversarial data correctly
     supervised_loss = lossDR + lossDF
@@ -95,13 +105,7 @@ def training_step_adversarial(config, model, optD, optG, data, target, adv_data,
     # Step optD, which changes only the model's params
     optD.step()
 
-    # Now train the "generator"
-    optG.zero_grad()
-
-    # Note that even though model's params have changed, lossG.backward()
-    # still uses cached values
-    lossG.backward()
-    optG.step()
+    return supervised_loss
 
 
 # Adversarially train a single epoch
@@ -119,7 +123,7 @@ def adversarial_train(args, config, model, device, train_loader,
         adv_data, adv_targetD, adv_targetG = adv_data.to(device), \
                 adv_targetD.to(device), adv_targetG.to(device)
 
-        training_step_adversarial(config, model, optD, optG, data, target, adv_data, adv_targetD,
+        loss = training_step_adversarial(config, model, optD, optG, data, target, adv_data, adv_targetD,
                 adv_targetG)
 
         if batch_idx % args.log_interval == 0:
@@ -130,6 +134,7 @@ def adversarial_train(args, config, model, device, train_loader,
             if args.dry_run:
                 break
     pass
+
 
 def train(args, model, device, train_loader, optimizer, epoch):
     model.train()
@@ -325,9 +330,9 @@ def main():
         adversarial_dataset = torch.utils.data.TensorDataset(images,
                 real_class_targets, fake_class_targets)
         adversarial_train_loader = InfiniteDataLoader(adversarial_dataset)
-    #model = ExampleCNNNet().to(device)
+    model = ExampleCNNNet(20).to(device)
     #model = MLPNet().to(device)
-    model = MLPNet3Layer().to(device)
+    #model = MLPNet3Layer().to(device)
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
     if args.train_mode == 'adversarial':
         optD = optimizer
