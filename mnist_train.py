@@ -108,7 +108,7 @@ def training_step_adversarial(config, model, optD, optG, data, target, adv_data,
 # adversarial_train_loader points to 1k 28x28 tensors
 # These are initialized to randomly generated mnist_transform(N(0, 0.1))
 # continuously modified during training
-def adversarial_train(args, model, device, train_loader,
+def adversarial_train(args, config, model, device, train_loader,
         adversarial_train_loader, optD, optG, epoch):
     model.train()
     for batch_idx, (data, target), (adv_data, adv_targetD, adv_targetG) in \
@@ -168,6 +168,16 @@ def test(model, device, test_loader):
 
 
 def main():
+    include_layer = {
+        "no penalty"    : [ False, False, False, False],
+        "input only"    : [ True, False, False, False],
+        "all layers"    : [ True, True, True, True],
+        "layer 1 only"  : [ False, True, False, False],
+        "layer 2 only"  : [ False, False, True, False],
+        "layer 3 only"  : [ False, False, False, True],
+        "all but input" : [ False, True, True, True],
+        }
+    generator_modes = list(include_layer.keys())
     # Training settings
     parser = argparse.ArgumentParser(description='Modified PyTorch MNIST Example')
 
@@ -200,7 +210,37 @@ def main():
                         help='how many batches to wait before logging training status')
     parser.add_argument('--save-model', action='store_true', default=False,
                         help='For Saving the current Model')
+
+    # Arguments specific to adversarial training
+    parser.add_argument('--generator-lr', type=float, default=0.05,
+                        metavar='GLR',
+                        help='learning rate for image generation (default: 0.05)')
+
+    parser.add_argument('--generator-mode', type=str, default='input only',
+            metavar='GMODE',
+            help='Generator penalty mode. One of: \n' +
+            '\n'.join(generator_modes))
+    #parser.add_argument('--generator-lambda', type=float, default=0.1, metavar='LAMBDA',
+    #                    help='lambda value for input layer')
+    #parser.add_argument('--generator-lambda-layers', nargs=3, type=float, default=[0.1,
+    #                    0.1, 0.1], metavar='a b c',
+    #                    help='lambda value for input layer')
+    #parser.add_argument('--generator-include-likelihood',
+    #                    dest='generator_include_likelihood',
+    #                    action='store_true', default=True,
+    #                    help='include likelihood loss')
+    #include_likelihood = config['generator_include_likelihood']
+    #include_layer = config['generator_include_layer']
+
     args = parser.parse_args()
+
+    # Set config from args
+    config = vars(args)
+    config['lambd'] = 0.1
+    config['lambd_layers'] = [ 0.1, 0.1, 0.1]
+    config['generator_include_likelihood'] = True
+    config['generator_include_layer'] = include_layer[args.generator_mode]
+
     use_cuda = not args.no_cuda and torch.cuda.is_available()
 
     torch.manual_seed(args.seed)
@@ -295,7 +335,7 @@ def main():
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
     for epoch in range(1, args.epochs + 1):
         if args.train_mode == 'adversarial':
-            adversarial_train(args, model, device, train_loader,
+            adversarial_train(args, config, model, device, train_loader,
                     adversarial_train_loader, optD, optG, epoch)
         elif args.train_mode == 'normal':
             train(args, model, device, train_loader, optimizer, epoch)
