@@ -20,6 +20,19 @@ def undo_transform(image):
     return mean + image * std
 
 
+def compute_mnist_transform_low_high():
+    mean = 0.1307
+    std = 0.3081
+    transform = transforms.Normalize(mean, std)
+    low = torch.zeros(1, 1, 1)
+    high = low + 1
+    print(torch.sum(low).item(), torch.sum(high).item())
+    transformed_low = transform(low).item()
+    transformed_high = transform(high).item()
+    print(transformed_low, transformed_high)
+    return transformed_low, transformed_high
+
+
 # Penalized L1 Loss for training adversarial images
 def compute_generator_loss(config, adv_output, adv_targetG, model_all_l1): 
     lambd = config['lambd']
@@ -260,14 +273,34 @@ def main():
     train_loader = torch.utils.data.DataLoader(dataset1,**train_kwargs)
     test_loader = torch.utils.data.DataLoader(dataset2, **test_kwargs)
 
+    if args.train_mode == 'adversarial':
+        # 1000 images of size 28x28, 1 channel
+        mnist_zero, mnist_one = compute_mnist_transform_low_high()
+        # initialize images with a Gaussian ball close to mnist 0
+        images = torch.normal(mnist_zero + 0.1, 0.1, (1000, 1, 28, 28), requires_grad=True)
+        real_class_targets = torch.randint(10, (1000, ))
+        # class fake-0 is 10, fake-1 is 11 etc
+        fake_class_targets = real_class_targets + 10
+        adversarial_dataset = torch.utils.data.TensorDataSet(images,
+                real_class_targets, fake_class_targets)
+        adversarial_train_loader = InfiniteDataLoader(adversarial_dataset)
     #model = ExampleCNNNet().to(device)
     #model = MLPNet().to(device)
     model = MLPNet3Layer().to(device)
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
+    if args.train_mode == 'adversarial':
+        optD = optimizer
+        optG = optim.Adam([images], lr=args.generator_lr)
 
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
     for epoch in range(1, args.epochs + 1):
-        train(args, model, device, train_loader, optimizer, epoch)
+        if args.train_mode == 'adversarial':
+            adversarial_train(args, model, device, train_loader,
+                    adversarial_train_loader, optD, optG, epoch)
+        elif args.train_mode == 'normal':
+            train(args, model, device, train_loader, optimizer, epoch)
+        else:
+            raise ValueError("invalid train_mode : " + args.train_mode)
         test(model, device, test_loader)
         scheduler.step()
 
