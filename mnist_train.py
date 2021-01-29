@@ -13,6 +13,7 @@ import numpy as np
 
 from mnist_model import ExampleCNNNet
 from mnist_mlp import MLPNet, MLPNet3Layer
+from infinite_dataloader import InfiniteDataLoader
 
 def undo_transform(image):
     mean = 0.1307
@@ -111,7 +112,7 @@ def training_step_adversarial(config, model, optD, optG, data, target, adv_data,
 def adversarial_train(args, config, model, device, train_loader,
         adversarial_train_loader, optD, optG, epoch):
     model.train()
-    for batch_idx, (data, target), (adv_data, adv_targetD, adv_targetG) in \
+    for batch_idx, ((data, target), (adv_data, adv_targetD, adv_targetG)) in \
             enumerate(zip(train_loader, adversarial_train_loader)):
         # Some stupid pytorch things
         data, target = data.to(device), target.to(device)
@@ -217,9 +218,9 @@ def main():
                         help='learning rate for image generation (default: 0.05)')
 
     parser.add_argument('--generator-mode', type=str, default='input only',
-            metavar='GMODE',
-            help='Generator penalty mode. One of: \n' +
-            '\n'.join(generator_modes))
+            metavar='GM',
+            help='Generator penalty mode. One of: "' +
+            '", "'.join(generator_modes) + '"')
     #parser.add_argument('--generator-lambda', type=float, default=0.1, metavar='LAMBDA',
     #                    help='lambda value for input layer')
     #parser.add_argument('--generator-lambda-layers', nargs=3, type=float, default=[0.1,
@@ -321,7 +322,7 @@ def main():
         real_class_targets = torch.randint(10, (1000, ))
         # class fake-0 is 10, fake-1 is 11 etc
         fake_class_targets = real_class_targets + 10
-        adversarial_dataset = torch.utils.data.TensorDataSet(images,
+        adversarial_dataset = torch.utils.data.TensorDataset(images,
                 real_class_targets, fake_class_targets)
         adversarial_train_loader = InfiniteDataLoader(adversarial_dataset)
     #model = ExampleCNNNet().to(device)
