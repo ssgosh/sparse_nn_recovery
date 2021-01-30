@@ -215,8 +215,9 @@ def post_process_images(images, mode='mean_median', low=None, high=None):
 # include_layer: boolean vector of whether to include a layer's l1 penalty
 def recover_image(model, images, targets, num_steps, include_layer,
         include_likelihood=True):
+    mnist_zero, mnist_one = compute_mnist_transform_low_high()
     images.requires_grad = True
-    optimizer = optim.Adam([images], lr=0.05)
+    optimizer = optim.Adam([images], lr=0.5)
 
     # lambda for input
     lambd = config.lambd
@@ -236,7 +237,7 @@ def recover_image(model, images, targets, num_steps, include_layer,
         # include l1 penalty only if it's given as true for that layer
         l1_loss = 0.
         if include_layer[0]:
-            l1_loss = lambd * (torch.norm(images + 0.5, 1)
+            l1_loss = lambd * (torch.norm(images - mnist_zero, 1)
                     / torch.numel(images))
 
         l1_layers = 0.
@@ -312,8 +313,8 @@ def recover_and_plot_images_varying_penalty(initial_image, include_likelihood,
 
     # One large image each (filtered and unfiltered) containing all digits,
     # all penalties
-    generate_multi_plot_all_digits(images_list,
-            post_processed_images_list, targets, labels)
+    #generate_multi_plot_all_digits(images_list,
+    #        post_processed_images_list, targets, labels)
 
     return images_list, post_processed_images_list
 
@@ -335,8 +336,8 @@ def load_and_plot_images_varying_penalty():
 
     # One folder per digit, containing filtered and unfiltered images for that
     # digit
-    generate_multi_plots_separate_digits(images_list,
-            post_processed_images_list, targets, labels)
+    #generate_multi_plots_separate_digits(images_list,
+    #        post_processed_images_list, targets, labels)
 
     # One large image each (filtered and unfiltered) containing all digits,
     # all penalties
@@ -356,7 +357,7 @@ def recover_and_plot_single_image(initial_image, digit):
 
 def load_model(config):
     model_class = get_class(config.discriminator_model_class)
-    model = model_class()
+    model = model_class(num_classes=20)
     #model_state_dict = torch.load('mnist_cnn.pt')
     model_state_dict = torch.load(config.discriminator_model_file)
     model.load_state_dict(model_state_dict)
@@ -384,8 +385,10 @@ model = load_model(config)
 #print(model)
 #summary(model, (1, 28, 28))
 
+mnist_zero, mnist_one = compute_mnist_transform_low_high()
 initial_image = torch.randn(1, 1, 28, 28)
-n = 10
+#initial_image = torch.normal(mnist_zero, 0.01, (1, 1, 28, 28))
+n = 1
 targets = torch.tensor(range(n))
 include_layer = {
         "no penalty"    : [ False, False, False, False],
@@ -404,8 +407,10 @@ config.include_layer = include_layer
 config.labels = labels
 
 # Run-specific information
-config.num_steps = 100
+config.num_steps = 1000
 config.include_likelihood = True
+#config.lambd = 1. #0.1
+#config.lambd_layers = [1., 1., 1.] #[0.1, 0.1, 0.1]
 config.lambd = 0.1
 config.lambd_layers = [0.1, 0.1, 0.1]
 
@@ -423,10 +428,9 @@ images_list, post_processed_images_list = recover_and_plot_images_varying_penalt
 torch.save(images_list, "images_list.pt")
 torch.save(post_processed_images_list, "post_processed_images_list.pt")
 
-#wandb.save(images_list)
-#wandb.save(post_processed_images_list)
-
 #load_and_plot_images_varying_penalty()
+
+#wandb.save("output/*")
 
 #recover_and_plot_single_image(initial_image, 0)
 #initial_image = torch.randn(1, 1, 28, 28)

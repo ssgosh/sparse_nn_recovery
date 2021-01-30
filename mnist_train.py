@@ -27,10 +27,10 @@ def compute_mnist_transform_low_high():
     transform = transforms.Normalize(mean, std)
     low = torch.zeros(1, 1, 1)
     high = low + 1
-    print(torch.sum(low).item(), torch.sum(high).item())
+    #print(torch.sum(low).item(), torch.sum(high).item())
     transformed_low = transform(low).item()
     transformed_high = transform(high).item()
-    print(transformed_low, transformed_high)
+    #print(transformed_low, transformed_high)
     return transformed_low, transformed_high
 
 def get_mnist_zero():
@@ -105,7 +105,7 @@ def training_step_adversarial(config, model, optD, optG, data, target, adv_data,
     # Step optD, which changes only the model's params
     optD.step()
 
-    return supervised_loss
+    return supervised_loss, lossDR, lossDF, lossG
 
 
 # Adversarially train a single epoch
@@ -123,13 +123,15 @@ def adversarial_train(args, config, model, device, train_loader,
         adv_data, adv_targetD, adv_targetG = adv_data.to(device), \
                 adv_targetD.to(device), adv_targetG.to(device)
 
-        loss = training_step_adversarial(config, model, optD, optG, data, target, adv_data, adv_targetD,
+        loss, lossDR, lossDF, lossG = training_step_adversarial(config, model, optD, optG, data, target, adv_data, adv_targetD,
                 adv_targetG)
 
         if batch_idx % args.log_interval == 0:
-            sys.stdout.write('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+            sys.stdout.write('Train Epoch: {} [{}/{} ({:.0f}%)]\tLossDR:'
+                    '{:.6f}\tLossDF: {:.6f}\tLossG: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
-                100. * batch_idx / len(train_loader), loss.item()))
+                100. * batch_idx / len(train_loader), lossDR.item(),
+                lossDF.item(), lossG.item()))
             sys.stdout.write('\r')
             if args.dry_run:
                 break
@@ -329,7 +331,12 @@ def main():
         fake_class_targets = real_class_targets + 10
         adversarial_dataset = torch.utils.data.TensorDataset(images,
                 real_class_targets, fake_class_targets)
-        adversarial_train_loader = InfiniteDataLoader(adversarial_dataset)
+        adversarial_train_loader = InfiniteDataLoader(adversarial_dataset,
+                **train_kwargs)
+        #batch_a, batch_b, batch_c = next(iter(adversarial_train_loader))
+        #print(len(batch_a))
+        #print(batch_a[0], batch_b[0], batch_c[0])
+
     model = ExampleCNNNet(20).to(device)
     #model = MLPNet().to(device)
     #model = MLPNet3Layer().to(device)
@@ -340,18 +347,22 @@ def main():
 
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
     for epoch in range(1, args.epochs + 1):
-        if args.train_mode == 'adversarial':
+        # Perform pre-training for 1 epoch in adversarial mode
+        if args.train_mode == 'normal' or epoch == 1:
+            if args.train_mode == 'adversarial':
+                print('Performing pre-training for 1 epoch')
+            train(args, model, device, train_loader, optimizer, epoch)
+        elif args.train_mode == 'adversarial':
             adversarial_train(args, config, model, device, train_loader,
                     adversarial_train_loader, optD, optG, epoch)
-        elif args.train_mode == 'normal':
-            train(args, model, device, train_loader, optimizer, epoch)
         else:
             raise ValueError("invalid train_mode : " + args.train_mode)
         test(model, device, test_loader)
         scheduler.step()
 
     if args.save_model:
-        torch.save(model.state_dict(), "mnist_mlp_3layer.pt")
+        #torch.save(model.state_dict(), "mnist_mlp_3layer.pt")
+        torch.save(model.state_dict(), "mnist_cnn.pt")
 
 
 if __name__ == '__main__':
