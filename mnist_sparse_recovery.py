@@ -26,17 +26,21 @@ np.set_printoptions(precision = 3)
 def get_class(classname):
     return getattr(sys.modules[__name__], classname)
 
+# Pre-computed from below commented-out function
 def compute_mnist_transform_low_high():
-    mean = 0.1307
-    std = 0.3081
-    transform = transforms.Normalize(mean, std)
-    low = torch.zeros(1, 1, 1)
-    high = low + 1
-    print(torch.sum(low).item(), torch.sum(high).item())
-    transformed_low = transform(low).item()
-    transformed_high = transform(high).item()
-    print(transformed_low, transformed_high)
-    return transformed_low, transformed_high
+    return -0.4242129623889923, 2.821486711502075
+
+#def compute_mnist_transform_low_high():
+#    mean = 0.1307
+#    std = 0.3081
+#    transform = transforms.Normalize(mean, std)
+#    low = torch.zeros(1, 1, 1)
+#    high = low + 1
+#    print(torch.sum(low).item(), torch.sum(high).item())
+#    transformed_low = transform(low).item()
+#    transformed_high = transform(high).item()
+#    print(transformed_low, transformed_high)
+#    return transformed_low, transformed_high
 
 #compute_mnist_transform_low_high()
 #sys.exit(1)
@@ -369,7 +373,7 @@ run = wandb.init(project='mnist_sparse_recovery')
 config = wandb.config
 
 config.discriminator_model_class = 'ExampleCNNNet'
-config.discriminator_model_file = 'mnist_cnn.pt'
+config.discriminator_model_file = 'mnist_cnn_adv_normal_init.pt'
 
 # Alternate model configuration
 #wandb.config.discriminator_model_class = 'MLPNet3Layer'

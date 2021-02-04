@@ -14,6 +14,7 @@ import numpy as np
 from mnist_model import ExampleCNNNet
 from mnist_mlp import MLPNet, MLPNet3Layer
 from infinite_dataloader import InfiniteDataLoader
+from utils.batched_tensor_view_data_loader import BatchedTensorViewDataLoader
 
 def undo_transform(image):
     mean = 0.1307
@@ -330,18 +331,21 @@ def main():
         # 1000 images of size 28x28, 1 channel
         mnist_zero, mnist_one = compute_mnist_transform_low_high()
         # initialize images with a Gaussian ball close to mnist 0
-        images = torch.normal(mnist_zero + 0.1, 0.1, (1000, 1, 28, 28), requires_grad=True)
+        #images = torch.normal(mnist_zero + 0.1, 0.1, (1000, 1, 28, 28), requires_grad=True)
+        images = torch.randn(1000, 1, 28, 28, requires_grad=True)
         real_class_targets = torch.randint(10, (1000, ))
         # class fake-0 is 10, fake-1 is 11 etc
         fake_class_targets = real_class_targets + 10
         adversarial_dataset = torch.utils.data.TensorDataset(images,
                 real_class_targets, fake_class_targets)
-        adversarial_train_loader = InfiniteDataLoader(adversarial_dataset,
-                **train_kwargs)
+        #adversarial_train_loader = InfiniteDataLoader(adversarial_dataset,
+        #        **train_kwargs)
+        adversarial_train_loader = BatchedTensorViewDataLoader(args.batch_size,
+                images, real_class_targets, fake_class_targets)
         batch_a, batch_b, batch_c = next(iter(adversarial_train_loader))
-        print(len(batch_a))
-        sys.exit(0)
+        #print(len(batch_a))
         #print(batch_a[0], batch_b[0], batch_c[0])
+        #sys.exit(0)
 
     model = ExampleCNNNet(20).to(device)
     #model = MLPNet().to(device)
@@ -354,7 +358,7 @@ def main():
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
     for epoch in range(1, args.epochs + 1):
         # Perform pre-training for 1 epoch in adversarial mode
-        if args.train_mode == 'normal' or epoch == 1:
+        if args.train_mode == 'normal' or epoch == 0:
             if args.train_mode == 'adversarial':
                 print('Performing pre-training for 1 epoch')
             train(args, model, device, train_loader, optimizer, epoch)
@@ -368,7 +372,7 @@ def main():
 
     if args.save_model:
         #torch.save(model.state_dict(), "mnist_mlp_3layer.pt")
-        torch.save(model.state_dict(), "mnist_cnn.pt")
+        torch.save(model.state_dict(), "mnist_cnn_adv_normal_init.pt")
 
 
 if __name__ == '__main__':
