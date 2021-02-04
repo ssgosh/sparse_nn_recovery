@@ -21,17 +21,22 @@ def undo_transform(image):
     return mean + image * std
 
 
+# Pre-computed from below commented-out function
 def compute_mnist_transform_low_high():
-    mean = 0.1307
-    std = 0.3081
-    transform = transforms.Normalize(mean, std)
-    low = torch.zeros(1, 1, 1)
-    high = low + 1
-    #print(torch.sum(low).item(), torch.sum(high).item())
-    transformed_low = transform(low).item()
-    transformed_high = transform(high).item()
-    #print(transformed_low, transformed_high)
-    return transformed_low, transformed_high
+    return -0.4242129623889923, 2.821486711502075
+
+#def compute_mnist_transform_low_high():
+#    mean = 0.1307
+#    std = 0.3081
+#    transform = transforms.Normalize(mean, std)
+#    print(transform)
+#    low = torch.zeros(1, 1, 1)
+#    high = low + 1
+#    #print(torch.sum(low).item(), torch.sum(high).item())
+#    transformed_low = transform(low).item()
+#    transformed_high = transform(high).item()
+#    print(transformed_low, transformed_high)
+#    return transformed_low, transformed_high
 
 def get_mnist_zero():
     mnist_zero, mnist_one = compute_mnist_transform_low_high()
@@ -273,9 +278,9 @@ def main():
     # , transforms are applied on each batch dynamically. Hence data gets
     # augmented due to random transforms.
     train_transform = transforms.Compose([
-        transforms.ToTensor(),
         transforms.RandomAffine(degrees=5, translate=(0.1, 0.1), scale=(0.9,
             1.1), shear=None),
+        transforms.ToTensor(),
         transforms.Normalize((0.1307,), (0.3081,))
         ])
     #dataset1 = datasets.MNIST('./data', train=True, download=True)
@@ -333,8 +338,9 @@ def main():
                 real_class_targets, fake_class_targets)
         adversarial_train_loader = InfiniteDataLoader(adversarial_dataset,
                 **train_kwargs)
-        #batch_a, batch_b, batch_c = next(iter(adversarial_train_loader))
-        #print(len(batch_a))
+        batch_a, batch_b, batch_c = next(iter(adversarial_train_loader))
+        print(len(batch_a))
+        sys.exit(0)
         #print(batch_a[0], batch_b[0], batch_c[0])
 
     model = ExampleCNNNet(20).to(device)
