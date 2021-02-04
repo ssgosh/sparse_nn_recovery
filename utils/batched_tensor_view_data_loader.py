@@ -18,10 +18,12 @@ class BatchedTensorViewDataLoader:
         self.perm_indices = torch.arange(self.N)
         self.cur_idx = 0
 
+    def __iter__(self):
+        return self
 
     # Get next batch
     # Leaves last small batch
-    def next(self):
+    def __next__(self):
         end = self.cur_idx + self.batch_size
         next_idx = end
         if end > self.N:
