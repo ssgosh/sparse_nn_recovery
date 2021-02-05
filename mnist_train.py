@@ -347,9 +347,9 @@ def main():
         #print(batch_a[0], batch_b[0], batch_c[0])
         #sys.exit(0)
 
-    model = ExampleCNNNet(20).to(device)
+    #model = ExampleCNNNet(20).to(device)
     #model = MLPNet().to(device)
-    #model = MLPNet3Layer().to(device)
+    model = MLPNet3Layer(num_classes=20).to(device)
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
     if args.train_mode == 'adversarial':
         optD = optimizer
@@ -371,8 +371,8 @@ def main():
         scheduler.step()
 
     if args.save_model:
-        #torch.save(model.state_dict(), "mnist_mlp_3layer.pt")
-        torch.save(model.state_dict(), "mnist_cnn_adv_normal_init.pt")
+        torch.save(model.state_dict(), "mnist_mlp_3layer_adv_normal_init.pt")
+        #torch.save(model.state_dict(), "mnist_cnn_adv_normal_init.pt")
 
 
 if __name__ == '__main__':

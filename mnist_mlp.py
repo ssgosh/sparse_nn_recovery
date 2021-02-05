@@ -57,7 +57,7 @@ class MLPNet(nn.Module):
         return output
 
 class MLPNet3Layer(nn.Module):
-    def __init__(self):
+    def __init__(self, num_classes=10):
         super(MLPNet3Layer, self).__init__()
         self.flatten1 = nn.Flatten()
         self.fc1 = nn.Linear(784, 256)
@@ -72,7 +72,7 @@ class MLPNet3Layer(nn.Module):
         self.relu3 = nn.ReLU()
         self.dropout3 = nn.Dropout(0.5)
 
-        self.fc4 = nn.Linear(128, 10)
+        self.fc4 = nn.Linear(128, num_classes)
         self.logsoftmax = nn.LogSoftmax(dim=1)
 
         self.fc1_l1 = None 

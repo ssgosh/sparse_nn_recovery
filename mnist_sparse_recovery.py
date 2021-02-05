@@ -317,8 +317,8 @@ def recover_and_plot_images_varying_penalty(initial_image, include_likelihood,
 
     # One large image each (filtered and unfiltered) containing all digits,
     # all penalties
-    #generate_multi_plot_all_digits(images_list,
-    #        post_processed_images_list, targets, labels)
+    generate_multi_plot_all_digits(images_list,
+            post_processed_images_list, targets, labels)
 
     return images_list, post_processed_images_list
 
@@ -372,8 +372,11 @@ def load_model(config):
 run = wandb.init(project='mnist_sparse_recovery')
 config = wandb.config
 
-config.discriminator_model_class = 'ExampleCNNNet'
-config.discriminator_model_file = 'mnist_cnn_adv_normal_init.pt'
+#config.discriminator_model_class = 'ExampleCNNNet'
+config.discriminator_model_class = 'MLPNet3Layer'
+#config.discriminator_model_file = 'mnist_cnn_adv_normal_init.pt'
+#config.discriminator_model_file = 'mnist_cnn_normal_training.pt'
+config.discriminator_model_file = 'mnist_mlp_3layer_adv_normal_init.pt'
 
 # Alternate model configuration
 #wandb.config.discriminator_model_class = 'MLPNet3Layer'
@@ -392,7 +395,7 @@ model = load_model(config)
 mnist_zero, mnist_one = compute_mnist_transform_low_high()
 initial_image = torch.randn(1, 1, 28, 28)
 #initial_image = torch.normal(mnist_zero, 0.01, (1, 1, 28, 28))
-n = 1
+n = 10
 targets = torch.tensor(range(n))
 include_layer = {
         "no penalty"    : [ False, False, False, False],
