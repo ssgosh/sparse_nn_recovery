@@ -18,7 +18,8 @@ import torch.nn as nn
 class MaxNormLayer(nn.Module):
     def __init__(self, size_in, size_out):
         super().__init__()
-        d = torch.ones(size_out)
+        d = torch.empty(size_out)
+        nn.init.uniform_(d, 0, 1)
         self.d = nn.Parameter(d)
         print(self.d)
         v = torch.randn(size_out, size_in)
@@ -44,7 +45,7 @@ class MaxNormLayer(nn.Module):
 
 
     def get_weight_decay(self):
-        return self.lambd * d*d #+ torch.sum(s*s)
+        return self.lambd * torch.mean(self.d * self.d) #+ torch.sum(s*s)
 
 
 if __name__ == '__main__':

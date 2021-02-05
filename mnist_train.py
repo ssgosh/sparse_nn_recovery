@@ -13,6 +13,7 @@ import numpy as np
 
 from mnist_model import ExampleCNNNet
 from mnist_mlp import MLPNet, MLPNet3Layer
+from mnist_max_norm_mlp import MaxNormMLP
 from infinite_dataloader import InfiniteDataLoader
 from utils.batched_tensor_view_data_loader import BatchedTensorViewDataLoader
 
@@ -150,7 +151,7 @@ def train(args, model, device, train_loader, optimizer, epoch):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         output = model(data)
-        loss = F.nll_loss(output, target)
+        loss = F.nll_loss(output, target) + model.get_weight_decay()
         loss.backward()
         optimizer.step()
         if batch_idx % args.log_interval == 0:
@@ -349,7 +350,8 @@ def main():
 
     #model = ExampleCNNNet(20).to(device)
     #model = MLPNet().to(device)
-    model = MLPNet3Layer(num_classes=20).to(device)
+    #model = MLPNet3Layer(num_classes=20).to(device)
+    model = MaxNormMLP(num_classes=10).to(device)
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
     if args.train_mode == 'adversarial':
         optD = optimizer
@@ -371,7 +373,7 @@ def main():
         scheduler.step()
 
     if args.save_model:
-        torch.save(model.state_dict(), "mnist_mlp_3layer_adv_normal_init.pt")
+        torch.save(model.state_dict(), "mnist_max_norm_mlp.pt")
         #torch.save(model.state_dict(), "mnist_cnn_adv_normal_init.pt")
 
 

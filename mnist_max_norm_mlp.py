@@ -10,14 +10,14 @@ class MaxNormMLP(nn.Module):
         self.flatten1 = nn.Flatten()
 
         self.mn1 = MaxNormLayer(784, 256)
-        self.fc1 = nn.Linear(256, 256)
+        #self.fc1 = nn.Linear(256, 256)
 
-        self.mn2 = nn.MaxNormLayer(256, 128)
-        self.fc2 = nn.Linear(128, 128)
+        #self.mn2 = MaxNormLayer(256, 128)
+        #self.fc2 = nn.Linear(128, 128)
 
-        self.mn3 = nn.MaxNormLayer(128, 128)
+        #self.mn3 = MaxNormLayer(128, 128)
 
-        self.fc3 = nn.Linear(128, num_classes)
+        self.output = nn.Linear(256, num_classes)
         self.logsoftmax = nn.LogSoftmax(dim=1)
 
         # Needed for adv training etc
@@ -30,17 +30,19 @@ class MaxNormMLP(nn.Module):
 
         # First hidden layer
         x = self.mn1(x)
-        x = self.fc1(x)
+        #x = self.fc1(x)
 
         # Second hidden layer
-        x = self.mn2(x)
-        x = self.fc2(x)
+        #x = self.mn2(x)
+        #x = self.fc2(x)
 
         # Third hidden layer
-        x = self.mn3(x)
+        #x = self.mn3(x)
 
         # Output Layer
-        x = self.fc4(x)
+        x = self.output(x)
         output = self.logsoftmax(x)
         return output
 
+    def get_weight_decay(self):
+        return self.mn1.get_weight_decay()
