@@ -19,7 +19,7 @@ class MaxNormLayer(nn.Module):
     def __init__(self, size_in, size_out):
         super().__init__()
         d = torch.empty(size_out)
-        nn.init.uniform_(d, 0, 1)
+        nn.init.uniform_(d, 0, 10)
         self.d = nn.Parameter(d)
         print(self.d)
         v = torch.randn(size_out, size_in)
@@ -40,7 +40,7 @@ class MaxNormLayer(nn.Module):
     def forward(self, x):
         x = torch.unsqueeze(x, dim=1)
         mn = torch.norm(x - self.v, float('inf'), dim=-1)
-        zeros = torch.zeros(mn.shape)
+        zeros = torch.zeros(mn.shape, device=x.device)
         return torch.max(zeros, self.d - mn)
 
 
