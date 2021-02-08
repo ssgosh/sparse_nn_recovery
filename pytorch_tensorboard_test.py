@@ -23,6 +23,7 @@ def main():
 
         print(f"step: {i}, loss: {mse.item():.3f}")
         writer.add_images("Images being trained", torch.unsqueeze(x, dim=1), dataformats="NCHW", global_step=i)
+        writer.add_scalar("loss/training", mse.item(), global_step=i)
 
 writer = tensorboard_setup()
 main()
