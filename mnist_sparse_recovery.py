@@ -4,6 +4,7 @@ import sys
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+import torchvision
 from torchvision import transforms
 
 from torchsummary import summary
@@ -36,12 +37,55 @@ def mnist_post_process_image_batch(images):
             high=transformed_high)
     return copied_images
 
+def add_image_grid(images, tag, global_step):
+    images = images.detach()
+    # Scale image
+    img_grid = torchvision.utils.make_grid(images, 3, normalize=True,
+            scale_each=True)
+    writer.add_image(tag, img_grid, global_step=global_step)
+
+
+# Plot 10 images in a 4x3 grid. One subplot per digit.
+def plot_image_batch(images, targets, label):
+    num_images = len(images)
+    nrows = 4
+    ncols = 3
+    plot.rcParams.update({'font.size' : 3 })
+    fig, axes = plot.subplots(nrows=nrows, ncols=ncols, figsize=(1, 1))
+    for i, ax in enumerate(axes.flat):
+        if i >= num_images:
+            fig.delaxes(ax)
+            continue
+        image = images[i][0]
+        title = "%d : %s" % (targets[i], label)
+        #plot_image_on_axis(ax, image, title, fig, vmin=-0.5, vmax=2.0)
+        plot_image_on_axis(ax, image, title, fig)#, vmin=-0.5, vmax=2.0)
+
+    #plot.tight_layout(pad=2.)
+    #plot.savefig(filename)
+    #plot.clf()
+    #plot.rcParams.update({'font.size' : 10 })
+    # Close this or we're gonna have a bad time with OOM if
+    # called from within ipython
+    #plot.close() 
+    return fig
+
+# XXX: Don't use on every batch since this is too slow
+def add_figure(images, tag, global_step, label):
+    fig = plot_image_batch(images.detach(), targets, label)
+    writer.add_figure(tag, fig, global_step=global_step)
+    plot.close()
+
 def add_tensorboard_stuff(label, model, images, losses, global_step):
-    writer.add_images(f"{label}/Unfiltered Images", images, dataformats="NCHW",
-            global_step=global_step)
+    #writer.add_images(f"{label}/Unfiltered Images", images, dataformats="NCHW",
+    #        global_step=global_step)
+    add_image_grid(images, f"{label}/Unfiltered Images", global_step)
+    #add_figure(images, f"{label}/Unfiltered Images", global_step, label)
     filtered_images = mnist_post_process_image_batch(images)
-    writer.add_images(f"{label}/Filtered Images", filtered_images, dataformats="NCHW",
-            global_step=global_step)
+    #add_figure(filtered_images, f"{label}/Filtered Images", global_step, label)
+    add_image_grid(filtered_images, f"{label}/Filtered Images", global_step)
+    #writer.add_images(f"{label}/Filtered Images", filtered_images, dataformats="NCHW",
+    #        global_step=global_step)
     for key in losses:
         writer.add_scalar(f"{label}/{key}", losses[key], global_step=global_step)
 
