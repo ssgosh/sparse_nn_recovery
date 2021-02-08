@@ -1,4 +1,5 @@
 import torch
+import torchvision
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -24,6 +25,9 @@ def main():
         print(f"step: {i}, loss: {mse.item():.3f}")
         writer.add_images("Images being trained", torch.unsqueeze(x, dim=1), dataformats="NCHW", global_step=i)
         writer.add_scalar("loss/training", mse.item(), global_step=i)
+
+        img_grid = torchvision.utils.make_grid(torch.unsqueeze(x, dim=1))
+        writer.add_image("Image Grid", img_grid, global_step=i)
 
 writer = tensorboard_setup()
 main()

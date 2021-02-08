@@ -37,12 +37,13 @@ def mnist_post_process_image_batch(images):
     return copied_images
 
 def add_tensorboard_stuff(label, model, images, losses, global_step):
-    writer.add_images("Unfiltered Images", images, dataformats="NCHW",
+    writer.add_images(f"{label}/Unfiltered Images", images, dataformats="NCHW",
             global_step=global_step)
     filtered_images = mnist_post_process_image_batch(images)
-    writer.add_images("Filtered Images", filtered_images, dataformats="NCHW",
+    writer.add_images(f"{label}/Filtered Images", filtered_images, dataformats="NCHW",
             global_step=global_step)
-    writer.add_scalars("losses", losses, global_step=global_step)
+    for key in losses:
+        writer.add_scalar(f"{label}/{key}", losses[key], global_step=global_step)
 
 def get_class(classname):
     return getattr(sys.modules[__name__], classname)
@@ -260,7 +261,7 @@ def recover_image(model, images, targets, num_steps, include_layer, label,
         else:
             nll_loss = torch.tensor(0.)
 
-        losses[f"{label}/nll_loss"] = nll_loss.item()
+        losses[f"nll_loss"] = nll_loss.item()
 
         # include l1 penalty only if it's given as true for that layer
         l1_loss = torch.tensor(0.)
@@ -268,7 +269,7 @@ def recover_image(model, images, targets, num_steps, include_layer, label,
             l1_loss = lambd * (torch.norm(images - mnist_zero, 1)
                     / torch.numel(images))
 
-        losses[f"{label}/input_l1_loss"] = l1_loss.item()
+        losses[f"input_l1_loss"] = l1_loss.item()
 
         l1_layers = torch.tensor(0.)
         for idx, (include, lamb, l1) in enumerate(zip(include_layer[1:], lambd_layers,
@@ -276,10 +277,10 @@ def recover_image(model, images, targets, num_steps, include_layer, label,
             if include:
                 layer_loss = lamb * l1
                 l1_layers += layer_loss
-                losses[f"{label}/layer_{idx}_l1_loss"] = layer_loss.item()
+                losses[f"layer_{idx}_l1_loss"] = layer_loss.item()
 
-        losses[f"{label}/hidden_layers_l1_loss"] = l1_layers.item()
-        losses[f"{label}/all_layers_l1_loss"] = l1_loss.item() + l1_layers.item()
+        losses[f"hidden_layers_l1_loss"] = l1_layers.item()
+        losses[f"all_layers_l1_loss"] = l1_loss.item() + l1_layers.item()
         #l1_layers = sum([ (lamb * l1) for lamb, l1 in zip(lambd_layers,
         #    model.all_l1) ])
         #l2_loss = lambd2 * (torch.norm(images, + 2) ** 2
@@ -288,7 +289,7 @@ def recover_image(model, images, targets, num_steps, include_layer, label,
         loss = nll_loss + l1_loss + l1_layers
         loss.backward()
         optimizer.step()
-        losses[f"{label}/total_loss"] = loss.item()
+        losses[f"total_loss"] = loss.item()
         print("Iter: ", i,", Loss: %.3f" % loss.item(),
                 f"Prob of {targets[0]} %.3f" %
                 pow(math.e, output[0][targets[0].item()].item()),
