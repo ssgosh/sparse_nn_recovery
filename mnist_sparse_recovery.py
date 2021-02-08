@@ -76,7 +76,11 @@ def add_figure(images, tag, global_step, label):
     writer.add_figure(tag, fig, global_step=global_step)
     plot.close()
 
-def add_tensorboard_stuff(label, model, images, losses, global_step):
+def log_dict(label, scalars, global_step):
+    for key in scalars:
+        writer.add_scalar(f"{label}/{key}", scalars[key], global_step=global_step)
+
+def add_tensorboard_stuff(label, model, images, losses, probs, global_step):
     #writer.add_images(f"{label}/Unfiltered Images", images, dataformats="NCHW",
     #        global_step=global_step)
     add_image_grid(images, f"{label}/Unfiltered Images", global_step)
@@ -86,8 +90,8 @@ def add_tensorboard_stuff(label, model, images, losses, global_step):
     add_image_grid(filtered_images, f"{label}/Filtered Images", global_step)
     #writer.add_images(f"{label}/Filtered Images", filtered_images, dataformats="NCHW",
     #        global_step=global_step)
-    for key in losses:
-        writer.add_scalar(f"{label}/{key}", losses[key], global_step=global_step)
+    log_dict(label, losses, global_step)
+    log_dict(label, probs, global_step)
 
 def get_class(classname):
     return getattr(sys.modules[__name__], classname)
@@ -297,6 +301,7 @@ def recover_image(model, images, targets, num_steps, include_layer, label,
     #lambd_layers = [0.01, 0.01, 0.01]
     #lambd2 = 1.
     losses = {}
+    probs = {}
     for i in range(1, num_steps+1):
         optimizer.zero_grad()
         output = model(images)
@@ -334,6 +339,11 @@ def recover_image(model, images, targets, num_steps, include_layer, label,
         loss.backward()
         optimizer.step()
         losses[f"total_loss"] = loss.item()
+        for idx, tgt in enumerate(targets):
+            prob = pow(math.e, output[idx][tgt.item()].item())
+            #print(prob)
+            probs[f"prob_{tgt}"] = prob
+
         print("Iter: ", i,", Loss: %.3f" % loss.item(),
                 f"Prob of {targets[0]} %.3f" %
                 pow(math.e, output[0][targets[0].item()].item()),
@@ -342,7 +352,7 @@ def recover_image(model, images, targets, num_steps, include_layer, label,
                 images.max().item()))
 
         # Do tensorboard things
-        add_tensorboard_stuff(label, model, images, losses, i)
+        add_tensorboard_stuff(label, model, images, losses, probs, i)
 
     images.requires_grad = False
 
