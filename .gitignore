@@ -1,7 +1,9 @@
-./output/
+output/
 wandb/
 data/
 *.pt
 __pycache__
 .*.swp
 output.old
+nohup.out
+runs/
