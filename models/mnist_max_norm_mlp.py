@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from max_norm_layer import MaxNormLayer
+from layers.max_norm_layer import MaxNormLayer
 
 class MaxNormMLP(nn.Module):
     def __init__(self, num_classes=10):
