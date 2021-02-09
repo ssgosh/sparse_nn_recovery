@@ -19,8 +19,8 @@ from utils import image_processor as imp
 from utils import mnist_helper as mh
 from utils import plotter
 
-from mnist_model import ExampleCNNNet
-from mnist_mlp import MLPNet3Layer
+from models.mnist_model import ExampleCNNNet
+from models.mnist_mlp import MLPNet3Layer
 
 np.set_printoptions(precision = 3)
 
@@ -194,9 +194,9 @@ config = wandb.config
 
 config.discriminator_model_class = 'ExampleCNNNet'
 #config.discriminator_model_class = 'MLPNet3Layer'
-#config.discriminator_model_file = 'mnist_cnn_adv_normal_init.pt'
-config.discriminator_model_file = 'mnist_cnn.pt'
-#config.discriminator_model_file = 'mnist_mlp_3layer_adv_normal_init.pt'
+#config.discriminator_model_file = 'ckpt/mnist_cnn_adv_normal_init.pt'
+config.discriminator_model_file = 'ckpt/mnist_cnn.pt'
+#config.discriminator_model_file = 'ckpt/mnist_mlp_3layer_adv_normal_init.pt'
 
 # Alternate model configuration
 #wandb.config.discriminator_model_class = 'MLPNet3Layer'
@@ -254,8 +254,8 @@ tbh = TensorBoardHelper()
 images_list, post_processed_images_list = recover_and_plot_images_varying_penalty(initial_image,
         include_likelihood=config.include_likelihood, num_steps=config.num_steps)
 
-torch.save(images_list, "images_list.pt")
-torch.save(post_processed_images_list, "post_processed_images_list.pt")
+torch.save(images_list, "ckpt/images_list.pt")
+torch.save(post_processed_images_list, "ckpt/post_processed_images_list.pt")
 
 #load_and_plot_images_varying_penalty()
 
