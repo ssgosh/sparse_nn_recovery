@@ -2,43 +2,13 @@ import torchvision
 
 from torch.utils.tensorboard import SummaryWriter
 
-
-def compute_mnist_transform_low_high():
-    return -0.4242129623889923, 2.821486711502075
-
-
-# high-pass and low-pass filter for images
-def post_process_images(images, mode='mean_median', low=None, high=None):
-    n = images.shape[0]
-    channel = 0
-    for idx in range(n):
-        image = images[idx][channel]
-        if mode == 'mean_median':
-            mean = image.mean()
-            median = image.median()
-            low = (median + mean) / 2
-        elif mode == 'low_high':
-            assert low is not None or high is not None
-        else:
-            raise ValueError("Invalid value provided for mode %s" % mode)
-
-        if low:
-            image[image <= low] = low
-        if high:
-            image[image >= high] = high
+import utils.mnist_helper as mh
 
 class TensorBoardHelper:
 
     def __init__(self):
         self.writer = SummaryWriter()
 
-    def mnist_post_process_image_batch(self, images):
-        transformed_low, transformed_high = compute_mnist_transform_low_high()
-        copied_images = images.clone().detach()
-        post_process_images(copied_images, mode='low_high',
-                low=transformed_low,
-                high=transformed_high)
-        return copied_images
 
     def add_image_grid(self, images, tag, global_step):
         images = images.detach()
@@ -88,7 +58,7 @@ class TensorBoardHelper:
         #        global_step=global_step)
         self.add_image_grid(images, f"{label}/Unfiltered Images", global_step)
         #add_figure(images, f"{label}/Unfiltered Images", global_step, label)
-        filtered_images = self.mnist_post_process_image_batch(images)
+        filtered_images = mh.mnist_post_process_image_batch(images)
         #add_figure(filtered_images, f"{label}/Filtered Images", global_step, label)
         self.add_image_grid(filtered_images, f"{label}/Filtered Images", global_step)
         #self.writer.add_images(f"{label}/Filtered Images", filtered_images, dataformats="NCHW",

@@ -22,6 +22,9 @@ import pathlib
 import wandb
 from utils.tensorboard_helper import TensorBoardHelper
 
+from utils import image_processor as imp
+from utils import mnist_helper as mh
+
 from mnist_model import ExampleCNNNet
 from mnist_mlp import MLPNet3Layer
 
@@ -31,29 +34,6 @@ np.set_printoptions(precision = 3)
 def get_class(classname):
     return getattr(sys.modules[__name__], classname)
 
-# Pre-computed from below commented-out function
-def compute_mnist_transform_low_high():
-    return -0.4242129623889923, 2.821486711502075
-
-#def compute_mnist_transform_low_high():
-#    mean = 0.1307
-#    std = 0.3081
-#    transform = transforms.Normalize(mean, std)
-#    low = torch.zeros(1, 1, 1)
-#    high = low + 1
-#    print(torch.sum(low).item(), torch.sum(high).item())
-#    transformed_low = transform(low).item()
-#    transformed_high = transform(high).item()
-#    print(transformed_low, transformed_high)
-#    return transformed_low, transformed_high
-
-#compute_mnist_transform_low_high()
-#sys.exit(1)
-
-def undo_transform(image):
-    mean = 0.1307
-    std = 0.3081
-    return mean + image * std
 
 def plot_image_on_axis(ax, image, title, fig, vmin=None, vmax=None):
     im = ax.imshow(image, cmap='gray', vmin=vmin, vmax=vmax)
@@ -200,31 +180,11 @@ def show_image(image):
     plot.show()
     image.requires_grad = save_requires_grad
 
-# high-pass and low-pass filter for images
-def post_process_images(images, mode='mean_median', low=None, high=None):
-    n = images.shape[0]
-    channel = 0
-    for idx in range(n):
-        image = images[idx][channel]
-        if mode == 'mean_median':
-            mean = image.mean()
-            median = image.median()
-            low = (median + mean) / 2
-        elif mode == 'low_high':
-            assert low is not None or high is not None
-        else:
-            raise ValueError("Invalid value provided for mode %s" % mode)
-
-        if low:
-            image[image <= low] = low
-        if high:
-            image[image >= high] = high
-
 
 # include_layer: boolean vector of whether to include a layer's l1 penalty
 def recover_image(model, images, targets, num_steps, include_layer, label,
         include_likelihood=True):
-    mnist_zero, mnist_one = compute_mnist_transform_low_high()
+    mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
     images.requires_grad = True
     optimizer = optim.Adam([images], lr=0.5)
 
@@ -295,20 +255,6 @@ def recover_and_plot_single_digit():
     recover_image(model, images, targets, 10000, include_layer[label], label,
             include_likelihood=False)
 
-def post_process_images_list(images_list):
-    transformed_low, transformed_high = compute_mnist_transform_low_high()
-    post_processed_images_list = []
-    for images in images_list:
-        #post_process_images(images)
-        copied_images = images.clone().detach()
-        #post_process_images(copied_images, mode='low_high', low=-0.5, high=2.0)
-        post_process_images(copied_images, mode='low_high',
-                low=transformed_low,
-                high=transformed_high)
-        post_processed_images_list.append(copied_images)
-
-    return post_processed_images_list
-
 
 # The main loop
 #
@@ -316,7 +262,7 @@ def post_process_images_list(images_list):
 def recover_and_plot_images_varying_penalty(initial_image, include_likelihood,
         num_steps):
     images_list = []
-    transformed_low, transformed_high = compute_mnist_transform_low_high()
+    transformed_low, transformed_high = mh.compute_mnist_transform_low_high()
     for label in labels:
         images = torch.zeros(n, 1, 28, 28)
         images += initial_image  # Use same initial image for each digit
@@ -330,7 +276,7 @@ def recover_and_plot_images_varying_penalty(initial_image, include_likelihood,
         #post_process_images(images)
         copied_images = images.clone().detach()
         #post_process_images(copied_images, mode='low_high', low=-0.5, high=2.0)
-        post_process_images(copied_images, mode='low_high',
+        imp.post_process_images(copied_images, mode='low_high',
                 low=transformed_low,
                 high=transformed_high)
         post_processed_images_list.append(copied_images)
@@ -351,14 +297,14 @@ def recover_and_plot_images_varying_penalty(initial_image, include_likelihood,
 # Load images_list from saved .pt files
 # Do post-processing only and plot
 def load_and_plot_images_varying_penalty():
-    transformed_low, transformed_high = compute_mnist_transform_low_high()
+    transformed_low, transformed_high = mh.compute_mnist_transform_low_high()
     images_list = torch.load("images_list.pt")
     assert len(labels) == len(images_list)
     post_processed_images_list = []
     for images in images_list:
         copied_images = images.clone().detach()
         assert targets.shape[0] == copied_images.shape[0]
-        post_process_images(copied_images, mode='low_high',
+        imp.post_process_images(copied_images, mode='low_high',
                 low=transformed_low,
                 high=transformed_high)
         post_processed_images_list.append(copied_images)
@@ -382,7 +328,7 @@ def recover_and_plot_single_image(initial_image, digit):
     recover_image(model, initial_image, targets, 2000, include_layer[label],
             label)
     show_image(initial_image[0][0])
-    post_process_images(initial_image, mode='low_high', low=-0.5, high=2.0)
+    imp.post_process_images(initial_image, mode='low_high', low=-0.5, high=2.0)
     show_image(initial_image[0][0])
 
 def load_model(config):
@@ -418,7 +364,7 @@ model = load_model(config)
 #print(model)
 #summary(model, (1, 28, 28))
 
-mnist_zero, mnist_one = compute_mnist_transform_low_high()
+mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
 initial_image = torch.randn(1, 1, 28, 28)
 #initial_image = torch.normal(mnist_zero, 0.01, (1, 1, 28, 28))
 n = 10
