@@ -1,5 +1,6 @@
 from . import image_processor as imp
 
+
 # Pre-computed from below commented-out function
 # python3.6/pytorch1.3.0 had some issues with the commented function
 def compute_mnist_transform_low_high():
@@ -17,6 +18,11 @@ def compute_mnist_transform_low_high():
 #    transformed_high = transform(high).item()
 #    print(transformed_low, transformed_high)
 #    return transformed_low, transformed_high
+
+
+def get_mnist_zero():
+    mnist_zero, mnist_one = compute_mnist_transform_low_high()
+    return mnist_zero
 
 
 def undo_transform(image):

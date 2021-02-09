@@ -1,8 +1,18 @@
+if __name__=='__main__':
+    import sys
+    # This is a hack needed so that you can directly run this file as 
+    # python models/<filename>.py
+    #
+    # This is so that files from layers/ dir inside this can be accessed using
+    # top-level dir reference (models.layers)
+    sys.path.append(".")
+
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from layers.max_norm_layer import MaxNormLayer
+from models.layers.max_norm_layer import MaxNormLayer
 
 class MaxNormMLP(nn.Module):
     def __init__(self, num_classes=10):
@@ -72,4 +82,5 @@ if __name__ == '__main__':
     model = MaxNormMLP()
     x = torch.randn(10, 1, 28, 28)
     y = model(x)
+    print('Success')
 

@@ -16,33 +16,8 @@ from models.mnist_mlp import MLPNet, MLPNet3Layer
 from models.mnist_max_norm_mlp import MaxNormMLP
 from utils.infinite_dataloader import InfiniteDataLoader
 from utils.batched_tensor_view_data_loader import BatchedTensorViewDataLoader
+import utils.mnist_helper as mh
 
-def undo_transform(image):
-    mean = 0.1307
-    std = 0.3081
-    return mean + image * std
-
-
-# Pre-computed from below commented-out function
-def compute_mnist_transform_low_high():
-    return -0.4242129623889923, 2.821486711502075
-
-#def compute_mnist_transform_low_high():
-#    mean = 0.1307
-#    std = 0.3081
-#    transform = transforms.Normalize(mean, std)
-#    print(transform)
-#    low = torch.zeros(1, 1, 1)
-#    high = low + 1
-#    #print(torch.sum(low).item(), torch.sum(high).item())
-#    transformed_low = transform(low).item()
-#    transformed_high = transform(high).item()
-#    print(transformed_low, transformed_high)
-#    return transformed_low, transformed_high
-
-def get_mnist_zero():
-    mnist_zero, mnist_one = compute_mnist_transform_low_high()
-    return mnist_zero
 
 # Penalized L1 Loss for training adversarial images
 def compute_generator_loss(config, adv_data, adv_output, adv_targetG, model_all_l1): 
@@ -60,7 +35,7 @@ def compute_generator_loss(config, adv_data, adv_output, adv_targetG, model_all_
     # include l1 penalty only if it's given as true for that layer
     l1_loss = 0.
     if include_layer[0]:
-        l1_loss = lambd * (torch.norm(adv_data - get_mnist_zero(), 1)
+        l1_loss = lambd * (torch.norm(adv_data - mh.get_mnist_zero(), 1)
                 / torch.numel(adv_data))
 
     l1_layers = 0.
@@ -314,10 +289,10 @@ def main():
     #
     #    imshow(image[0], cmap='gray')
     #    plot.show()
-    # imshow(undo_transform(image)[0], cmap='gray')
+    # imshow(mh.undo_transform(image)[0], cmap='gray')
     # plot.show()
     
-    #np_img = undo_transform(image)[0].numpy()
+    #np_img = mh.undo_transform(image)[0].numpy()
     #img = Image.fromarray(np.uint8(np_img * 255), 'L')
     #img.show()
     # Show one image
@@ -330,7 +305,7 @@ def main():
 
     if args.train_mode == 'adversarial':
         # 1000 images of size 28x28, 1 channel
-        mnist_zero, mnist_one = compute_mnist_transform_low_high()
+        mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
         # initialize images with a Gaussian ball close to mnist 0
         #images = torch.normal(mnist_zero + 0.1, 0.1, (1000, 1, 28, 28), requires_grad=True)
         images = torch.randn(1000, 1, 28, 28, requires_grad=True)
@@ -351,7 +326,7 @@ def main():
     #model = ExampleCNNNet(20).to(device)
     #model = MLPNet().to(device)
     #model = MLPNet3Layer(num_classes=20).to(device)
-    model = MaxNormMLP(num_classes=10).to(device)
+    model = MaxNormMLP(num_classes=20).to(device)
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
     if args.train_mode == 'adversarial':
         optD = optimizer
