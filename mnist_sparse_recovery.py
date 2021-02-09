@@ -8,6 +8,8 @@ import torchvision
 from torchvision import transforms
 
 from torchsummary import summary
+import matplotlib
+matplotlib.use('Agg') # For non-gui flow. Gets rid of DISPLAY bug in TkInter
 import matplotlib.pyplot as plot
 from matplotlib.pyplot import imshow
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -18,80 +20,13 @@ import pathlib
 
 # For experiment management
 import wandb
-from torch.utils.tensorboard import SummaryWriter
+from utils.tensorboard_helper import TensorBoardHelper
 
 from mnist_model import ExampleCNNNet
 from mnist_mlp import MLPNet3Layer
 
 np.set_printoptions(precision = 3)
 
-def setup_tensorboard():
-    writer = SummaryWriter()
-    return writer
-
-def mnist_post_process_image_batch(images):
-    transformed_low, transformed_high = compute_mnist_transform_low_high()
-    copied_images = images.clone().detach()
-    post_process_images(copied_images, mode='low_high',
-            low=transformed_low,
-            high=transformed_high)
-    return copied_images
-
-def add_image_grid(images, tag, global_step):
-    images = images.detach()
-    # Scale image
-    img_grid = torchvision.utils.make_grid(images, 3, normalize=True,
-            scale_each=True)
-    writer.add_image(tag, img_grid, global_step=global_step)
-
-
-# Plot 10 images in a 4x3 grid. One subplot per digit.
-def plot_image_batch(images, targets, label):
-    num_images = len(images)
-    nrows = 4
-    ncols = 3
-    plot.rcParams.update({'font.size' : 3 })
-    fig, axes = plot.subplots(nrows=nrows, ncols=ncols, figsize=(1, 1))
-    for i, ax in enumerate(axes.flat):
-        if i >= num_images:
-            fig.delaxes(ax)
-            continue
-        image = images[i][0]
-        title = "%d : %s" % (targets[i], label)
-        #plot_image_on_axis(ax, image, title, fig, vmin=-0.5, vmax=2.0)
-        plot_image_on_axis(ax, image, title, fig)#, vmin=-0.5, vmax=2.0)
-
-    #plot.tight_layout(pad=2.)
-    #plot.savefig(filename)
-    #plot.clf()
-    #plot.rcParams.update({'font.size' : 10 })
-    # Close this or we're gonna have a bad time with OOM if
-    # called from within ipython
-    #plot.close() 
-    return fig
-
-# XXX: Don't use on every batch since this is too slow
-def add_figure(images, tag, global_step, label):
-    fig = plot_image_batch(images.detach(), targets, label)
-    writer.add_figure(tag, fig, global_step=global_step)
-    plot.close()
-
-def log_dict(label, scalars, global_step):
-    for key in scalars:
-        writer.add_scalar(f"{label}/{key}", scalars[key], global_step=global_step)
-
-def add_tensorboard_stuff(label, model, images, losses, probs, global_step):
-    #writer.add_images(f"{label}/Unfiltered Images", images, dataformats="NCHW",
-    #        global_step=global_step)
-    add_image_grid(images, f"{label}/Unfiltered Images", global_step)
-    #add_figure(images, f"{label}/Unfiltered Images", global_step, label)
-    filtered_images = mnist_post_process_image_batch(images)
-    #add_figure(filtered_images, f"{label}/Filtered Images", global_step, label)
-    add_image_grid(filtered_images, f"{label}/Filtered Images", global_step)
-    #writer.add_images(f"{label}/Filtered Images", filtered_images, dataformats="NCHW",
-    #        global_step=global_step)
-    log_dict(label, losses, global_step)
-    log_dict(label, probs, global_step)
 
 def get_class(classname):
     return getattr(sys.modules[__name__], classname)
@@ -352,7 +287,7 @@ def recover_image(model, images, targets, num_steps, include_layer, label,
                 images.max().item()))
 
         # Do tensorboard things
-        add_tensorboard_stuff(label, model, images, losses, probs, i)
+        tbh.add_tensorboard_stuff(label, model, images, losses, probs, i)
 
     images.requires_grad = False
 
@@ -505,14 +440,14 @@ config.include_layer = include_layer
 config.labels = labels
 
 # Run-specific information
-config.num_steps = 1000
+config.num_steps = 10
 config.include_likelihood = True
 #config.lambd = 1. #0.1
 #config.lambd_layers = [1., 1., 1.] #[0.1, 0.1, 0.1]
 config.lambd = 0.1
 config.lambd_layers = [0.1, 0.1, 0.1]
 
-writer = setup_tensorboard()
+tbh = TensorBoardHelper()
 
 #labels.remove("no penalty")
 
