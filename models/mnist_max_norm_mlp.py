@@ -67,3 +67,9 @@ class MaxNormMLP(nn.Module):
 
     def get_weight_decay(self):
         return self.mn1.get_weight_decay()
+
+if __name__ == '__main__':
+    model = MaxNormMLP()
+    x = torch.randn(10, 1, 28, 28)
+    y = model(x)
+
