@@ -8,15 +8,8 @@ import torchvision
 from torchvision import transforms
 
 from torchsummary import summary
-import matplotlib
-matplotlib.use('Agg') # For non-gui flow. Gets rid of DISPLAY bug in TkInter
-import matplotlib.pyplot as plot
-from matplotlib.pyplot import imshow
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from PIL import Image
 import numpy as np
 import math
-import pathlib
 
 # For experiment management
 import wandb
@@ -24,6 +17,7 @@ from utils.tensorboard_helper import TensorBoardHelper
 
 from utils import image_processor as imp
 from utils import mnist_helper as mh
+from utils import plotter
 
 from mnist_model import ExampleCNNNet
 from mnist_mlp import MLPNet3Layer
@@ -33,152 +27,6 @@ np.set_printoptions(precision = 3)
 
 def get_class(classname):
     return getattr(sys.modules[__name__], classname)
-
-
-def plot_image_on_axis(ax, image, title, fig, vmin=None, vmax=None):
-    im = ax.imshow(image, cmap='gray', vmin=vmin, vmax=vmax)
-    ax.set_title(title)
-
-    # Add colorbar for this image
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes('right', size='5%', pad=0.05)
-    fig.colorbar(im, cax=cax, orientation='vertical')
-
-# 1 col each for:
-#
-# no penalty
-# input
-# layer 1
-# layer 2
-# layer 3
-# all but input
-# all
-#
-# 7 rows, 10 cols
-def plot_multiple_images_varying_penalty(filename, images_list, targets,
-        labels):
-    nrows = len(images_list)
-    ncols = len(targets)
-    assert len(labels) == nrows
-    plot.rcParams.update({'font.size' : 40 })
-    fig, axes = plot.subplots(nrows=nrows, ncols=ncols, figsize=(80, 56))
-    for i, images in enumerate(images_list):
-        assert images.shape[0] == ncols
-        for j in range(ncols):
-            image = images[j][0]
-            ax = axes[i][j]
-            title = "%d : %s" % (targets[j], labels[i])
-            plot_image_on_axis(ax, image, title, fig)
-
-    plot.tight_layout(pad=2.)
-    plot.savefig(filename)
-    #plot.show()
-    plot.clf()
-    plot.rcParams.update({'font.size' : 10 })
-    plot.close()
-
-def generate_multi_plot_all_digits(images_list, post_processed_images_list, targets, labels):
-    #filename = "./output/mean_0.5/10k/unfiltered_10k_varying_penalty.jpg"
-    filename = "./output/all_digits_unfiltered_varying_penalty.jpg"
-    plot_multiple_images_varying_penalty(filename, images_list, targets,
-            labels)
-
-    #filename = "./output/mean_0.5/10k/filtered_10k_varying_penalty.jpg"
-    #filename = "./output/mean_0.5/2k/filtered_2k_varying_penalty.jpg"
-    filename = "./output/all_digits_filtered_varying_penalty.jpg"
-    plot_multiple_images_varying_penalty(filename, post_processed_images_list, targets,
-            labels)
-
-def generate_multi_plots_separate_digits(images_list,
-        post_processed_images_list, targets, labels):
-    for i in range(len(targets)):
-        digit = targets[i]
-        #filename = f"./output/mean_0.5/10k/{digit}/unfiltered_10k_varying_penalty.jpg"
-        filename = f"./output/{digit}_unfiltered_varying_penalty.jpg"
-        path = pathlib.Path(filename)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        plot_multiple_images_varying_penalty_single_digit(filename, images_list, targets,
-                labels, i)
-
-        #filename = f"./output/mean_0.5/10k/{digit}/filtered_10k_varying_penalty.jpg"
-        filename = f"./output/{digit}_filtered_varying_penalty.jpg"
-        plot_multiple_images_varying_penalty_single_digit(filename,
-                post_processed_images_list, targets,
-                labels, i)
-
-# 7 items to plot
-# 3 rows, 3 cols
-def plot_multiple_images_varying_penalty_single_digit(filename, images_list, targets,
-        labels, index):
-    num_images = len(images_list)
-    assert index < len(targets)
-    nrows = 3
-    ncols = 3
-    assert len(labels) == num_images
-    plot.rcParams.update({'font.size' : 40 })
-    fig, axes = plot.subplots(nrows=nrows, ncols=ncols, figsize=(24, 24))
-    for i, ax in enumerate(axes.flat):
-        if i >= num_images:
-            fig.delaxes(ax)
-            continue
-        images = images_list[i]
-        image = images[index][0]
-        title = "%d : %s" % (targets[index], labels[i])
-        #plot_image_on_axis(ax, image, title, fig, vmin=-0.5, vmax=2.0)
-        plot_image_on_axis(ax, image, title, fig)#, vmin=-0.5, vmax=2.0)
-
-    plot.tight_layout(pad=2.)
-    plot.savefig(filename)
-    plot.clf()
-    plot.rcParams.update({'font.size' : 10 })
-    # Close this or we're gonna have a bad time with OOM if
-    # called from within ipython
-    plot.close() 
-
-# Plot images in a 3x4 grid
-# All digits, 0-9
-# deprecated
-def plot_multiple_images(filename, original, images, targets):
-    images.requires_grad = False
-    fig, axes = plot.subplots(nrows=3, ncols=4, figsize=(8, 8))
-    for idx, ax in enumerate(axes.flat):
-        if idx >= 11:
-            fig.delaxes(ax)
-            continue
-        if idx != 0:
-            image = images[idx-1][0]
-            title = "%d" % targets[idx-1]
-        else:
-            image = original
-            title = "original"
-
-        im = ax.imshow(image, cmap='gray')
-        ax.set_title(title)
-
-        # Add colorbar for this image
-        divider = make_axes_locatable(ax)
-        cax = divider.append_axes('right', size='5%', pad=0.05)
-        fig.colorbar(im, cax=cax, orientation='vertical')
-
-    plot.tight_layout(pad=0.)
-    plot.savefig(filename)
-    plot.clf()
-
-def show_image(image):
-    save_requires_grad = image.requires_grad
-    image.requires_grad = False
-    print("Image mean, std, min, max: ", image.mean().item(),
-            image.std().item(),
-            image.min().item(), image.max().item())
-    #print("Initial image: ", torch.sum(image[0][0]))
-    imshow(image, cmap='gray')
-    plot.colorbar()
-    #plot.draw()
-    #plot.pause(0.0001)
-    #plot.show()
-    #imshow(undo_transform(image)[0][0], cmap='gray')
-    plot.show()
-    image.requires_grad = save_requires_grad
 
 
 # include_layer: boolean vector of whether to include a layer's l1 penalty
@@ -283,12 +131,12 @@ def recover_and_plot_images_varying_penalty(initial_image, include_likelihood,
 
     # One folder per digit, containing filtered and unfiltered images for that
     # digit
-    generate_multi_plots_separate_digits(images_list,
+    plotter.generate_multi_plots_separate_digits(images_list,
             post_processed_images_list, targets, labels)
 
     # One large image each (filtered and unfiltered) containing all digits,
     # all penalties
-    generate_multi_plot_all_digits(images_list,
+    plotter.generate_multi_plot_all_digits(images_list,
             post_processed_images_list, targets, labels)
 
     return images_list, post_processed_images_list
@@ -311,12 +159,12 @@ def load_and_plot_images_varying_penalty():
 
     # One folder per digit, containing filtered and unfiltered images for that
     # digit
-    #generate_multi_plots_separate_digits(images_list,
+    #plotter.generate_multi_plots_separate_digits(images_list,
     #        post_processed_images_list, targets, labels)
 
     # One large image each (filtered and unfiltered) containing all digits,
     # all penalties
-    generate_multi_plot_all_digits(images_list,
+    plotter.generate_multi_plot_all_digits(images_list,
             post_processed_images_list, targets, labels)
 
     return images_list, post_processed_images_list
@@ -327,9 +175,9 @@ def recover_and_plot_single_image(initial_image, digit):
     targets = torch.tensor([digit])
     recover_image(model, initial_image, targets, 2000, include_layer[label],
             label)
-    show_image(initial_image[0][0])
+    plotter.show_image(initial_image[0][0])
     imp.post_process_images(initial_image, mode='low_high', low=-0.5, high=2.0)
-    show_image(initial_image[0][0])
+    plotter.show_image(initial_image[0][0])
 
 def load_model(config):
     model_class = get_class(config.discriminator_model_class)
@@ -386,7 +234,7 @@ config.include_layer = include_layer
 config.labels = labels
 
 # Run-specific information
-config.num_steps = 10
+config.num_steps = 1
 config.include_likelihood = True
 #config.lambd = 1. #0.1
 #config.lambd_layers = [1., 1., 1.] #[0.1, 0.1, 0.1]
@@ -419,9 +267,9 @@ torch.save(post_processed_images_list, "post_processed_images_list.pt")
 #initial_image = torch.randn(1, 1, 28, 28)
 #recover_and_plot_single_image(initial_image, 4)
 
-#plot_multiple_images('./output/mean_0.5/10k/unfiltered_10k_all_penalty.png', initial_image[0][0], images, targets)
+#plotter.plot_multiple_images('./output/mean_0.5/10k/unfiltered_10k_all_penalty.png', initial_image[0][0], images, targets)
 #post_process_images(images)
-#plot_multiple_images('./output/mean_0.5/10k/filtered_10k_all_penalty.png', initial_image[0][0], images, targets)
+#plotter.plot_multiple_images('./output/mean_0.5/10k/filtered_10k_all_penalty.png', initial_image[0][0], images, targets)
 
 #images_list = [images]*7
 
