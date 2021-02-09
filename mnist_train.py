@@ -11,10 +11,10 @@ from matplotlib.pyplot import imshow
 from PIL import Image
 import numpy as np
 
-from mnist_model import ExampleCNNNet
-from mnist_mlp import MLPNet, MLPNet3Layer
-from mnist_max_norm_mlp import MaxNormMLP
-from infinite_dataloader import InfiniteDataLoader
+from models.mnist_model import ExampleCNNNet
+from models.mnist_mlp import MLPNet, MLPNet3Layer
+from models.mnist_max_norm_mlp import MaxNormMLP
+from utils.infinite_dataloader import InfiniteDataLoader
 from utils.batched_tensor_view_data_loader import BatchedTensorViewDataLoader
 
 def undo_transform(image):
