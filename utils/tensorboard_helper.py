@@ -65,5 +65,6 @@ class TensorBoardHelper:
         self.add_image_grid(filtered_images, f"{label}/Filtered Images", global_step)
         #self.writer.add_images(f"{label}/Filtered Images", filtered_images, dataformats="NCHW",
         #        global_step=global_step)
-        self.log_dict(label, losses, global_step)
-        self.log_dict(label, probs, global_step)
+        self.log_dict(f"{label}/losses", losses, global_step)
+        self.log_dict(f"{label}/probs", probs, global_step)
+
