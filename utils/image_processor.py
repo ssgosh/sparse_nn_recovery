@@ -1,3 +1,4 @@
+import torch
 
 # high-pass and low-pass filter for images
 def post_process_images(images, mode='mean_median', low=None, high=None):
@@ -32,5 +33,13 @@ def post_process_images_list(images_list, low, high):
         post_processed_images_list.append(copied_images)
 
     return post_processed_images_list
+
+
+# Computes sparsity of each image in the batch separately
+def get_sparsity_batch(images, zero):
+    n = len(images.shape)
+    assert n > 1
+    with torch.no_grad():
+        return torch.sum(images > zero, dim=list(range(1, n)))
 
 

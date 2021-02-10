@@ -18,6 +18,7 @@ from utils.tensorboard_helper import TensorBoardHelper
 from utils import image_processor as imp
 from utils import mnist_helper as mh
 from utils import plotter
+from utils import metrics_helper as mth
 
 from models.mnist_model import ExampleCNNNet
 from models.mnist_mlp import MLPNet3Layer
@@ -52,6 +53,7 @@ def recover_image(model, images, targets, num_steps, include_layer, label,
     #lambd2 = 1.
     losses = {}
     probs = {}
+    sparsity = {}
     for i in range(1, num_steps+1):
         optimizer.zero_grad()
         output = model(images)
@@ -93,8 +95,8 @@ def recover_image(model, images, targets, num_steps, include_layer, label,
         for idx, tgt in enumerate(targets):
             prob = pow(math.e, output[idx][tgt.item()].item())
             #print(prob)
-            probs[f"prob_{tgt}"] = prob
-
+            probs[f"{tgt}/prob"] = prob
+        mth.compute_sparsities(images, model, targets, sparsity)
         print("Iter: ", i,", Loss: %.3f" % loss.item(),
                 f"Prob of {targets[0]} %.3f" %
                 pow(math.e, output[0][targets[0].item()].item()),
@@ -103,7 +105,8 @@ def recover_image(model, images, targets, num_steps, include_layer, label,
                 images.max().item()))
 
         # Do tensorboard things
-        tbh.add_tensorboard_stuff(label, model, images, losses, probs, i)
+        tbh.add_tensorboard_stuff(label, model, images, losses, probs,
+                sparsity, i)
 
     images.requires_grad = False
 

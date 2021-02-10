@@ -35,10 +35,16 @@ class ExampleCNNNet(nn.Module):
         self.fc1_l1 = None
         # list of the above three tensors
         self.all_l1 = []
+        # list of layer activation tensors
+        self.layers = []
 
     def forward(self, x):
         x = self.conv1(x)
         x = F.relu(x)
+
+        # First layer activations
+        self.layers.clear()
+        self.layers.append(x)
 
         # NOTE: This works regardless of batch size or number of channels
         # Could also have computed the norm per-channel and taken the average
@@ -51,6 +57,9 @@ class ExampleCNNNet(nn.Module):
         x = F.relu(x)
         x = F.max_pool2d(x, 2)
 
+        # Second layer activations. Before the dropout but after max pool
+        self.layers.append(x)
+
         # Compute l1 here
         self.max_pool2_l1 = torch.norm(x, 1) / torch.numel(x)
         self.all_l1.append(self.max_pool2_l1)
@@ -60,6 +69,9 @@ class ExampleCNNNet(nn.Module):
         x = self.fc1(x)
         x = F.relu(x)
 
+        # Third layer activations. Before dropout
+        self.layers.append(x)
+
         # Compute l1 here
         self.fc1_l1 = torch.norm(x, 1) / torch.numel(x)
         self.all_l1.append(self.fc1_l1)
@@ -68,4 +80,7 @@ class ExampleCNNNet(nn.Module):
         x = self.fc2(x)
         output = F.log_softmax(x, dim=1)
         return output
+
+    def get_layers(self):
+        return self.layers
 

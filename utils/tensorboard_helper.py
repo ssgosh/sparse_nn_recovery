@@ -55,7 +55,8 @@ class TensorBoardHelper:
         for key in scalars:
             self.writer.add_scalar(f"{label}/{key}", scalars[key], global_step=global_step)
 
-    def add_tensorboard_stuff(self, label, model, images, losses, probs, global_step):
+    def add_tensorboard_stuff(self, label, model, images, losses, probs,
+            sparsity, global_step):
         #self.writer.add_images(f"{label}/Unfiltered Images", images, dataformats="NCHW",
         #        global_step=global_step)
         self.add_image_grid(images, f"{label}/Unfiltered Images", global_step)
@@ -66,5 +67,6 @@ class TensorBoardHelper:
         #self.writer.add_images(f"{label}/Filtered Images", filtered_images, dataformats="NCHW",
         #        global_step=global_step)
         self.log_dict(f"{label}/losses", losses, global_step)
-        self.log_dict(f"{label}/probs", probs, global_step)
+        self.log_dict(f"{label}", probs, global_step)
+        self.log_dict(f"{label}", sparsity, global_step)
 
