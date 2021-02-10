@@ -120,6 +120,7 @@ def recover_and_plot_single_digit(initial_image, label, targets):
     recover_image(model, initial_image, targets, config.num_steps, include_layer[label], label,
             include_likelihood=True)
     plotter.plot_single_digit(initial_image.detach()[0][0], targets[0], label)
+    return initial_image
 
 
 # The main loop
@@ -316,7 +317,8 @@ elif config.mode == 'single-digit':
     config.num_targets = n
     config.targets = targets
     label = labels[0]
-    recover_and_plot_single_digit(initial_image, label, targets)
+    recovered_image = recover_and_plot_single_digit(initial_image, label, targets)
+    torch.save(recovered_image, f"{config.run_dir}/ckpt/recovered_image.pt")
 else:
     raise ValueError("Invalid mode %s" % config.mode)
 
