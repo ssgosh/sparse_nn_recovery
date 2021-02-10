@@ -2,6 +2,7 @@ import torch
 import torchvision
 
 from torch.utils.tensorboard import SummaryWriter
+from torchvision import datasets, transforms
 
 def tensorboard_setup():
     writer = SummaryWriter()
@@ -29,6 +30,32 @@ def main():
         img_grid = torchvision.utils.make_grid(torch.unsqueeze(x, dim=1), 4)
         writer.add_image("Image Grid", img_grid, global_step=i)
 
-writer = tensorboard_setup()
-main()
+def foobar():
+    # Writer will output to ./runs/ directory by default
+    writer = SummaryWriter()
+
+    transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
+    trainset = datasets.MNIST('../data', train=True, download=False, transform=transform)
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=64, shuffle=True)
+    model = torchvision.models.resnet18(False)
+    # Have ResNet model take in grayscale rather than RGB
+    model.conv1 = torch.nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
+    images, labels = next(iter(trainloader))
+
+    grid = torchvision.utils.make_grid(images)
+    writer.add_image('images', grid, 0)
+    writer.add_graph(model, images)
+    writer.add_text('lstm', 'This is an lstm', 0)
+    writer.add_text('rnn', 'This is an rnn', 10)
+    layout = {'Taiwan':{'twse':['Multiline',['twse/0050', 'twse/2330']]},
+                 'USA':{ 'dow':['Margin',   ['dow/aaa', 'dow/bbb', 'dow/ccc']],
+                      'nasdaq':['Margin',   ['nasdaq/aaa', 'nasdaq/bbb', 'nasdaq/ccc']]}}
+
+    writer.add_custom_scalars(layout)
+    writer.close()
+
+foobar()
+
+#writer = tensorboard_setup()
+#main()
 

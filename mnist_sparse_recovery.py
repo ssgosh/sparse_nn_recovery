@@ -12,7 +12,7 @@ import numpy as np
 import math
 
 # For experiment management
-import wandb
+#import wandb
 from utils.tensorboard_helper import TensorBoardHelper
 
 from utils import image_processor as imp
@@ -203,8 +203,19 @@ def load_model(config):
     model.eval()
     return model
 
-run = wandb.init(project='mnist_sparse_recovery')
-config = wandb.config
+
+def get_config_dict(config):
+    return vars(config)
+
+parser = argparse.ArgumentParser(description='Recover images from a '
+        'discriminative model by gradient descent on input')
+parser.add_argument('--run-dir', type=str, default=None, required=False,
+        help='Directory inside which outputs and tensorboard logs will be saved')
+
+config = parser.parse_args()
+
+#run = wandb.init(project='mnist_sparse_recovery')
+#config = wandb.config
 
 config.discriminator_model_class = 'ExampleCNNNet'
 #config.discriminator_model_class = 'MLPNet3Layer'
@@ -257,6 +268,10 @@ config.lambd = 0.1
 config.lambd_layers = [0.1, 0.1, 0.1]
 
 tbh = TensorBoardHelper()
+tbh.log_config(config)
+tbh.log_config(config)
+
+sys.exit(1)
 
 #labels.remove("no penalty")
 

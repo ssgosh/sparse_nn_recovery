@@ -55,6 +55,11 @@ class TensorBoardHelper:
         for key in scalars:
             self.writer.add_scalar(f"{label}/{key}", scalars[key], global_step=global_step)
 
+    def log_config(self, config):
+        config_dict = vars(config)
+        hparams = { key:str(config_dict[key]) for key in config_dict }
+        self.writer.add_hparams(hparams, {'dummy_metric' : 0.})
+
     def add_tensorboard_stuff(self, label, model, images, losses, probs,
             sparsity, global_step):
         #self.writer.add_images(f"{label}/Unfiltered Images", images, dataformats="NCHW",
