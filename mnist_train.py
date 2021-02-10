@@ -10,6 +10,7 @@ import matplotlib.pyplot as plot
 from matplotlib.pyplot import imshow
 from PIL import Image
 import numpy as np
+import pathlib
 
 from models.mnist_model import ExampleCNNNet
 from models.mnist_mlp import MLPNet, MLPNet3Layer
@@ -200,6 +201,9 @@ def main():
                         help='how many batches to wait before logging training status')
     parser.add_argument('--save-model', action='store_true', default=False,
                         help='For Saving the current Model')
+    parser.add_argument('--run-dir', type=str, default='.',
+            metavar='DIR',
+            help='Directory under which model and outputs are saved')
 
     # Arguments specific to adversarial training
     parser.add_argument('--generator-lr', type=float, default=0.05,
@@ -323,10 +327,10 @@ def main():
         #print(batch_a[0], batch_b[0], batch_c[0])
         #sys.exit(0)
 
-    #model = ExampleCNNNet(20).to(device)
+    model = ExampleCNNNet(20).to(device)
     #model = MLPNet().to(device)
     #model = MLPNet3Layer(num_classes=20).to(device)
-    model = MaxNormMLP(num_classes=20).to(device)
+    #model = MaxNormMLP(num_classes=20).to(device)
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
     if args.train_mode == 'adversarial':
         optD = optimizer
@@ -348,7 +352,10 @@ def main():
         scheduler.step()
 
     if args.save_model:
-        torch.save(model.state_dict(), "mnist_max_norm_mlp.pt")
+        save_path = pathlib.Path(f"{args.run_dir}/ckpt/mnist_cnn.pt")
+        save_path.parent.mkdir(exist_ok=True, parents=True)
+        torch.save(model.state_dict(), save_path)
+        #torch.save(model.state_dict(), "mnist_max_norm_mlp.pt")
         #torch.save(model.state_dict(), "mnist_cnn_adv_normal_init.pt")
 
 

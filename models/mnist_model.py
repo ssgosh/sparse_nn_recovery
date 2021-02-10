@@ -84,3 +84,5 @@ class ExampleCNNNet(nn.Module):
     def get_layers(self):
         return self.layers
 
+    def get_weight_decay(self):
+        return torch.tensor(0.)
