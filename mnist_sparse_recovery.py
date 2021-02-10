@@ -19,6 +19,7 @@ from utils import image_processor as imp
 from utils import mnist_helper as mh
 from utils import plotter
 from utils import metrics_helper as mth
+from utils import runs_helper as rh
 
 from models.mnist_model import ExampleCNNNet
 from models.mnist_mlp import MLPNet3Layer
@@ -207,20 +208,29 @@ def load_model(config):
 def get_config_dict(config):
     return vars(config)
 
+
 parser = argparse.ArgumentParser(description='Recover images from a '
         'discriminative model by gradient descent on input')
 parser.add_argument('--run-dir', type=str, default=None, required=False,
         help='Directory inside which outputs and tensorboard logs will be saved')
+parser.add_argument('--discriminator-model-class', type=str, metavar='DMC',
+        default='ExampleCNNNet', required=False,
+        help='Discriminator model class')
+parser.add_argument('--discriminator-model-file', type=str, metavar='DMF',
+        default='ckpt/mnist_cnn.pt', required=False,
+        help='Discriminator model file')
 
 config = parser.parse_args()
+
+rh.setup_run_dir(config, 'image_runs')
 
 #run = wandb.init(project='mnist_sparse_recovery')
 #config = wandb.config
 
-config.discriminator_model_class = 'ExampleCNNNet'
+#config.discriminator_model_class = 'ExampleCNNNet'
 #config.discriminator_model_class = 'MLPNet3Layer'
 #config.discriminator_model_file = 'ckpt/mnist_cnn_adv_normal_init.pt'
-config.discriminator_model_file = 'ckpt/mnist_cnn.pt'
+#config.discriminator_model_file = f'ckpt/mnist_cnn.pt'
 #config.discriminator_model_file = 'ckpt/mnist_mlp_3layer_adv_normal_init.pt'
 
 # Alternate model configuration
@@ -268,10 +278,6 @@ config.lambd = 0.1
 config.lambd_layers = [0.1, 0.1, 0.1]
 
 tbh = TensorBoardHelper()
-tbh.log_config(config)
-tbh.log_config(config)
-
-sys.exit(1)
 
 #labels.remove("no penalty")
 
@@ -284,8 +290,8 @@ sys.exit(1)
 images_list, post_processed_images_list = recover_and_plot_images_varying_penalty(initial_image,
         include_likelihood=config.include_likelihood, num_steps=config.num_steps)
 
-torch.save(images_list, "ckpt/images_list.pt")
-torch.save(post_processed_images_list, "ckpt/post_processed_images_list.pt")
+torch.save(images_list, f"{config.run_dir}/ckpt/images_list.pt")
+torch.save(post_processed_images_list, f"{config.run_dir}/ckpt/post_processed_images_list.pt")
 
 #load_and_plot_images_varying_penalty()
 
