@@ -114,8 +114,10 @@ def recover_image(model, images, targets, num_steps, include_layer, label,
 
     images.requires_grad = False
 
-def recover_and_plot_single_digit():
-    recover_image(model, images, targets, 10000, include_layer[label], label,
+
+# Single digit, single label
+def recover_and_plot_single_digit(initial_image, label, targets):
+    recover_image(model, initial_image, targets, 10000, include_layer[label], label,
             include_likelihood=False)
 
 
@@ -213,12 +215,17 @@ parser = argparse.ArgumentParser(description='Recover images from a '
         'discriminative model by gradient descent on input')
 parser.add_argument('--run-dir', type=str, default=None, required=False,
         help='Directory inside which outputs and tensorboard logs will be saved')
+parser.add_argument('--run-suffix', type=str, default='', required=False,
+        help='Directory inside which outputs and tensorboard logs will be saved')
 parser.add_argument('--discriminator-model-class', type=str, metavar='DMC',
         default='ExampleCNNNet', required=False,
         help='Discriminator model class')
 parser.add_argument('--discriminator-model-file', type=str, metavar='DMF',
         default='ckpt/mnist_cnn.pt', required=False,
         help='Discriminator model file')
+parser.add_argument('--lambd', type=float, metavar='L',
+        default=0.1, required=False,
+        help='L1 penalty lambda on input layer')
 
 config = parser.parse_args()
 
@@ -263,7 +270,8 @@ include_layer = {
         "all but input" : [ False, True, True, True],
         }
 #labels = list(include_layer.keys())
-labels = [ "input only", "all layers" ]
+#labels = [ "input only", "all layers" ]
+labels = [ "input only", ]
 
 config.num_targets = n
 config.targets = targets
@@ -271,11 +279,11 @@ config.include_layer = include_layer
 config.labels = labels
 
 # Run-specific information
-config.num_steps = 10000
+config.num_steps = 1000
 config.include_likelihood = True
 #config.lambd = 1. #0.1
 #config.lambd_layers = [1., 1., 1.] #[0.1, 0.1, 0.1]
-config.lambd = 0.1
+#config.lambd = 0.1
 config.lambd_layers = [0.1, 0.1, 0.1]
 
 tbh = TensorBoardHelper()

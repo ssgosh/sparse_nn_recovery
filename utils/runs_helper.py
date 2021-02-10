@@ -19,9 +19,11 @@ def setup_run_dir(config, default_run_dir='runs'):
         with open(run_num_file, 'wb') as f:
             pickle.dump(next_run_num, f)
         
-        timestamp = time.strftime('%b%d-%H-%M-%S')
+        timestamp = time.strftime('%b%d_%H-%M-%S')
         config.run_dir = f'{default_run_dir}/{next_run_num:0>4d}-{timestamp}'
     
+    suffix = config.run_suffix
+    config.run_dir = config.run_dir + f'{suffix}'
     path = pathlib.Path(config.run_dir)
     path.mkdir(exist_ok=True)
     ckpt_path = path / 'ckpt'
