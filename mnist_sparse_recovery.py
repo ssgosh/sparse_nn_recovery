@@ -89,8 +89,11 @@ def recover_image(model, images, targets, num_steps, include_layer, label,
 
         loss = nll_loss + l1_loss + l1_layers
         loss.backward()
+
+        # Do step before computation of metrics which will change on backprop
         optimizer.step()
         clip_if_needed(images)
+
         losses[f"total_loss"] = loss.item()
         for idx, tgt in enumerate(targets):
             prob = pow(math.e, output[idx][tgt.item()].item())
