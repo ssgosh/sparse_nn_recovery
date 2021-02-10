@@ -95,7 +95,7 @@ def recover_image(model, images, targets, num_steps, include_layer, label,
         for idx, tgt in enumerate(targets):
             prob = pow(math.e, output[idx][tgt.item()].item())
             #print(prob)
-            probs[f"{tgt}/prob"] = prob
+            probs[f"1-class_{tgt}/prob"] = prob
         mth.compute_sparsities(images, model, targets, sparsity)
         print("Iter: ", i,", Loss: %.3f" % loss.item(),
                 f"Prob of {targets[0]} %.3f" %
