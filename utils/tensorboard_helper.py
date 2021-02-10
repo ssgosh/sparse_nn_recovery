@@ -12,8 +12,10 @@ class TensorBoardHelper:
 
     def add_image_grid(self, images, tag, global_step):
         images = images.detach()
+        mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
         # Scale image
         img_grid = torchvision.utils.make_grid(images, 3, normalize=True,
+                range=(mnist_zero, mnist_one),
                 scale_each=True)
         self.writer.add_image(tag, img_grid, global_step=global_step)
 

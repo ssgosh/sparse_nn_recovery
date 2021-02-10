@@ -29,6 +29,13 @@ def get_class(classname):
     return getattr(sys.modules[__name__], classname)
 
 
+# Clip the pixels to between (mnist_zero, mnist_one)
+def clip_if_needed(images):
+    mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
+    with torch.no_grad():
+        torch.clip(images, mnist_zero, mnist_one, out=images)
+
+
 # include_layer: boolean vector of whether to include a layer's l1 penalty
 def recover_image(model, images, targets, num_steps, include_layer, label,
         include_likelihood=True):
@@ -81,6 +88,7 @@ def recover_image(model, images, targets, num_steps, include_layer, label,
         loss = nll_loss + l1_loss + l1_layers
         loss.backward()
         optimizer.step()
+        clip_if_needed(images)
         losses[f"total_loss"] = loss.item()
         for idx, tgt in enumerate(targets):
             prob = pow(math.e, output[idx][tgt.item()].item())
@@ -226,7 +234,8 @@ include_layer = {
         "layer 3 only"  : [ False, False, False, True],
         "all but input" : [ False, True, True, True],
         }
-labels = list(include_layer.keys())
+#labels = list(include_layer.keys())
+labels = [ "input only", "all layers" ]
 
 config.num_targets = n
 config.targets = targets
@@ -234,7 +243,7 @@ config.include_layer = include_layer
 config.labels = labels
 
 # Run-specific information
-config.num_steps = 1
+config.num_steps = 10000
 config.include_likelihood = True
 #config.lambd = 1. #0.1
 #config.lambd_layers = [1., 1., 1.] #[0.1, 0.1, 0.1]
