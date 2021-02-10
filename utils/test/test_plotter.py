@@ -1,0 +1,14 @@
+import sys
+sys.path.append('.')
+
+import utils.plotter as plotter
+
+import torch
+
+def test_plot_single_digit():
+    digit = 3
+    image = torch.randn(28, 28)
+    label = "Hello"
+    plotter.plot_single_image(image, digit, label)
+
+test_plot_single_digit()

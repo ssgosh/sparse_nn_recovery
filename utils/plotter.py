@@ -6,7 +6,11 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import pathlib
 
+import utils.mnist_helper as mh
+
+# Useful globals
 run_dir = '.'
+mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
 
 def set_run_dir(some_dir):
     global run_dir
@@ -21,6 +25,15 @@ def plot_image_on_axis(ax, image, title, fig, vmin=None, vmax=None):
     cax = divider.append_axes('right', size='5%', pad=0.05)
     fig.colorbar(im, cax=cax, orientation='vertical')
 
+
+def plot_single_image(image, digit, label):
+    fig = plot.gcf()
+    ax = plot.gca()
+    title = "%d : %s" % (digit, label)
+    plot_image_on_axis(ax, image, title, fig, vmin=mnist_zero, vmax=mnist_one)
+    filename = f"{run_dir}/output/{digit}_{label}.jpg"
+    print(filename)
+    plot.savefig(filename)
 
 # 1 col each for:
 #
@@ -46,7 +59,8 @@ def plot_multiple_images_varying_penalty(filename, images_list, targets,
             image = images[j][0]
             ax = axes[i][j]
             title = "%d : %s" % (targets[j], labels[i])
-            plot_image_on_axis(ax, image, title, fig)
+            #plot_image_on_axis(ax, image, title, fig)
+            plot_image_on_axis(ax, image, title, fig, vmin=mnist_zero, vmax=mnist_one)
 
     plot.tight_layout(pad=2.)
     plot.savefig(filename)
@@ -104,7 +118,7 @@ def plot_multiple_images_varying_penalty_single_digit(filename, images_list, tar
         image = images[index][0]
         title = "%d : %s" % (targets[index], labels[i])
         #plot_image_on_axis(ax, image, title, fig, vmin=-0.5, vmax=2.0)
-        plot_image_on_axis(ax, image, title, fig)#, vmin=-0.5, vmax=2.0)
+        plot_image_on_axis(ax, image, title, fig, vmin=mnist_zero, vmax=mnist_one)
 
     plot.tight_layout(pad=2.)
     plot.savefig(filename)
