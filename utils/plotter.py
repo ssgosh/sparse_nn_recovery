@@ -26,7 +26,7 @@ def plot_image_on_axis(ax, image, title, fig, vmin=None, vmax=None):
     fig.colorbar(im, cax=cax, orientation='vertical')
 
 
-def plot_single_image(image, digit, label):
+def plot_single_digit(image, digit, label):
     fig = plot.gcf()
     ax = plot.gca()
     title = "%d : %s" % (digit, label)

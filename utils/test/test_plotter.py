@@ -9,6 +9,6 @@ def test_plot_single_digit():
     digit = 3
     image = torch.randn(28, 28)
     label = "Hello"
-    plotter.plot_single_image(image, digit, label)
+    plotter.plot_single_digit(image, digit, label)
 
 test_plot_single_digit()

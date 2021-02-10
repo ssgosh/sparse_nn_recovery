@@ -117,8 +117,9 @@ def recover_image(model, images, targets, num_steps, include_layer, label,
 
 # Single digit, single label
 def recover_and_plot_single_digit(initial_image, label, targets):
-    recover_image(model, initial_image, targets, 10000, include_layer[label], label,
+    recover_image(model, initial_image, targets, config.num_steps, include_layer[label], label,
             include_likelihood=False)
+    plot_single_digit(initial_image.detach()[0][0], targets[0], label)
 
 
 # The main loop
@@ -213,6 +214,10 @@ def get_config_dict(config):
 
 parser = argparse.ArgumentParser(description='Recover images from a '
         'discriminative model by gradient descent on input')
+parser.add_argument('--mode', type=str, default='all-digits', required=False,
+        help='Image recovery mode: "single-digit" or "all-digits"')
+parser.add_argument('--num-steps', type=int, default=1000, required=False,
+        help='Number of steps of gradient descent for image generation')
 parser.add_argument('--run-dir', type=str, default=None, required=False,
         help='Directory inside which outputs and tensorboard logs will be saved')
 parser.add_argument('--run-suffix', type=str, default='', required=False,
@@ -258,8 +263,6 @@ model = load_model(config)
 mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
 initial_image = torch.randn(1, 1, 28, 28)
 #initial_image = torch.normal(mnist_zero, 0.01, (1, 1, 28, 28))
-n = 10
-targets = torch.tensor(range(n))
 include_layer = {
         "no penalty"    : [ False, False, False, False],
         "input only"    : [ True, False, False, False],
@@ -273,13 +276,11 @@ include_layer = {
 #labels = [ "input only", "all layers" ]
 labels = [ "input only", ]
 
-config.num_targets = n
-config.targets = targets
 config.include_layer = include_layer
 config.labels = labels
 
 # Run-specific information
-config.num_steps = 1000
+#config.num_steps = 1000
 config.include_likelihood = True
 #config.lambd = 1. #0.1
 #config.lambd_layers = [1., 1., 1.] #[0.1, 0.1, 0.1]
@@ -296,11 +297,24 @@ tbh = TensorBoardHelper()
 #generate_multi_plot_all_digits(images_list,
 #        post_processed_images_list, targets, labels)
 
-images_list, post_processed_images_list = recover_and_plot_images_varying_penalty(initial_image,
-        include_likelihood=config.include_likelihood, num_steps=config.num_steps)
+if config.mode == 'all-digits':
+    n = 10
+    targets = torch.tensor(range(n))
+    config.num_targets = n
+    config.targets = targets
+    images_list, post_processed_images_list = recover_and_plot_images_varying_penalty(initial_image,
+            include_likelihood=config.include_likelihood, num_steps=config.num_steps)
 
-torch.save(images_list, f"{config.run_dir}/ckpt/images_list.pt")
-torch.save(post_processed_images_list, f"{config.run_dir}/ckpt/post_processed_images_list.pt")
+    torch.save(images_list, f"{config.run_dir}/ckpt/images_list.pt")
+    torch.save(post_processed_images_list, f"{config.run_dir}/ckpt/post_processed_images_list.pt")
+elif config.mode == 'single-digit':
+    n = 1
+    targets = torch.tensor(range(n))
+    config.num_targets = n
+    config.targets = targets
+    recover_and_plot_single_digit(initial_image, label, targets)
+else:
+    raise ValueError("Invalid mode %s" % config.mode)
 
 #load_and_plot_images_varying_penalty()
 
