@@ -231,6 +231,9 @@ parser.add_argument('--discriminator-model-file', type=str, metavar='DMF',
 parser.add_argument('--lambd', type=float, metavar='L',
         default=0.1, required=False,
         help='L1 penalty lambda on input layer')
+parser.add_argument('--digit', type=int, metavar='L',
+        default=0, required=False,
+        help='Which digit if single-digit is specified in mode')
 
 config = parser.parse_args()
 
@@ -287,7 +290,7 @@ config.include_likelihood = True
 #config.lambd = 0.1
 config.lambd_layers = [0.1, 0.1, 0.1]
 
-tbh = TensorBoardHelper()
+tbh = TensorBoardHelper(config.run_dir)
 
 #labels.remove("no penalty")
 
@@ -309,8 +312,7 @@ if config.mode == 'all-digits':
     torch.save(post_processed_images_list, f"{config.run_dir}/ckpt/post_processed_images_list.pt")
 elif config.mode == 'single-digit':
     n = 1
-    targets = torch.tensor(range(n))
-    targets = torch.tensor([3])
+    targets = torch.tensor([config.digit])
     config.num_targets = n
     config.targets = targets
     label = labels[0]

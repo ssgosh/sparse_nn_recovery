@@ -6,8 +6,8 @@ import utils.mnist_helper as mh
 
 class TensorBoardHelper:
 
-    def __init__(self):
-        self.writer = SummaryWriter()
+    def __init__(self, name=None):
+        self.writer = SummaryWriter(name)
 
 
     def add_image_grid(self, images, tag, global_step):
