@@ -9,6 +9,7 @@ import pathlib
 run_dir = '.'
 
 def set_run_dir(some_dir):
+    global run_dir
     run_dir = some_dir
 
 def plot_image_on_axis(ax, image, title, fig, vmin=None, vmax=None):
