@@ -9,7 +9,7 @@ def compute_sparsities(images, model, targets, sparsity):
     mnist_zero, _ = mh.compute_mnist_transform_low_high()
     batch_sparsity = imp.get_sparsity_batch(images, zero=mnist_zero)
     for i in range(n):
-        sparsity[f"class_{targets[i]}/sparsity/image"] = batch_sparsity[i].item()
+        sparsity[f"1-class_{targets[i]}/sparsity/image"] = batch_sparsity[i].item()
 
     for j, layer in enumerate(model.get_layers()):
         batch_sparsity = imp.get_sparsity_batch(layer, zero=0.)
