@@ -24,4 +24,8 @@ def setup_run_dir(config, default_run_dir='runs'):
     
     path = pathlib.Path(config.run_dir)
     path.mkdir(exist_ok=True)
+    ckpt_path = path / 'ckpt'
+    ckpt_path.mkdir(exist_ok=True)
+    output_path = path / 'output'
+    output_path.mkdir(exist_ok=True)
 

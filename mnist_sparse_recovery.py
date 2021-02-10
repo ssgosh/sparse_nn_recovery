@@ -223,6 +223,7 @@ parser.add_argument('--discriminator-model-file', type=str, metavar='DMF',
 config = parser.parse_args()
 
 rh.setup_run_dir(config, 'image_runs')
+plotter.set_run_dir(config.run_dir)
 
 #run = wandb.init(project='mnist_sparse_recovery')
 #config = wandb.config
