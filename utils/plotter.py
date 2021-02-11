@@ -26,14 +26,17 @@ def plot_image_on_axis(ax, image, title, fig, vmin=None, vmax=None):
     fig.colorbar(im, cax=cax, orientation='vertical')
 
 
-def plot_single_digit(image, digit, label):
+def plot_single_digit(image, digit, label, filtered):
     fig = plot.gcf()
     ax = plot.gca()
     title = "%d : %s" % (digit, label)
-    plot_image_on_axis(ax, image, title, fig, vmin=mnist_zero, vmax=mnist_one)
-    filename = f"{run_dir}/output/{digit}_{label}.jpg"
+    (vmin, vmax) = (mnist_zero, mnist_one) if filtered else (None, None)
+    plot_image_on_axis(ax, image, title, fig, vmin=vmin, vmax=vmax)
+    filtered_str = "filtered" if filtered else "unfiltered"
+    filename = f"{run_dir}/output/{digit}_{label}_{filtered_str}.jpg"
     print(filename)
     plot.savefig(filename)
+    plot.close()
 
 # 1 col each for:
 #

@@ -120,7 +120,10 @@ def recover_image(model, images, targets, num_steps, include_layer, label,
 def recover_and_plot_single_digit(initial_image, label, targets):
     recover_image(model, initial_image, targets, config.num_steps, include_layer[label], label,
             include_likelihood=True)
-    plotter.plot_single_digit(initial_image.detach()[0][0], targets[0], label)
+    plotter.plot_single_digit(initial_image.detach()[0][0], targets[0], label,
+            filtered=False)
+    plotter.plot_single_digit(initial_image.detach()[0][0], targets[0], label,
+            filtered=True)
     return initial_image
 
 
