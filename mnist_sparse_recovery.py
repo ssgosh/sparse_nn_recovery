@@ -231,7 +231,7 @@ parser.add_argument('--discriminator-model-file', type=str, metavar='DMF',
         help='Discriminator model file')
 parser.add_argument('--lambd', type=float, metavar='L',
         default=0.1, required=False,
-        help='L1 penalty lambda on input layer')
+        help='L1 penalty lambda on each layer')
 parser.add_argument('--digit', type=int, metavar='L',
         default=0, required=False,
         help='Which digit if single-digit is specified in mode')
@@ -291,7 +291,9 @@ config.include_likelihood = True
 #config.lambd = 1. #0.1
 #config.lambd_layers = [1., 1., 1.] #[0.1, 0.1, 0.1]
 #config.lambd = 0.1
-config.lambd_layers = [0.1, 0.1, 0.1]
+config.lambd_layers = 3 * [config.lambd] #[0.1, 0.1, 0.1]
+#print(config.lambd_layers)
+#sys.exit(1)
 
 tbh = TensorBoardHelper(config.run_dir)
 

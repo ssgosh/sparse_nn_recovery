@@ -31,3 +31,14 @@ def setup_run_dir(config, default_run_dir='runs'):
     output_path = path / 'output'
     output_path.mkdir(exist_ok=True)
 
+
+# Setup run dir from param and return the folder name
+def setup_run_dir1(run_dir, default_run_dir='runs', run_suffix=''):
+    class Config:
+        def __init__(self):
+            self.run_dir = run_dir
+            self.run_suffix = run_suffix
+
+    config = Config()
+    setup_run_dir(config, default_run_dir)
+    return config.run_dir
