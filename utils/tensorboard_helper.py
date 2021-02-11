@@ -10,12 +10,12 @@ class TensorBoardHelper:
         self.writer = SummaryWriter(name)
 
 
-    def add_image_grid(self, images, tag, global_step):
+    def add_image_grid(self, images, tag, filtered, global_step):
         images = images.detach()
         mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
-        # Scale image
+        rng = (mnist_zero, mnist_one) if filtered else None
         img_grid = torchvision.utils.make_grid(images, 3, normalize=True,
-                range=(mnist_zero, mnist_one),
+                range=rng,
                 scale_each=True)
         self.writer.add_image(tag, img_grid, global_step=global_step)
 
@@ -64,11 +64,13 @@ class TensorBoardHelper:
             sparsity, global_step):
         #self.writer.add_images(f"{label}/Unfiltered Images", images, dataformats="NCHW",
         #        global_step=global_step)
-        self.add_image_grid(images, f"{label}/Unfiltered Images", global_step)
+        self.add_image_grid(images, f"{label}/Unfiltered Images",
+                filtered=False, True, global_step=global_step)
         #add_figure(images, f"{label}/Unfiltered Images", global_step, label)
         filtered_images = mh.mnist_post_process_image_batch(images)
         #add_figure(filtered_images, f"{label}/Filtered Images", global_step, label)
-        self.add_image_grid(filtered_images, f"{label}/Filtered Images", global_step)
+        self.add_image_grid(filtered_images, f"{label}/Filtered Images",
+                filtered=True, global_step=global_step)
         #self.writer.add_images(f"{label}/Filtered Images", filtered_images, dataformats="NCHW",
         #        global_step=global_step)
         self.log_dict(f"{label}/0-losses", losses, global_step)
