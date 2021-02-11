@@ -6,6 +6,7 @@ for digit in range(10):
         100.0]):
         cmd = f'python3 mnist_sparse_recovery.py --mode single-digit ' \
                 f'--digit {digit} ' \
+                f'--penalty-mode "all layers" ' \
                 f'--lambd {lambd} ' \
                 f'--run-suffix _lambda_{lambd} ' \
                 f'--run-dir image_lambda_runs/{digit}/{i:0>2d}' \

@@ -235,6 +235,8 @@ parser.add_argument('--lambd', type=float, metavar='L',
 parser.add_argument('--digit', type=int, metavar='L',
         default=0, required=False,
         help='Which digit if single-digit is specified in mode')
+parser.add_argument('--penalty-mode', type=str, default='input only', required=False,
+        help='When mode is single-digit, which penalty mode should be used')
 
 config = parser.parse_args()
 
@@ -276,9 +278,9 @@ include_layer = {
         "layer 3 only"  : [ False, False, False, True],
         "all but input" : [ False, True, True, True],
         }
-#labels = list(include_layer.keys())
+labels = list(include_layer.keys())
 #labels = [ "input only", "all layers" ]
-labels = [ "input only", ]
+#labels = [ "input only", ]
 
 config.include_layer = include_layer
 config.labels = labels
@@ -316,7 +318,7 @@ elif config.mode == 'single-digit':
     targets = torch.tensor([config.digit])
     config.num_targets = n
     config.targets = targets
-    label = labels[0]
+    label = config.penalty_mode
     recovered_image = recover_and_plot_single_digit(initial_image, label, targets)
     torch.save(recovered_image, f"{config.run_dir}/ckpt/recovered_image.pt")
 else:
