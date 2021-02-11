@@ -15,7 +15,7 @@ class TensorBoardHelper:
         mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
         rng = (mnist_zero, mnist_one) if filtered else None
         img_grid = torchvision.utils.make_grid(images, 3, normalize=True,
-                range=rng,
+                range=rng, padding=2, pad_value=1.0,
                 scale_each=True)
         self.writer.add_image(tag, img_grid, global_step=global_step)
 
@@ -65,7 +65,7 @@ class TensorBoardHelper:
         #self.writer.add_images(f"{label}/Unfiltered Images", images, dataformats="NCHW",
         #        global_step=global_step)
         self.add_image_grid(images, f"{label}/Unfiltered Images",
-                filtered=False, True, global_step=global_step)
+                filtered=False, global_step=global_step)
         #add_figure(images, f"{label}/Unfiltered Images", global_step, label)
         filtered_images = mh.mnist_post_process_image_batch(images)
         #add_figure(filtered_images, f"{label}/Filtered Images", global_step, label)

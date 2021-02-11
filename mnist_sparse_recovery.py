@@ -243,7 +243,7 @@ parser.add_argument('--disable-pgd', dest='use_pgd', action='store_false',
         help='Disable Projected Gradient Descent (clipping)')
 parser.add_argument('--enable-pgd', dest='use_pgd', action='store_true',
         default=True, required=False,
-        help='Disable Projected Gradient Descent (clipping)')
+        help='Enable Projected Gradient Descent (clipping)')
 
 config = parser.parse_args()
 
