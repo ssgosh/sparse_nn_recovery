@@ -33,9 +33,10 @@ def get_class(classname):
 
 # Clip the pixels to between (mnist_zero, mnist_one)
 def clip_if_needed(images):
-    mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
-    with torch.no_grad():
-        torch.clip(images, mnist_zero, mnist_one, out=images)
+    if config.use_pgd:
+        mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
+        with torch.no_grad():
+            torch.clip(images, mnist_zero, mnist_one, out=images)
 
 
 # include_layer: boolean vector of whether to include a layer's l1 penalty
@@ -237,6 +238,12 @@ parser.add_argument('--digit', type=int, metavar='L',
         help='Which digit if single-digit is specified in mode')
 parser.add_argument('--penalty-mode', type=str, default='input only', required=False,
         help='When mode is single-digit, which penalty mode should be used')
+parser.add_argument('--disable-pgd', dest='use_pgd', action='store_false',
+        default=True, required=False,
+        help='Disable Projected Gradient Descent (clipping)')
+parser.add_argument('--enable-pgd', dest='use_pgd', action='store_true',
+        default=True, required=False,
+        help='Disable Projected Gradient Descent (clipping)')
 
 config = parser.parse_args()
 
