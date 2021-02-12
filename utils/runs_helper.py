@@ -24,6 +24,7 @@ def setup_run_dir(config, default_run_dir='runs'):
     
     suffix = config.run_suffix
     config.run_dir = config.run_dir + f'{suffix}'
+    print("Run directory: ", config.run_dir)
     path = pathlib.Path(config.run_dir)
     path.mkdir(exist_ok=True, parents=True)
     ckpt_path = path / 'ckpt'

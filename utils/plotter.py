@@ -93,19 +93,22 @@ def generate_multi_plots_separate_digits(images_list,
         path = pathlib.Path(filename)
         path.parent.mkdir(parents=True, exist_ok=True)
         plot_multiple_images_varying_penalty_single_digit(filename, images_list, targets,
-                labels, i)
+                labels, i, filtered=False)
 
         #filename = f"./output/mean_0.5/10k/{digit}/filtered_10k_varying_penalty.jpg"
         filename = f"{run_dir}/output/{digit}_filtered_varying_penalty.jpg"
         plot_multiple_images_varying_penalty_single_digit(filename,
                 post_processed_images_list, targets,
-                labels, i)
+                labels, i, filtered=True)
 
+
+def get_range_filtered(filtered):
+    return (mnist_zero, mnist_one) if filtered else (None, None)
 
 # 7 items to plot
 # 3 rows, 3 cols
 def plot_multiple_images_varying_penalty_single_digit(filename, images_list, targets,
-        labels, index):
+        labels, index, filtered):
     num_images = len(images_list)
     assert index < len(targets)
     nrows = 3
@@ -113,6 +116,7 @@ def plot_multiple_images_varying_penalty_single_digit(filename, images_list, tar
     assert len(labels) == num_images
     plot.rcParams.update({'font.size' : 40 })
     fig, axes = plot.subplots(nrows=nrows, ncols=ncols, figsize=(24, 24))
+    vmin, vmax = get_range_filtered(filtered)
     for i, ax in enumerate(axes.flat):
         if i >= num_images:
             fig.delaxes(ax)
@@ -121,6 +125,7 @@ def plot_multiple_images_varying_penalty_single_digit(filename, images_list, tar
         image = images[index][0]
         title = "%d : %s" % (targets[index], labels[i])
         #plot_image_on_axis(ax, image, title, fig, vmin=-0.5, vmax=2.0)
+        #plot_image_on_axis(ax, image, title, fig, vmin=mnist_zero, vmax=mnist_one)
         plot_image_on_axis(ax, image, title, fig, vmin=mnist_zero, vmax=mnist_one)
 
     plot.tight_layout(pad=2.)
