@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import argparse
+import json
 import sys
 
 import numpy as np
@@ -72,6 +73,9 @@ parser.add_argument('--disable-pgd', dest='use_pgd', action='store_false',
 parser.add_argument('--enable-pgd', dest='use_pgd', action='store_true',
         default=True, required=False,
         help='Enable Projected Gradient Descent (clipping)')
+parser.add_argument('--dump-config', action='store_true',
+                    default=False, required=False,
+                    help='Print config json and exit')
 
 config = parser.parse_args()
 
@@ -100,6 +104,10 @@ config.labels = labels
 
 config.include_likelihood = True
 config.lambd_layers = 3 * [config.lambd] #[0.1, 0.1, 0.1]
+
+if config.dump_config:
+    json.dump(vars(config), sys.stdout, indent=2, sort_keys=True)
+    sys.exit(0)
 
 tbh = TensorBoardHelper(config.run_dir)
 
@@ -134,7 +142,8 @@ elif config.mode == 'single-digit':
     config.num_targets = n
     config.targets = targets
     label = config.penalty_mode
-    recovered_image = sparse_input_recoverer.recover_and_plot_single_digit(initial_image, label, targets)
+    recovered_image = sparse_input_recoverer.recover_and_plot_single_digit(
+        initial_image, label, targets, include_layer=include_layer, model=model)
     torch.save(recovered_image, f"{config.run_dir}/ckpt/recovered_image.pt")
 else:
     raise ValueError("Invalid mode %s" % config.mode)
