@@ -87,11 +87,10 @@ class SparseInputRecoverer:
             self.clip_if_needed(images)
 
             losses[f"total_loss"] = loss.item()
-            for idx, tgt in enumerate(targets):
-                prob = pow(math.e, output[idx][tgt.item()].item())
-                # print(prob)
-                probs[f"1-class_{tgt}/prob"] = prob
+
+            mth.compute_probs(output, probs, targets)
             mth.compute_sparsities(images, model, targets, sparsity)
+
             print("Iter: ", i, ", Loss: %.3f" % loss.item(),
                   f"Prob of {targets[0]} %.3f" %
                   pow(math.e, output[0][targets[0].item()].item()),
