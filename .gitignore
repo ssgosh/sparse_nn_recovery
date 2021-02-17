@@ -6,4 +6,4 @@ __pycache__
 .*.swp
 output.old
 nohup.out
-runs/
+*runs*
