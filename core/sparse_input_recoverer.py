@@ -30,8 +30,8 @@ class SparseInputRecoverer:
                 torch.clip(images, mnist_zero, mnist_one, out=images)
 
     # include_layer: boolean vector of whether to include a layer's l1 penalty
-    def recover_image(self, model, images, targets, num_steps, include_layer, label,
-                      include_likelihood=True):
+    def recover_image_batch(self, model, images, targets, num_steps, include_layer, label,
+                            include_likelihood=True):
         mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
         images.requires_grad = True
         optimizer = optim.Adam([images], lr=0.5)
@@ -107,8 +107,8 @@ class SparseInputRecoverer:
 
     # Single digit, single label
     def recover_and_plot_single_digit(self, initial_image, label, targets, include_layer, model):
-        self.recover_image(model, initial_image, targets, self.config.num_steps, include_layer[label], label,
-                           include_likelihood=True)
+        self.recover_image_batch(model, initial_image, targets, self.config.num_steps, include_layer[label], label,
+                                 include_likelihood=True)
         plotter.plot_single_digit(initial_image.detach()[0][0], targets[0], label,
                                   filtered=False)
         plotter.plot_single_digit(initial_image.detach()[0][0], targets[0], label,
@@ -127,9 +127,9 @@ class SparseInputRecoverer:
             images = torch.zeros(n, 1, 28, 28)
             images += initial_image  # Use same initial image for each digit
             images_list.append(images)
-            self.recover_image(model, images, targets, num_steps, include_layer[label],
-                               label,
-                               include_likelihood)
+            self.recover_image_batch(model, images, targets, num_steps, include_layer[label],
+                                     label,
+                                     include_likelihood)
 
         post_processed_images_list = []
         for images in images_list:
@@ -183,8 +183,8 @@ class SparseInputRecoverer:
     def recover_and_plot_single_image(self, initial_image, digit, model, targets, labels, include_layer):
         label = "input only"
         targets = torch.tensor([digit])
-        self.recover_image(model, initial_image, targets, 2000, include_layer[label],
-                           label)
+        self.recover_image_batch(model, initial_image, targets, 2000, include_layer[label],
+                                 label)
         plotter.show_image(initial_image[0][0])
         imp.post_process_images(initial_image, mode='low_high', low=-0.5, high=2.0)
         plotter.show_image(initial_image[0][0])
