@@ -7,10 +7,9 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from utils import image_processor as imp
-#from utils import metrics_helper as mth
-#from utils import mnist_helper as mh
 from utils import plotter
 from utils.metrics_helper import MetricsHelper
+from utils.model_context_manager import model_eval_no_grad, images_require_grad
 
 
 class SparseInputRecoverer:
@@ -37,7 +36,12 @@ class SparseInputRecoverer:
     # include_layer: boolean vector of whether to include a layer's l1 penalty
     def recover_image_batch(self, model, images, targets, num_steps, include_layer, sparsity_mode,
                             include_likelihood=True):
-        images.requires_grad = True
+        with model_eval_no_grad(model), images_require_grad(images):
+            self.recover_image_batch_internal(model, images, targets, num_steps, include_layer, sparsity_mode,
+                                             include_likelihood)
+
+    def recover_image_batch_internal(self, model, images, targets, num_steps, include_layer, sparsity_mode,
+                            include_likelihood):
         optimizer = optim.Adam([images], lr=0.5)
 
         # lambda for input
@@ -107,7 +111,6 @@ class SparseInputRecoverer:
             self.tbh.add_tensorboard_stuff(sparsity_mode, model, images, losses, probs,
                                            sparsity, i)
 
-        images.requires_grad = False
 
     # Single digit, single label
     def recover_and_plot_single_digit(self, initial_image, label, targets, include_layer, model):
@@ -192,3 +195,4 @@ class SparseInputRecoverer:
         plotter.show_image(initial_image[0][0])
         imp.post_process_images(initial_image, mode='low_high', low=-0.5, high=2.0)
         plotter.show_image(initial_image[0][0])
+
