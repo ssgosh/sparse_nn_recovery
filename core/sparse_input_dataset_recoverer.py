@@ -32,3 +32,4 @@ class SparseInputDatasetRecoverer:
             targets_tensor = torch.cat(targets)
 
         return images_tensor, targets_tensor
+
