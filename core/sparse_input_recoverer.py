@@ -82,10 +82,6 @@ class SparseInputRecoverer:
 
             losses[f"hidden_layers_l1_loss"] = l1_layers.item()
             losses[f"all_layers_l1_loss"] = l1_loss.item() + l1_layers.item()
-            # l1_layers = sum([ (lamb * l1) for lamb, l1 in zip(lambd_layers,
-            #    model.all_l1) ])
-            # l2_loss = lambd2 * (torch.norm(images, + 2) ** 2
-            #        / torch.numel(images))
 
             loss = nll_loss + l1_loss + l1_layers
             loss.backward()
