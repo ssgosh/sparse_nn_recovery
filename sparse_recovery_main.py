@@ -116,9 +116,15 @@ if config.mode == 'all-digits':
     targets = torch.tensor(range(n))
     config.num_targets = n
     config.targets = targets
-    images_list, post_processed_images_list = sparse_input_recoverer .recover_and_plot_images_varying_penalty(
+    images_list, post_processed_images_list = sparse_input_recoverer.recover_and_plot_images_varying_penalty(
         initial_image,
-        include_likelihood=config.include_likelihood, num_steps=config.num_steps)
+        include_likelihood=config.include_likelihood,
+        num_steps=config.num_steps,
+        labels=config.labels,
+        model=model,
+        include_layer=include_layer,
+        targets=targets
+    )
 
     torch.save(images_list, f"{config.run_dir}/ckpt/images_list.pt")
     torch.save(post_processed_images_list, f"{config.run_dir}/ckpt/post_processed_images_list.pt")
