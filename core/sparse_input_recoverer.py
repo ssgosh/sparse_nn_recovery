@@ -7,9 +7,10 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from utils import image_processor as imp
-from utils import metrics_helper as mth
-from utils import mnist_helper as mh
+#from utils import metrics_helper as mth
+#from utils import mnist_helper as mh
 from utils import plotter
+from utils.metrics_helper import MetricsHelper
 
 
 class SparseInputRecoverer:
@@ -23,18 +24,19 @@ class SparseInputRecoverer:
         self.verbose = verbose
         self.config = config
         self.tbh = tbh
+        self.image_zero = config.image_zero
+        self.image_one = config.image_one
+        self.metrics_helper = MetricsHelper(self.image_zero, self.image_one)
 
     # Clip the pixels to between (mnist_zero, mnist_one)
     def clip_if_needed(self, images):
         if self.config.use_pgd:
-            mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
             with torch.no_grad():
-                torch.clip(images, mnist_zero, mnist_one, out=images)
+                torch.clip(images, self.image_zero, self.image_one, out=images)
 
     # include_layer: boolean vector of whether to include a layer's l1 penalty
-    def recover_image_batch(self, model, images, targets, num_steps, include_layer, label,
+    def recover_image_batch(self, model, images, targets, num_steps, include_layer, sparsity_mode,
                             include_likelihood=True):
-        mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
         images.requires_grad = True
         optimizer = optim.Adam([images], lr=0.5)
 
@@ -61,7 +63,7 @@ class SparseInputRecoverer:
             # include l1 penalty only if it's given as true for that layer
             l1_loss = torch.tensor(0.)
             if include_layer[0]:
-                l1_loss = lambd * (torch.norm(images - mnist_zero, 1)
+                l1_loss = lambd * (torch.norm(images - self.image_zero, 1)
                                    / torch.numel(images))
 
             losses[f"input_l1_loss"] = l1_loss.item()
@@ -90,8 +92,8 @@ class SparseInputRecoverer:
 
             losses[f"total_loss"] = loss.item()
 
-            mth.compute_probs(output, probs, targets)
-            mth.compute_sparsities(images, model, targets, sparsity)
+            self.metrics_helper.compute_probs(output, probs, targets)
+            self.metrics_helper.compute_sparsities(images, model, targets, sparsity)
 
             if self.verbose:
                 print("Iter: ", i, ", Loss: %.3f" % loss.item(),
@@ -102,7 +104,7 @@ class SparseInputRecoverer:
                           images.max().item()))
 
             # Do tensorboard things
-            self.tbh.add_tensorboard_stuff(label, model, images, losses, probs,
+            self.tbh.add_tensorboard_stuff(sparsity_mode, model, images, losses, probs,
                                            sparsity, i)
 
         images.requires_grad = False
@@ -123,7 +125,7 @@ class SparseInputRecoverer:
     def recover_and_plot_images_varying_penalty(self, initial_image, include_likelihood,
                                                 num_steps, labels, model, include_layer, targets):
         images_list = []
-        transformed_low, transformed_high = mh.compute_mnist_transform_low_high()
+        transformed_low, transformed_high = self.image_zero, self.image_one
         n = targets.shape[0]
         for label in labels:
             images = torch.zeros(n, 1, 28, 28)
@@ -158,7 +160,7 @@ class SparseInputRecoverer:
     # Load images_list from saved .pt files
     # Do post-processing only and plot
     def load_and_plot_images_varying_penalty(self, labels, targets):
-        transformed_low, transformed_high = mh.compute_mnist_transform_low_high()
+        transformed_low, transformed_high = self.image_zero, self.image_one
         images_list = torch.load("images_list.pt")
         assert len(labels) == len(images_list)
         post_processed_images_list = []
@@ -182,7 +184,7 @@ class SparseInputRecoverer:
 
         return images_list, post_processed_images_list
 
-    def recover_and_plot_single_image(self, initial_image, digit, model, targets, labels, include_layer):
+    def recover_and_plot_single_image(self, initial_image, digit, model, include_layer):
         label = "input only"
         targets = torch.tensor([digit])
         self.recover_image_batch(model, initial_image, targets, 2000, include_layer[label],

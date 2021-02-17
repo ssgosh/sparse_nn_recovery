@@ -85,7 +85,11 @@ plotter.set_run_dir(config.run_dir)
 model = load_model(config)
 
 
+# This will change when we support multiple datasets
 mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
+config.image_zero = mnist_zero
+config.image_one = mnist_one
+
 initial_image = torch.randn(1, 1, 28, 28)
 #initial_image = torch.normal(mnist_zero, 0.01, (1, 1, 28, 28))
 include_layer = {
@@ -111,7 +115,7 @@ if config.dump_config:
 
 tbh = TensorBoardHelper(config.run_dir)
 
-sparse_input_recoverer = SparseInputRecoverer(config, tbh)
+sparse_input_recoverer = SparseInputRecoverer(config, tbh, verbose=True)
 
 #images_list = torch.load("images_list.pt")
 #post_processed_images_list = torch.load("post_processed_images_list.pt")
