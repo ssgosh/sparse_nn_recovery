@@ -14,11 +14,13 @@ from utils import plotter
 
 class SparseInputRecoverer:
 
-    def __init__(self, config, tbh):
+    def __init__(self, config, tbh, verbose=False):
         """
 
         :type tbh: TensorBoardHelper
+        :type verbose: bool
         """
+        self.verbose = verbose
         self.config = config
         self.tbh = tbh
 
@@ -91,12 +93,13 @@ class SparseInputRecoverer:
             mth.compute_probs(output, probs, targets)
             mth.compute_sparsities(images, model, targets, sparsity)
 
-            print("Iter: ", i, ", Loss: %.3f" % loss.item(),
-                  f"Prob of {targets[0]} %.3f" %
-                  pow(math.e, output[0][targets[0].item()].item()),
-                  "images median, mean, std, min, max: %.3f, %.3f, %.3f, %.3f, %.3f" % (
-                      images.median().item(), images.mean().item(), images.std().item(), images.min().item(),
-                      images.max().item()))
+            if self.verbose:
+                print("Iter: ", i, ", Loss: %.3f" % loss.item(),
+                      f"Prob of {targets[0]} %.3f" %
+                      pow(math.e, output[0][targets[0].item()].item()),
+                      "images median, mean, std, min, max: %.3f, %.3f, %.3f, %.3f, %.3f" % (
+                          images.median().item(), images.mean().item(), images.std().item(), images.min().item(),
+                          images.max().item()))
 
             # Do tensorboard things
             self.tbh.add_tensorboard_stuff(label, model, images, losses, probs,
