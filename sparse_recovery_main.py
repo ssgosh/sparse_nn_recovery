@@ -11,6 +11,8 @@ from utils import plotter
 from utils import runs_helper as rh
 from utils.tensorboard_helper import TensorBoardHelper
 
+from core.sparse_input_recoverer import SparseInputRecoverer
+
 # noinspection PyUnresolvedReferences
 from models.mnist_model import ExampleCNNNet
 # noinspection PyUnresolvedReferences
@@ -76,28 +78,8 @@ config = parser.parse_args()
 rh.setup_run_dir(config, 'image_runs')
 plotter.set_run_dir(config.run_dir)
 
-#run = wandb.init(project='mnist_sparse_recovery')
-#config = wandb.config
-
-#config.discriminator_model_class = 'ExampleCNNNet'
-#config.discriminator_model_class = 'MLPNet3Layer'
-#config.discriminator_model_file = 'ckpt/mnist_cnn_adv_normal_init.pt'
-#config.discriminator_model_file = f'ckpt/mnist_cnn.pt'
-#config.discriminator_model_file = 'ckpt/mnist_mlp_3layer_adv_normal_init.pt'
-
-# Alternate model configuration
-#wandb.config.discriminator_model_class = 'MLPNet3Layer'
-#wandb.config.discriminator_model_file = 'mnist_mlp_3layer.pt'
-
 model = load_model(config)
 
-#model = Net()
-#model = MLPNet3Layer()
-#model_state_dict = torch.load('mnist_cnn.pt')
-#model_state_dict = torch.load('mnist_mlp_3layer.pt')
-#model.load_state_dict(model_state_dict)
-#print(model)
-#summary(model, (1, 28, 28))
 
 mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
 initial_image = torch.randn(1, 1, 28, 28)
@@ -112,25 +94,16 @@ include_layer = {
         "all but input" : [ False, True, True, True],
         }
 labels = list(include_layer.keys())
-#labels = [ "input only", "all layers" ]
-#labels = [ "input only", ]
 
 config.include_layer = include_layer
 config.labels = labels
 
-# Run-specific information
-#config.num_steps = 1000
 config.include_likelihood = True
-#config.lambd = 1. #0.1
-#config.lambd_layers = [1., 1., 1.] #[0.1, 0.1, 0.1]
-#config.lambd = 0.1
 config.lambd_layers = 3 * [config.lambd] #[0.1, 0.1, 0.1]
-#print(config.lambd_layers)
-#sys.exit(1)
 
 tbh = TensorBoardHelper(config.run_dir)
 
-#labels.remove("no penalty")
+sparse_input_recoverer = SparseInputRecoverer(config, tbh)
 
 #images_list = torch.load("images_list.pt")
 #post_processed_images_list = torch.load("post_processed_images_list.pt")
@@ -143,8 +116,9 @@ if config.mode == 'all-digits':
     targets = torch.tensor(range(n))
     config.num_targets = n
     config.targets = targets
-    images_list, post_processed_images_list = recover_and_plot_images_varying_penalty(initial_image,
-            include_likelihood=config.include_likelihood, num_steps=config.num_steps)
+    images_list, post_processed_images_list = sparse_input_recoverer .recover_and_plot_images_varying_penalty(
+        initial_image,
+        include_likelihood=config.include_likelihood, num_steps=config.num_steps)
 
     torch.save(images_list, f"{config.run_dir}/ckpt/images_list.pt")
     torch.save(post_processed_images_list, f"{config.run_dir}/ckpt/post_processed_images_list.pt")
@@ -154,7 +128,7 @@ elif config.mode == 'single-digit':
     config.num_targets = n
     config.targets = targets
     label = config.penalty_mode
-    recovered_image = recover_and_plot_single_digit(initial_image, label, targets)
+    recovered_image = sparse_input_recoverer.recover_and_plot_single_digit(initial_image, label, targets)
     torch.save(recovered_image, f"{config.run_dir}/ckpt/recovered_image.pt")
 else:
     raise ValueError("Invalid mode %s" % config.mode)
