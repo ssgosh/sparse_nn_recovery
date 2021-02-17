@@ -9,9 +9,14 @@ import torch
 from utils import mnist_helper as mh
 from utils import plotter
 from utils import runs_helper as rh
-# For experiment management
-# import wandb
 from utils.tensorboard_helper import TensorBoardHelper
+
+# noinspection PyUnresolvedReferences
+from models.mnist_model import ExampleCNNNet
+# noinspection PyUnresolvedReferences
+from models.mnist_max_norm_mlp import MaxNormMLP
+# noinspection PyUnresolvedReferences
+from models.mnist_mlp import MLPNet3Layer
 
 np.set_printoptions(precision = 3)
 
