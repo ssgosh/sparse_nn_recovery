@@ -1,7 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="PYTHON_MODULE" version="4">
   <component name="NewModuleRootManager">
-    <content url="file://$MODULE_DIR$" />
+    <content url="file://$MODULE_DIR$">
+      <excludeFolder url="file://$MODULE_DIR$/sandbox/runs" />
+      <excludeFolder url="file://$MODULE_DIR$/ckpt" />
+      <excludeFolder url="file://$MODULE_DIR$/data" />
+      <excludeFolder url="file://$MODULE_DIR$/debug-runs" />
+      <excludeFolder url="file://$MODULE_DIR$/debug_runs" />
+      <excludeFolder url="file://$MODULE_DIR$/image_lambda_runs" />
+      <excludeFolder url="file://$MODULE_DIR$/image_lambda_runs.old" />
+      <excludeFolder url="file://$MODULE_DIR$/image_lambda_runs_all_layers_1000_Feb11_09-17-06" />
+      <excludeFolder url="file://$MODULE_DIR$/image_runs" />
+      <excludeFolder url="file://$MODULE_DIR$/input_only" />
+      <excludeFolder url="file://$MODULE_DIR$/model_runs" />
+      <excludeFolder url="file://$MODULE_DIR$/old" />
+      <excludeFolder url="file://$MODULE_DIR$/output" />
+      <excludeFolder url="file://$MODULE_DIR$/output.old" />
+      <excludeFolder url="file://$MODULE_DIR$/runs" />
+      <excludeFolder url="file://$MODULE_DIR$/wandb" />
+    </content>
     <orderEntry type="jdk" jdkName="3.8 @ Ubuntu" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
