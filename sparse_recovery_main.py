@@ -43,47 +43,47 @@ def get_config_dict(config):
     return vars(config)
 
 
-parser = argparse.ArgumentParser(description='Recover images from a '
-        'discriminative model by gradient descent on input')
-parser.add_argument('--mode', type=str, default='all-digits', required=False,
-        help='Image recovery mode: "single-digit" or "all-digits"')
-parser.add_argument('--num-steps', type=int, default=1000, required=False,
-        help='Number of steps of gradient descent for image generation')
-parser.add_argument('--run-dir', type=str, default=None, required=False,
-        help='Directory inside which outputs and tensorboard logs will be saved')
-parser.add_argument('--run-suffix', type=str, default='', required=False,
-        help='Directory inside which outputs and tensorboard logs will be saved')
-parser.add_argument('--discriminator-model-class', type=str, metavar='DMC',
-        default='ExampleCNNNet', required=False,
-        help='Discriminator model class')
-parser.add_argument('--discriminator-model-file', type=str, metavar='DMF',
-        default='ckpt/mnist_cnn.pt', required=False,
-        help='Discriminator model file')
-parser.add_argument('--lambd', type=float, metavar='L',
-        default=0.1, required=False,
-        help='L1 penalty lambda on each layer')
-parser.add_argument('--digit', type=int, metavar='L',
-        default=0, required=False,
-        help='Which digit if single-digit is specified in mode')
-parser.add_argument('--penalty-mode', type=str, default='input only', required=False,
-        help='When mode is single-digit, which penalty mode should be used')
-parser.add_argument('--disable-pgd', dest='use_pgd', action='store_false',
-        default=True, required=False,
-        help='Disable Projected Gradient Descent (clipping)')
-parser.add_argument('--enable-pgd', dest='use_pgd', action='store_true',
-        default=True, required=False,
-        help='Enable Projected Gradient Descent (clipping)')
-parser.add_argument('--dump-config', action='store_true',
-                    default=False, required=False,
-                    help='Print config json and exit')
+def get_arguments_parser():
+    parser = argparse.ArgumentParser(description='Recover images from a '
+                                                 'discriminative model by gradient descent on input')
+    parser.add_argument('--mode', type=str, default='all-digits', required=False,
+                        help='Image recovery mode: "single-digit" or "all-digits"')
+    parser.add_argument('--num-steps', type=int, default=1000, required=False,
+                        help='Number of steps of gradient descent for image generation')
+    parser.add_argument('--run-dir', type=str, default=None, required=False,
+                        help='Directory inside which outputs and tensorboard logs will be saved')
+    parser.add_argument('--run-suffix', type=str, default='', required=False,
+                        help='Directory inside which outputs and tensorboard logs will be saved')
+    parser.add_argument('--discriminator-model-class', type=str, metavar='DMC',
+                        default='ExampleCNNNet', required=False,
+                        help='Discriminator model class')
+    parser.add_argument('--discriminator-model-file', type=str, metavar='DMF',
+                        default='ckpt/mnist_cnn.pt', required=False,
+                        help='Discriminator model file')
+    parser.add_argument('--lambd', type=float, metavar='L',
+                        default=0.1, required=False,
+                        help='L1 penalty lambda on each layer')
+    parser.add_argument('--digit', type=int, metavar='L',
+                        default=0, required=False,
+                        help='Which digit if single-digit is specified in mode')
+    parser.add_argument('--penalty-mode', type=str, default='input only', required=False,
+                        help='When mode is single-digit, which penalty mode should be used')
+    parser.add_argument('--disable-pgd', dest='use_pgd', action='store_false',
+                        default=True, required=False,
+                        help='Disable Projected Gradient Descent (clipping)')
+    parser.add_argument('--enable-pgd', dest='use_pgd', action='store_true',
+                        default=True, required=False,
+                        help='Enable Projected Gradient Descent (clipping)')
+    parser.add_argument('--dump-config', action='store_true',
+                        default=False, required=False,
+                        help='Print config json and exit')
+
+    return parser
+
+
+parser = get_arguments_parser()
 
 config = parser.parse_args()
-
-rh.setup_run_dir(config, 'image_runs')
-plotter.set_run_dir(config.run_dir)
-
-model = load_model(config)
-
 
 # This will change when we support multiple datasets
 mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
@@ -112,6 +112,12 @@ config.lambd_layers = 3 * [config.lambd] #[0.1, 0.1, 0.1]
 if config.dump_config:
     json.dump(vars(config), sys.stdout, indent=2, sort_keys=True)
     sys.exit(0)
+
+rh.setup_run_dir(config, 'image_runs')
+plotter.set_run_dir(config.run_dir)
+
+model = load_model(config)
+
 
 tbh = TensorBoardHelper(config.run_dir)
 
