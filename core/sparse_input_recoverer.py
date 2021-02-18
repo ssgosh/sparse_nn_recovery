@@ -26,6 +26,7 @@ class SparseInputRecoverer:
         self.image_zero = config.image_zero
         self.image_one = config.image_one
         self.metrics_helper = MetricsHelper(self.image_zero, self.image_one)
+        self.tensorboard_logging = True
 
     # Clip the pixels to between (mnist_zero, mnist_one)
     def clip_if_needed(self, images):
@@ -104,9 +105,10 @@ class SparseInputRecoverer:
                           images.median().item(), images.mean().item(), images.std().item(), images.min().item(),
                           images.max().item()))
 
-            # Do tensorboard things
-            self.tbh.add_tensorboard_stuff(penalty_mode, model, images, losses, probs,
-                                           sparsity, i)
+            if self.tensorboard_logging:
+                # Do tensorboard things
+                self.tbh.add_tensorboard_stuff(penalty_mode, model, images, losses, probs,
+                                               sparsity, i)
 
 
     # Single digit, single label
