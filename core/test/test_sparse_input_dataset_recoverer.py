@@ -11,8 +11,10 @@ class TestSparseInputDatasetRecoverer(TestCase):
         dataset_recoverer = SparseInputDatasetRecoverer(sparse_input_recoverer)
 
         images, targets = dataset_recoverer.recover_image_dataset(
-            model, output_shape=(10, 1, 28, 28), num_classes=10, batch_size=2, num_steps=10,
+            model, output_shape=(10, 1, 28, 28), num_classes=10, batch_size=5, num_steps=100,
             include_layer=include_layer, sparsity_mode=config.penalty_mode)
 
         assert images.shape == (10, 1, 28, 28)
         assert targets.shape[0] == 10
+
+        tbh.add_image_grid(images, "Final Dataset", filtered=False, global_step=None)

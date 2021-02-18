@@ -51,11 +51,11 @@ class SparseInputRecoverer:
         lambd_layers = self.config.lambd_layers  # [0.1, 0.1, 0.1]
         # lambd_layers = [0.01, 0.01, 0.01]
         # lambd2 = 1.
-        losses = {}
-        probs = {}
-        sparsity = {}
         start = num_steps * batch_idx + 1
         for i in range(start, start + num_steps):
+            losses = {}
+            probs = {}
+            sparsity = {}
             optimizer.zero_grad()
             output = model(images)
             if include_likelihood:
