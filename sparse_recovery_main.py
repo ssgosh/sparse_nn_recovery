@@ -21,9 +21,6 @@ from models.mnist_max_norm_mlp import MaxNormMLP
 # noinspection PyUnresolvedReferences
 from models.mnist_mlp import MLPNet3Layer
 
-np.set_printoptions(precision = 3)
-
-
 def get_class(classname):
     return getattr(sys.modules[__name__], classname)
 
@@ -80,97 +77,105 @@ def get_arguments_parser():
 
     return parser
 
+def setup_config(parser):
+    config = parser.parse_args()
+    # This will change when we support multiple datasets
+    mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
+    config.image_zero = mnist_zero
+    config.image_one = mnist_one
+    # initial_image = torch.normal(mnist_zero, 0.01, (1, 1, 28, 28))
+    include_layer = {
+        "no penalty": [False, False, False, False],
+        "input only": [True, False, False, False],
+        "all layers": [True, True, True, True],
+        "layer 1 only": [False, True, False, False],
+        "layer 2 only": [False, False, True, False],
+        "layer 3 only": [False, False, False, True],
+        "all but input": [False, True, True, True],
+    }
+    labels = list(include_layer.keys())
+    config.include_layer = include_layer
+    config.labels = labels
+    config.include_likelihood = True
+    config.lambd_layers = 3 * [config.lambd]  # [0.1, 0.1, 0.1]
+    if config.dump_config:
+        json.dump(vars(config), sys.stdout, indent=2, sort_keys=True)
+        sys.exit(0)
 
-parser = get_arguments_parser()
-
-config = parser.parse_args()
-
-# This will change when we support multiple datasets
-mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
-config.image_zero = mnist_zero
-config.image_one = mnist_one
-
-initial_image = torch.randn(1, 1, 28, 28)
-#initial_image = torch.normal(mnist_zero, 0.01, (1, 1, 28, 28))
-include_layer = {
-        "no penalty"    : [ False, False, False, False],
-        "input only"    : [ True, False, False, False],
-        "all layers"    : [ True, True, True, True],
-        "layer 1 only"  : [ False, True, False, False],
-        "layer 2 only"  : [ False, False, True, False],
-        "layer 3 only"  : [ False, False, False, True],
-        "all but input" : [ False, True, True, True],
-        }
-labels = list(include_layer.keys())
-
-config.include_layer = include_layer
-config.labels = labels
-
-config.include_likelihood = True
-config.lambd_layers = 3 * [config.lambd] #[0.1, 0.1, 0.1]
-
-if config.dump_config:
-    json.dump(vars(config), sys.stdout, indent=2, sort_keys=True)
-    sys.exit(0)
-
-rh.setup_run_dir(config, 'image_runs')
-plotter.set_run_dir(config.run_dir)
-
-model = load_model(config)
+    return config, include_layer, labels
 
 
-tbh = TensorBoardHelper(config.run_dir)
+def setup_everything():
+    parser = get_arguments_parser()
+    config, include_layer, labels = setup_config(parser)
 
-sparse_input_recoverer = SparseInputRecoverer(config, tbh, verbose=True)
+    rh.setup_run_dir(config, 'image_runs')
+    plotter.set_run_dir(config.run_dir)
 
-#images_list = torch.load("images_list.pt")
-#post_processed_images_list = torch.load("post_processed_images_list.pt")
+    model = load_model(config)
 
-#generate_multi_plot_all_digits(images_list,
-#        post_processed_images_list, targets, labels)
 
-if config.mode == 'all-digits':
-    n = 10
-    targets = torch.tensor(range(n))
-    config.num_targets = n
-    config.targets = targets
-    images_list, post_processed_images_list = sparse_input_recoverer.recover_and_plot_images_varying_penalty(
-        initial_image,
-        include_likelihood=config.include_likelihood,
-        num_steps=config.num_steps,
-        labels=config.labels,
-        model=model,
-        include_layer=include_layer,
-        targets=targets
-    )
+    tbh = TensorBoardHelper(config.run_dir)
 
-    torch.save(images_list, f"{config.run_dir}/ckpt/images_list.pt")
-    torch.save(post_processed_images_list, f"{config.run_dir}/ckpt/post_processed_images_list.pt")
-elif config.mode == 'single-digit':
-    n = 1
-    targets = torch.tensor([config.digit])
-    config.num_targets = n
-    config.targets = targets
-    label = config.penalty_mode
-    recovered_image = sparse_input_recoverer.recover_and_plot_single_digit(
-        initial_image, label, targets, include_layer=include_layer, model=model)
-    torch.save(recovered_image, f"{config.run_dir}/ckpt/recovered_image.pt")
-else:
-    raise ValueError("Invalid mode %s" % config.mode)
+    sparse_input_recoverer = SparseInputRecoverer(config, tbh, verbose=True)
 
-#load_and_plot_images_varying_penalty()
+    return config, include_layer, labels, model, tbh, sparse_input_recoverer
 
-#wandb.save("output/*")
 
-#recover_and_plot_single_image(initial_image, 0)
-#initial_image = torch.randn(1, 1, 28, 28)
-#recover_and_plot_single_image(initial_image, 1)
-#initial_image = torch.randn(1, 1, 28, 28)
-#recover_and_plot_single_image(initial_image, 4)
+def main():
+    config, include_layer, labels, model, tbh, sparse_input_recoverer = setup_everything()
+    initial_image = torch.randn(1, 1, 28, 28)
+    #images_list = torch.load("images_list.pt")
+    #post_processed_images_list = torch.load("post_processed_images_list.pt")
 
-#plotter.plot_multiple_images('./output/mean_0.5/10k/unfiltered_10k_all_penalty.png', initial_image[0][0], images, targets)
-#post_process_images(images)
-#plotter.plot_multiple_images('./output/mean_0.5/10k/filtered_10k_all_penalty.png', initial_image[0][0], images, targets)
+    #generate_multi_plot_all_digits(images_list,
+    #        post_processed_images_list, targets, labels)
 
-#images_list = [images]*7
+    if config.mode == 'all-digits':
+        n = 10
+        targets = torch.tensor(range(n))
+        config.num_targets = n
+        config.targets = targets
+        images_list, post_processed_images_list = sparse_input_recoverer.recover_and_plot_images_varying_penalty(
+            initial_image,
+            include_likelihood=config.include_likelihood,
+            num_steps=config.num_steps,
+            labels=config.labels,
+            model=model,
+            include_layer=include_layer,
+            targets=targets
+        )
 
+        torch.save(images_list, f"{config.run_dir}/ckpt/images_list.pt")
+        torch.save(post_processed_images_list, f"{config.run_dir}/ckpt/post_processed_images_list.pt")
+    elif config.mode == 'single-digit':
+        n = 1
+        targets = torch.tensor([config.digit])
+        config.num_targets = n
+        config.targets = targets
+        label = config.penalty_mode
+        recovered_image = sparse_input_recoverer.recover_and_plot_single_digit(
+            initial_image, label, targets, include_layer=include_layer, model=model)
+        torch.save(recovered_image, f"{config.run_dir}/ckpt/recovered_image.pt")
+    else:
+        raise ValueError("Invalid mode %s" % config.mode)
+
+    #load_and_plot_images_varying_penalty()
+
+    #wandb.save("output/*")
+
+    #recover_and_plot_single_image(initial_image, 0)
+    #initial_image = torch.randn(1, 1, 28, 28)
+    #recover_and_plot_single_image(initial_image, 1)
+    #initial_image = torch.randn(1, 1, 28, 28)
+    #recover_and_plot_single_image(initial_image, 4)
+
+    #plotter.plot_multiple_images('./output/mean_0.5/10k/unfiltered_10k_all_penalty.png', initial_image[0][0], images, targets)
+    #post_process_images(images)
+    #plotter.plot_multiple_images('./output/mean_0.5/10k/filtered_10k_all_penalty.png', initial_image[0][0], images, targets)
+
+    #images_list = [images]*7
+
+if __name__ == "__main__":
+    np.set_printoptions(precision=3)
+    main()
