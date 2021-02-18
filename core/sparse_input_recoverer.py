@@ -34,13 +34,13 @@ class SparseInputRecoverer:
                 torch.clip(images, self.image_zero, self.image_one, out=images)
 
     # include_layer: boolean vector of whether to include a layer's l1 penalty
-    def recover_image_batch(self, model, images, targets, num_steps, include_layer, sparsity_mode,
+    def recover_image_batch(self, model, images, targets, num_steps, include_layer, penalty_mode,
                             include_likelihood=True):
         with model_eval_no_grad(model), images_require_grad(images):
-            self.recover_image_batch_internal(model, images, targets, num_steps, include_layer, sparsity_mode,
+            self.recover_image_batch_internal(model, images, targets, num_steps, include_layer, penalty_mode,
                                              include_likelihood)
 
-    def recover_image_batch_internal(self, model, images, targets, num_steps, include_layer, sparsity_mode,
+    def recover_image_batch_internal(self, model, images, targets, num_steps, include_layer, penalty_mode,
                             include_likelihood):
         optimizer = optim.Adam([images], lr=0.5)
 
@@ -104,7 +104,7 @@ class SparseInputRecoverer:
                           images.max().item()))
 
             # Do tensorboard things
-            self.tbh.add_tensorboard_stuff(sparsity_mode, model, images, losses, probs,
+            self.tbh.add_tensorboard_stuff(penalty_mode, model, images, losses, probs,
                                            sparsity, i)
 
 
