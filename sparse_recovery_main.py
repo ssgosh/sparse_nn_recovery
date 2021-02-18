@@ -77,8 +77,8 @@ def get_arguments_parser():
 
     return parser
 
-def setup_config(parser):
-    config = parser.parse_args()
+
+def setup_config(config):
     # This will change when we support multiple datasets
     mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
     config.image_zero = mnist_zero
@@ -105,9 +105,10 @@ def setup_config(parser):
     return config, include_layer, labels
 
 
-def setup_everything():
+def setup_everything(argv):
     parser = get_arguments_parser()
-    config, include_layer, labels = setup_config(parser)
+    config = parser.parse_args(argv)
+    config, include_layer, labels = setup_config(config)
 
     rh.setup_run_dir(config, 'image_runs')
     plotter.set_run_dir(config.run_dir)
@@ -123,7 +124,7 @@ def setup_everything():
 
 
 def main():
-    config, include_layer, labels, model, tbh, sparse_input_recoverer = setup_everything()
+    config, include_layer, labels, model, tbh, sparse_input_recoverer = setup_everything(sys.argv[1:])
     initial_image = torch.randn(1, 1, 28, 28)
     #images_list = torch.load("images_list.pt")
     #post_processed_images_list = torch.load("post_processed_images_list.pt")
