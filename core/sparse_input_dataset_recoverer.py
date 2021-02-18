@@ -22,7 +22,7 @@ class SparseInputDatasetRecoverer:
             targets_batch = torch.randint(low=0, high=num_classes, size=batch_size)
             images.append(image_batch)
             targets.append(targets_batch)
-            self.sparse_input_recoverer.recover_image_batch(self, model, image_batch, targets_batch, num_steps, include_layer,
+            self.sparse_input_recoverer.recover_image_batch(model, image_batch, targets_batch, num_steps, include_layer,
                                                             sparsity_mode,
                                                             include_likelihood=True)
 
