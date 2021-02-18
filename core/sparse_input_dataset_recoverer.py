@@ -23,7 +23,8 @@ class SparseInputDatasetRecoverer:
             self.sparse_input_recoverer.recover_image_batch(model, image_batch, targets_batch, num_steps,
                                                             include_layer[sparsity_mode],
                                                             sparsity_mode,
-                                                            include_likelihood=True)
+                                                            include_likelihood=True,
+                                                            batch_idx=batch_idx)
 
         # Need to concat the tensors and return
         with torch.no_grad():

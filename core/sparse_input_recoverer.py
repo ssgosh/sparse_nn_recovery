@@ -35,13 +35,13 @@ class SparseInputRecoverer:
 
     # include_layer: boolean vector of whether to include a layer's l1 penalty
     def recover_image_batch(self, model, images, targets, num_steps, include_layer, penalty_mode,
-                            include_likelihood=True):
+                            include_likelihood=True, batch_idx=0):
         with model_eval_no_grad(model), images_require_grad(images):
             self.recover_image_batch_internal(model, images, targets, num_steps, include_layer, penalty_mode,
-                                             include_likelihood)
+                                             include_likelihood, batch_idx)
 
     def recover_image_batch_internal(self, model, images, targets, num_steps, include_layer, penalty_mode,
-                            include_likelihood):
+                            include_likelihood, batch_idx):
         optimizer = optim.Adam([images], lr=0.5)
 
         # lambda for input
@@ -54,7 +54,8 @@ class SparseInputRecoverer:
         losses = {}
         probs = {}
         sparsity = {}
-        for i in range(1, num_steps + 1):
+        start = num_steps * batch_idx + 1
+        for i in range(start, start + num_steps):
             optimizer.zero_grad()
             output = model(images)
             if include_likelihood:
