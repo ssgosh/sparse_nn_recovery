@@ -69,6 +69,7 @@ def setup_config(config):
     mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
     config.image_zero = mnist_zero
     config.image_one = mnist_one
+    SparseInputRecoverer.setup_default_config(config)
     # initial_image = torch.normal(mnist_zero, 0.01, (1, 1, 28, 28))
     if config.dump_config:
         json.dump(vars(config), sys.stdout, indent=2, sort_keys=True)
@@ -113,7 +114,7 @@ def main():
         images_list, post_processed_images_list = sparse_input_recoverer.recover_and_plot_images_varying_penalty(
             initial_image,
             include_likelihood=config.include_likelihood,
-            num_steps=config.num_steps,
+            num_steps=config.num_recovery_steps,
             labels=config.labels,
             model=model,
             include_layer=include_layer,
