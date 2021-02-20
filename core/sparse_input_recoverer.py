@@ -14,6 +14,45 @@ from utils.model_context_manager import model_eval_no_grad, images_require_grad
 
 class SparseInputRecoverer:
 
+    # Dictionary of string penalty modes to array of boolean values,
+    # indicating whether penalty is on/off for the corresponding layer in that mode
+    include_layer = {
+        "no penalty": [False, False, False, False],
+        "input only": [True, False, False, False],
+        "all layers": [True, True, True, True],
+        "layer 1 only": [False, True, False, False],
+        "layer 2 only": [False, False, True, False],
+        "layer 3 only": [False, False, False, True],
+        "all but input": [False, True, True, True],
+    }
+
+    # All available penalty modes
+    all_penalty_modes = list(include_layer.keys())
+
+    @staticmethod
+    def add_sparse_recovery_arguments(parser):
+        parser.add_argument('--num-recovery-steps', type=int, default=1000, required=False,
+                            help='Number of steps of gradient descent for image generation')
+        parser.add_argument('--lambd', type=float, metavar='L',
+                            default=0.1, required=False,
+                            help='L1 penalty lambda on each layer')
+        parser.add_argument('--penalty-mode', type=str, default='input only', required=False,
+                            help='When mode is single-digit, which penalty mode should be used')
+        parser.add_argument('--disable-pgd', dest='use_pgd', action='store_false',
+                            default=True, required=False,
+                            help='Disable Projected Gradient Descent (clipping)')
+        parser.add_argument('--enable-pgd', dest='use_pgd', action='store_true',
+                            default=True, required=False,
+                            help='Enable Projected Gradient Descent (clipping)')
+
+
+    @staticmethod
+    def setup_default_config(config):
+        config.include_layer = SparseInputRecoverer.include_layer
+        config.labels = SparseInputRecoverer.all_penalty_modes
+        config.include_likelihood = True
+        config.lambd_layers = 3 * [config.lambd]  # [0.1, 0.1, 0.1]
+
     def __init__(self, config, tbh, verbose=False):
         """
 

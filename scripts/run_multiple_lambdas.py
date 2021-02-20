@@ -3,7 +3,7 @@ import sys
 import time
 
 def inner_loop(mode, penalty_mode, num_steps, pgd, digits, lambdas, timestamp):
-    folder = f"image_lambda_runs/{mode}/{penalty_mode.replace(' ','_')}/num-steps_{num_steps}/{pgd}/{timestamp}"
+    folder = f"image_lambda_runs/{mode}/{penalty_mode.replace(' ','_')}/num-recovery-steps_{num_steps}/{pgd}/{timestamp}"
     for digit in digits:
         for i, lambd in enumerate(lambdas):
             cmd = f'python3 mnist_sparse_recovery.py --mode {mode} ' \
@@ -12,7 +12,7 @@ def inner_loop(mode, penalty_mode, num_steps, pgd, digits, lambdas, timestamp):
                     f'--lambd {lambd} ' \
                     f'--run-suffix _lambda_{lambd} ' \
                     f'--run-dir {folder}/{digit}/{i:0>2d}' \
-                    f' --num-steps {num_steps}' \
+                    f' --num-recovery-steps {num_steps}' \
                     f' --{pgd}' \
 
             print(cmd)

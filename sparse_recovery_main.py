@@ -40,13 +40,11 @@ def get_config_dict(config):
     return vars(config)
 
 
-def get_arguments_parser():
+def add_main_script_arguments():
     parser = argparse.ArgumentParser(description='Recover images from a '
                                                  'discriminative model by gradient descent on input')
     parser.add_argument('--mode', type=str, default='all-digits', required=False,
                         help='Image recovery mode: "single-digit" or "all-digits"')
-    parser.add_argument('--num-steps', type=int, default=1000, required=False,
-                        help='Number of steps of gradient descent for image generation')
     parser.add_argument('--run-dir', type=str, default=None, required=False,
                         help='Directory inside which outputs and tensorboard logs will be saved')
     parser.add_argument('--run-suffix', type=str, default='', required=False,
@@ -57,24 +55,12 @@ def get_arguments_parser():
     parser.add_argument('--discriminator-model-file', type=str, metavar='DMF',
                         default='ckpt/mnist_cnn.pt', required=False,
                         help='Discriminator model file')
-    parser.add_argument('--lambd', type=float, metavar='L',
-                        default=0.1, required=False,
-                        help='L1 penalty lambda on each layer')
     parser.add_argument('--digit', type=int, metavar='L',
                         default=0, required=False,
                         help='Which digit if single-digit is specified in mode')
-    parser.add_argument('--penalty-mode', type=str, default='input only', required=False,
-                        help='When mode is single-digit, which penalty mode should be used')
-    parser.add_argument('--disable-pgd', dest='use_pgd', action='store_false',
-                        default=True, required=False,
-                        help='Disable Projected Gradient Descent (clipping)')
-    parser.add_argument('--enable-pgd', dest='use_pgd', action='store_true',
-                        default=True, required=False,
-                        help='Enable Projected Gradient Descent (clipping)')
     parser.add_argument('--dump-config', action='store_true',
                         default=False, required=False,
                         help='Print config json and exit')
-
     return parser
 
 
@@ -84,29 +70,16 @@ def setup_config(config):
     config.image_zero = mnist_zero
     config.image_one = mnist_one
     # initial_image = torch.normal(mnist_zero, 0.01, (1, 1, 28, 28))
-    include_layer = {
-        "no penalty": [False, False, False, False],
-        "input only": [True, False, False, False],
-        "all layers": [True, True, True, True],
-        "layer 1 only": [False, True, False, False],
-        "layer 2 only": [False, False, True, False],
-        "layer 3 only": [False, False, False, True],
-        "all but input": [False, True, True, True],
-    }
-    labels = list(include_layer.keys())
-    config.include_layer = include_layer
-    config.labels = labels
-    config.include_likelihood = True
-    config.lambd_layers = 3 * [config.lambd]  # [0.1, 0.1, 0.1]
     if config.dump_config:
         json.dump(vars(config), sys.stdout, indent=2, sort_keys=True)
         sys.exit(0)
 
-    return config, include_layer, labels
+    return config, config.include_layer, config.labels
 
 
 def setup_everything(argv):
-    parser = get_arguments_parser()
+    parser = add_main_script_arguments()
+    SparseInputRecoverer.add_sparse_recovery_arguments(parser)
     config = parser.parse_args(argv)
     config, include_layer, labels = setup_config(config)
 
