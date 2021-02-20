@@ -35,7 +35,7 @@ def foobar():
     writer = SummaryWriter()
 
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
-    trainset = datasets.MNIST('../data', train=True, download=False, transform=transform)
+    trainset = datasets.MNIST('./data', train=True, download=False, transform=transform)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=64, shuffle=True)
     model = torchvision.models.resnet18(False)
     # Have ResNet model take in grayscale rather than RGB
