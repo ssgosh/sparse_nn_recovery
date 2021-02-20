@@ -22,7 +22,7 @@ class TrainLogger():
     def log_batch(self, lossval):
         if self.trainer.next_real_batch % self.log_interval == 0:
             sys.stdout.write('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                self.epoch, self.trainer.next_real_batch * self.trainer.adv_training_batch_size, self.train_dataset_len,
+                self.trainer.epoch, self.trainer.next_real_batch * self.trainer.adv_training_batch_size, self.train_dataset_len,
                 100. * self.trainer.next_real_batch / self.train_dataset_len, lossval)
             )
             sys.stdout.write('\r')
@@ -132,7 +132,7 @@ class AdversarialTrainer:
                 fake_images, _, fake_targets = adv_batch
                 self.train_one_batch_adversarial(real_images, real_targets, fake_images, fake_targets)
                 self.next_real_batch += 1  # Keep track of batch number
-                if i >= m:
+                if i >= k:
                     stopped_early = False
                     break
             if stopped_early:
