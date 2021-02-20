@@ -1,6 +1,10 @@
+from core.sparse_input_dataset_recoverer import SparseInputDatasetRecoverer
+from utils.batched_tensor_view_data_loader import BatchedTensorViewDataLoader
+
 
 class AdversarialTrainer:
-    def __init__(self, real_data_train_loader, sparse_input_dataset_recoverer, model, opt_model):
+    def __init__(self, real_data_train_loader, sparse_input_dataset_recoverer : SparseInputDatasetRecoverer,
+                 model, opt_model):
         self.real_data_train_loader = real_data_train_loader
         self.sparse_input_dataset_recoverer = sparse_input_dataset_recoverer
         self.model = model
@@ -27,5 +31,14 @@ class AdversarialTrainer:
     def generate_m_image_batches_train_one_epoch_adversarial(self, m):
         pass
 
-    def generte_m_image_batches_train_k_batches_adversarial(self, m, k):
-        pass
+    # Say adversarial image batch size is 32
+    # and m is 10
+    # Then 320 images will be generated
+    # Say k is 100.
+    # Then 100 batches of real data and 100 batches each of size 32 from above 320 images will be used for adversarial training
+    def generate_m_image_batches_train_k_batches_adversarial(self, m, k):
+        self.sparse_input_dataset_recoverer.dataset_len = m * self.adv_training_batch_size
+        images, targets = self.sparse_input_dataset_recoverer.recover_image_dataset()
+        fake_class_targets = targets + self.sparse_input_dataset_recoverer.num_classes
+        adversarial_train_loader = BatchedTensorViewDataLoader(self.adv_training_batch_size,
+                                                               images, targets, fake_class_targets)
