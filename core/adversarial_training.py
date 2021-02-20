@@ -24,5 +24,8 @@ class AdversarialTrainer:
         pass
 
 
-    def train_one_epoch_adversarial_and_regenerate_images(self):
+    def generate_m_image_batches_train_one_epoch_adversarial(self, m):
+        pass
+
+    def generte_m_image_batches_train_k_batches_adversarial(self, m, k):
         pass
