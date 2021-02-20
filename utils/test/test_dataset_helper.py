@@ -7,7 +7,7 @@ if __name__ == '__main__':
 from utils.dataset_helper import *
 
 class DatasetHelperTest(unittest.TestCase):
-    def test_dataset_helper(self):
+    def test_dataset_helper_mnist(self):
         self.assertRaises(AssertionError, DatasetHelper.get_dataset )
         dataset_helper = DatasetHelper.get_dataset('mnist')
         self.assertIsNotNone(dataset_helper)
@@ -17,6 +17,14 @@ class DatasetHelperTest(unittest.TestCase):
         self.assertEqual(zero, mnist_zero)
         self.assertEqual(one, mnist_one)
         self.assertRaises(AssertionError, DatasetHelper.get_dataset)
+
+    def test_dataset_helper_cifar(self):
+        dataset_helper = DatasetHelper.get_dataset('cifar')
+        self.assertIsNotNone(dataset_helper)
+        self.assertEqual(type(dataset_helper), CIFARDatasetHelper)
+        dataset_helper.get_transformed_zero_one()
+
+
 
 
 if __name__ == '__main__':
