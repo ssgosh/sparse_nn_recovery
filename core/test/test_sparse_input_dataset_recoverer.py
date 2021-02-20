@@ -13,9 +13,10 @@ class TestSparseInputDatasetRecoverer(TestCase):
 
         n = 20
         bs = 4
-        images, targets = dataset_recoverer.recover_image_dataset(
-            model, output_shape=(n, 1, 28, 28), num_classes=10, batch_size=bs, num_steps=10,
-            include_layer=include_layer, sparsity_mode=config.penalty_mode)
+        images, targets = dataset_recoverer.recover_image_dataset_internal(model, output_shape=(n, 1, 28, 28),
+                                                                           num_classes=10, batch_size=bs, num_steps=10,
+                                                                           include_layer=include_layer,
+                                                                           sparsity_mode=config.penalty_mode)
 
         assert images.shape == (n, 1, 28, 28)
         assert targets.shape[0] == n
