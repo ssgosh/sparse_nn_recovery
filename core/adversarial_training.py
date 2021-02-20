@@ -37,8 +37,9 @@ class AdversarialTrainer:
     # Say k is 100.
     # Then 100 batches of real data and 100 batches each of size 32 from above 320 images will be used for adversarial training
     def generate_m_image_batches_train_k_batches_adversarial(self, m, k):
+        # First, generate m image batches
         self.sparse_input_dataset_recoverer.dataset_len = m * self.adv_training_batch_size
         images, targets = self.sparse_input_dataset_recoverer.recover_image_dataset()
-        fake_class_targets = targets + self.sparse_input_dataset_recoverer.num_classes
+        fake_class_targets = targets + self.sparse_input_dataset_recoverer.num_real_classes
         adversarial_train_loader = BatchedTensorViewDataLoader(self.adv_training_batch_size,
                                                                images, targets, fake_class_targets)

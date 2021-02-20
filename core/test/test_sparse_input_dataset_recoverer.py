@@ -11,10 +11,10 @@ class TestSparseInputDatasetRecoverer(TestCase):
         sparse_input_recoverer.tensorboard_logging = False
         n = 20
         bs = 4
-        dataset_recoverer = SparseInputDatasetRecoverer(
-            sparse_input_recoverer, model, num_recovery_steps=10, batch_size = bs, sparsity_mode=config.penalty_mode,
-            num_classes=10, dataset_len=n, each_entry_shape=(1, 28, 28)
-        )
+        dataset_recoverer = SparseInputDatasetRecoverer(sparse_input_recoverer, model, num_recovery_steps=10,
+                                                        batch_size=bs, sparsity_mode=config.penalty_mode,
+                                                        num_real_classes=10, dataset_len=n,
+                                                        each_entry_shape=(1, 28, 28))
 
         images, targets = dataset_recoverer.recover_image_dataset()
 
@@ -23,8 +23,8 @@ class TestSparseInputDatasetRecoverer(TestCase):
         print(targets.detach().numpy())
 
         images, targets = dataset_recoverer.recover_image_dataset_internal(model, output_shape=(100, 1, 28, 28),
-                                                                           num_classes=5, batch_size=10, num_steps=10,
-                                                                           include_layer=include_layer,
+                                                                           num_real_classes=5, batch_size=10,
+                                                                           num_steps=10, include_layer=include_layer,
                                                                            sparsity_mode=config.penalty_mode)
         assert images.shape == (100, 1, 28, 28)
         assert targets.shape[0] == 100
