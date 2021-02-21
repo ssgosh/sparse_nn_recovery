@@ -29,6 +29,8 @@ class TrainLogger():
             )
             sys.stdout.write('\r')
             if self.dry_run:
+                sys.stdout.write('\n')
+                sys.stdout.flush()
                 raise ShouldBreak('Breaking because of dry run')
 
 
@@ -82,8 +84,8 @@ class AdversarialTrainer:
     # Create a batch from real and adversarial data and call train_one_batch
     def train_one_batch_adversarial(self, real_batch_inputs, real_batch_targets,
                                     adversarial_batch_inputs, adversarial_batch_targets):
-        batch_inputs = torch.stack([real_batch_inputs, adversarial_batch_inputs])
-        batch_targets = torch.stack([real_batch_targets, adversarial_batch_targets])
+        batch_inputs = torch.cat([real_batch_inputs, adversarial_batch_inputs])
+        batch_targets = torch.cat([real_batch_targets, adversarial_batch_targets])
         self.train_one_batch(batch_inputs, batch_targets)
 
     # One epoch of adversarial training

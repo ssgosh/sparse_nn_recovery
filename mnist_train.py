@@ -381,22 +381,31 @@ def main():
             dataset_len=dataset_len,
             each_entry_shape=dataset_helper.get_each_entry_shape(),
             device=device)
-        images, targets = dataset_recoverer.recover_image_dataset()
-        print("Recovered images, targets", images.shape, targets.shape, targets.detach().numpy())
-        sys.exit(0)
+        #images, targets = dataset_recoverer.recover_image_dataset()
+        #print("Recovered images, targets", images.shape, targets.shape, targets.detach().numpy())
+        #sys.exit(0)
+        # Now we can create an AdversarialTrainer!!!!!
+        adversarial_trainer = AdversarialTrainer(train_loader, dataset_recoverer, model, optimizer, config.batch_size,
+                                                 device, config.log_interval, config.dry_run)
+
 
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
     for epoch in range(1, args.epochs + 1):
-        # Perform pre-training for 1 epoch in adversarial mode
-        if args.train_mode == 'normal' or epoch == 0:
-            if args.train_mode == 'adversarial-continuous':
-                print('Performing pre-training for 1 epoch')
-            train(args, model, device, train_loader, optimizer, epoch)
-        elif args.train_mode == 'adversarial-continuous':
-            adversarial_train(args, config_dict, model, device, train_loader,
-                              adversarial_train_loader, optD, optG, epoch)
+        if args.train_mode not in ['adversarial-batches', 'adversarial-epoch']:
+            # Perform pre-training for 1 epoch in adversarial mode
+            if args.train_mode == 'normal' or epoch == 0:
+                if args.train_mode == 'adversarial-continuous':
+                    print('Performing pre-training for 1 epoch')
+                train(args, model, device, train_loader, optimizer, epoch)
+            elif args.train_mode == 'adversarial-continuous':
+                adversarial_train(args, config_dict, model, device, train_loader,
+                                  adversarial_train_loader, optD, optG, epoch)
+            else:
+                raise ValueError("invalid train_mode : " + args.train_mode)
         else:
-            raise ValueError("invalid train_mode : " + args.train_mode)
+            if args.train_mode == 'adversarial-batches':
+                adversarial_trainer.generate_m_images_train_k_batches_adversarial(
+                    m=config.num_adversarial_images_batch_mode, k=config.num_adversarial_train_batches)
         test(model, device, test_loader)
         scheduler.step()
 
