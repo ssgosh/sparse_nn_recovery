@@ -8,8 +8,8 @@ def inner_loop(mode, penalty_mode, num_steps, pgd, digits, lambdas, timestamp):
         for i, lambd in enumerate(lambdas):
             cmd = f'python3 mnist_sparse_recovery.py --mode {mode} ' \
                     f'--digit {digit} ' \
-                    f'--penalty-mode "{penalty_mode}" ' \
-                    f'--lambd {lambd} ' \
+                    f'--recovery-penalty-mode "{penalty_mode}" ' \
+                    f'--recovery-lambd {lambd} ' \
                     f'--run-suffix _lambda_{lambd} ' \
                     f'--run-dir {folder}/{digit}/{i:0>2d}' \
                     f' --recovery-num-steps {num_steps}' \
@@ -31,7 +31,7 @@ def mega_loop():
     penalty_mode = "input only"
     num_steps = 1000
     timestamp = time.strftime('%b%d_%H-%M-%S')
-    pgd = 'enable-pgd' # or 'enable-pgd'
+    pgd = 'recovery-enable-pgd' # or 'enable-pgd'
 
 
     for penalty_mode in ["input only", "all layers"]:

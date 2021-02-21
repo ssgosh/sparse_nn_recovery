@@ -32,7 +32,7 @@ class SparseInputRecoverer:
 
     @staticmethod
     def add_sparse_recovery_arguments(parser: argparse.ArgumentParser):
-        parser.add_argument('--recovery-num-steps', type=int, default=1000, required=False,
+        parser.add_argument('--recovery-num-steps', type=int, default=1000, required=False, metavar='N',
                             help='Number of steps of gradient descent for image generation')
         parser.add_argument('--recovery-lr', type=float, metavar='LR',
                             default=0.5, required=False,
@@ -40,7 +40,7 @@ class SparseInputRecoverer:
         parser.add_argument('--recovery-lambd', type=float, metavar='L',
                             default=0.1, required=False,
                             help='L1 penalty lambda on each layer')
-        parser.add_argument('--recovery-penalty-mode', type=str, default='input only', required=False,
+        parser.add_argument('--recovery-penalty-mode', type=str, default='input only', required=False, metavar='PM',
                             help='When mode is single-digit, which penalty mode should be used')
         parser.add_argument('--recovery-disable-pgd', dest='recovery_use_pgd', action='store_false',
                             default=True, required=False,
