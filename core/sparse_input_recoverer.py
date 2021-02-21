@@ -32,17 +32,17 @@ class SparseInputRecoverer:
 
     @staticmethod
     def add_sparse_recovery_arguments(parser: argparse.ArgumentParser):
-        parser.add_argument('--num-recovery-steps', type=int, default=1000, required=False,
+        parser.add_argument('--recovery-num-steps', type=int, default=1000, required=False,
                             help='Number of steps of gradient descent for image generation')
-        parser.add_argument('--lambd', type=float, metavar='L',
+        parser.add_argument('--recovery-lambd', type=float, metavar='L',
                             default=0.1, required=False,
                             help='L1 penalty lambda on each layer')
-        parser.add_argument('--penalty-mode', type=str, default='input only', required=False,
+        parser.add_argument('--recovery-penalty-mode', type=str, default='input only', required=False,
                             help='When mode is single-digit, which penalty mode should be used')
-        parser.add_argument('--disable-pgd', dest='use_pgd', action='store_false',
+        parser.add_argument('--recovery-disable-pgd', dest='use_pgd', action='store_false',
                             default=True, required=False,
                             help='Disable Projected Gradient Descent (clipping)')
-        parser.add_argument('--enable-pgd', dest='use_pgd', action='store_true',
+        parser.add_argument('--recovery-enable-pgd', dest='use_pgd', action='store_true',
                             default=True, required=False,
                             help='Enable Projected Gradient Descent (clipping)')
 
@@ -51,8 +51,8 @@ class SparseInputRecoverer:
     def setup_default_config(config):
         config.include_layer = SparseInputRecoverer.include_layer
         config.labels = SparseInputRecoverer.all_penalty_modes
-        config.include_likelihood = True
-        config.lambd_layers = 3 * [config.lambd]  # [0.1, 0.1, 0.1]
+        config.recovery_include_likelihood = True
+        config.recovery_lambd_layers = 3 * [config.recovery_lambd]  # [0.1, 0.1, 0.1]
 
     def __init__(self, config, tbh, verbose=False):
         """
@@ -70,7 +70,7 @@ class SparseInputRecoverer:
 
     # Clip the pixels to between (mnist_zero, mnist_one)
     def clip_if_needed(self, images):
-        if self.config.use_pgd:
+        if self.config.recovery_use_pgd:
             with torch.no_grad():
                 torch.clip(images, self.image_zero, self.image_one, out=images)
 
@@ -86,10 +86,10 @@ class SparseInputRecoverer:
         optimizer = optim.Adam([images], lr=0.5)
 
         # lambda for input
-        lambd = self.config.lambd
+        lambd = self.config.recovery_lambd
         # lambd = 0.01
         # lambda for each layer
-        lambd_layers = self.config.lambd_layers  # [0.1, 0.1, 0.1]
+        lambd_layers = self.config.recovery_lambd_layers  # [0.1, 0.1, 0.1]
         # lambd_layers = [0.01, 0.01, 0.01]
         # lambd2 = 1.
         start = num_steps * batch_idx + 1
@@ -153,7 +153,7 @@ class SparseInputRecoverer:
 
     # Single digit, single label
     def recover_and_plot_single_digit(self, initial_image, label, targets, include_layer, model):
-        self.recover_image_batch(model, initial_image, targets, self.config.num_recovery_steps, include_layer[label], label,
+        self.recover_image_batch(model, initial_image, targets, self.config.recovery_num_steps, include_layer[label], label,
                                  include_likelihood=True)
         plotter.plot_single_digit(initial_image.detach()[0][0], targets[0], label,
                                   filtered=False)

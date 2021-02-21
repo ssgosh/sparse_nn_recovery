@@ -12,7 +12,7 @@ def inner_loop(mode, penalty_mode, num_steps, pgd, digits, lambdas, timestamp):
                     f'--lambd {lambd} ' \
                     f'--run-suffix _lambda_{lambd} ' \
                     f'--run-dir {folder}/{digit}/{i:0>2d}' \
-                    f' --num-recovery-steps {num_steps}' \
+                    f' --recovery-num-steps {num_steps}' \
                     f' --{pgd}' \
 
             print(cmd)
