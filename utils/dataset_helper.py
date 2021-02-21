@@ -28,6 +28,11 @@ class DatasetHelper(ABC):
     def get_transformed_zero_one(self):
         pass
 
+    def setup_config(self, config):
+        zero, one = self.get_transformed_zero_one()
+        config.image_zero = zero
+        config.image_one = one
+
 
 class MNISTdatasetHelper(DatasetHelper):
     def __init__(self):

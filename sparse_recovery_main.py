@@ -10,6 +10,7 @@ import torch
 from utils import mnist_helper as mh
 from utils import plotter
 from utils import runs_helper as rh
+from utils.dataset_helper import DatasetHelper
 from utils.tensorboard_helper import TensorBoardHelper
 
 from core.sparse_input_recoverer import SparseInputRecoverer
@@ -66,9 +67,10 @@ def add_main_script_arguments():
 
 def setup_config(config):
     # This will change when we support multiple datasets
-    mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
-    config.image_zero = mnist_zero
-    config.image_one = mnist_one
+    #mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
+    #config.image_zero = mnist_zero
+    #config.image_one = mnist_one
+    DatasetHelper.get_dataset('mnist').setup_config(config)
     SparseInputRecoverer.setup_default_config(config)
     # initial_image = torch.normal(mnist_zero, 0.01, (1, 1, 28, 28))
     if config.dump_config:
