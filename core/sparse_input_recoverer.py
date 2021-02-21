@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import argparse
 import math
 
 import torch
@@ -30,7 +31,7 @@ class SparseInputRecoverer:
     all_penalty_modes = list(include_layer.keys())
 
     @staticmethod
-    def add_sparse_recovery_arguments(parser):
+    def add_sparse_recovery_arguments(parser: argparse.ArgumentParser):
         parser.add_argument('--num-recovery-steps', type=int, default=1000, required=False,
                             help='Number of steps of gradient descent for image generation')
         parser.add_argument('--lambd', type=float, metavar='L',
