@@ -246,6 +246,7 @@ def main():
     args = parser.parse_args()
 
     config = args
+    SparseInputRecoverer.setup_default_config(config)
     # dataset name is 'MNIST'
     config.dataset_name = 'mnist'
     dataset_helper: DatasetHelper = DatasetHelper.get_dataset(config.dataset_name)

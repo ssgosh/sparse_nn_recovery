@@ -49,6 +49,12 @@ class MNISTdatasetHelper(DatasetHelper):
     def get_transformed_zero_one(self):
         return mnist_helper.compute_mnist_transform_low_high()
 
+    def get_num_classes(self):
+        return 10
+
+    def get_each_entry_shape(self):
+        return (1, 28, 28)
+
 
 class CIFARDatasetHelper(DatasetHelper):
     def __init__(self):

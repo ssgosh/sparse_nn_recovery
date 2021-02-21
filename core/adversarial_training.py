@@ -41,9 +41,9 @@ class AdversarialTrainer:
         parser.add_argument('--num-adversarial-train-batches', type=int, default=100,
                             metavar='k', help='Number of batches to train for before regenerating images if in '
                                               '"adversarial-batches" mode')
-        parser.add_argument('--num-adversarial-images-batch-mode', type=int, default=20,
+        parser.add_argument('--num-adversarial-images-batch-mode', type=int, default=1024,
                             metavar='m', help='Number of batches of images to generate in "adversarial-batches" mode')
-        parser.add_argument('--num-adversarial-images-epoch-mode', type=int, default=300,
+        parser.add_argument('--num-adversarial-images-epoch-mode', type=int, default=10240,
                             metavar='m', help='Number of batches of images to generate in "adversarial-epoch" mode')
 
     def __init__(self, real_data_train_loader, sparse_input_dataset_recoverer: SparseInputDatasetRecoverer,
