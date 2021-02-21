@@ -17,7 +17,7 @@ class SparseInputRecoverer:
 
     # Dictionary of string penalty modes to array of boolean values,
     # indicating whether penalty is on/off for the corresponding layer in that mode
-    include_layer = {
+    include_layer_map = {
         "no penalty": [False, False, False, False],
         "input only": [True, False, False, False],
         "all layers": [True, True, True, True],
@@ -28,7 +28,7 @@ class SparseInputRecoverer:
     }
 
     # All available penalty modes
-    all_penalty_modes = list(include_layer.keys())
+    all_penalty_modes = list(include_layer_map.keys())
 
     @staticmethod
     def add_sparse_recovery_arguments(parser: argparse.ArgumentParser):
@@ -52,7 +52,7 @@ class SparseInputRecoverer:
 
     @staticmethod
     def setup_default_config(config):
-        config.include_layer = SparseInputRecoverer.include_layer
+        config.include_layer = SparseInputRecoverer.include_layer_map
         config.labels = SparseInputRecoverer.all_penalty_modes
         config.recovery_include_likelihood = True
         config.recovery_lambd_layers = 3 * [config.recovery_lambd]  # [0.1, 0.1, 0.1]

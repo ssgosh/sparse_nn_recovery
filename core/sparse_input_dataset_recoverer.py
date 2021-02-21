@@ -13,7 +13,7 @@ class SparseInputDatasetRecoverer:
                  sparsity_mode, num_real_classes, dataset_len, each_entry_shape, device):
         self.sparse_input_recoverer = sparse_input_recoverer
         self.model = model
-        self.include_layer_map = SparseInputRecoverer.include_layer
+        self.include_layer_map = SparseInputRecoverer.include_layer_map
         self.sparsity_mode = sparsity_mode
         self.num_recovery_steps = num_recovery_steps
         self.batch_size = batch_size
