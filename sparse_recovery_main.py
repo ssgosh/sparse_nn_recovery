@@ -49,7 +49,7 @@ def add_main_script_arguments():
     parser.add_argument('--run-dir', type=str, default=None, required=False,
                         help='Directory inside which outputs and tensorboard logs will be saved')
     parser.add_argument('--run-suffix', type=str, default='', required=False,
-                        help='Directory inside which outputs and tensorboard logs will be saved')
+                        help='Will be appended to the run directory provided')
     parser.add_argument('--discriminator-model-class', type=str, metavar='DMC',
                         default='ExampleCNNNet', required=False,
                         help='Discriminator model class')
@@ -67,9 +67,6 @@ def add_main_script_arguments():
 
 def setup_config(config):
     # This will change when we support multiple datasets
-    #mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
-    #config.image_zero = mnist_zero
-    #config.image_one = mnist_one
     DatasetHelper.get_dataset('mnist').setup_config(config)
     SparseInputRecoverer.setup_default_config(config)
     # initial_image = torch.normal(mnist_zero, 0.01, (1, 1, 28, 28))

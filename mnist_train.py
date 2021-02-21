@@ -16,13 +16,18 @@ from core.sparse_input_recoverer import SparseInputRecoverer
 from models.mnist_model import ExampleCNNNet
 from models.mnist_mlp import MLPNet, MLPNet3Layer
 from models.mnist_max_norm_mlp import MaxNormMLP
+from utils.dataset_helper import DatasetHelper
 from utils.infinite_dataloader import InfiniteDataLoader
 from utils.batched_tensor_view_data_loader import BatchedTensorViewDataLoader
 import utils.mnist_helper as mh
+from utils import runs_helper as rh
 
 
 # Penalized L1 Loss for training adversarial images
-def compute_generator_loss(config, adv_data, adv_output, adv_targetG, model_all_l1): 
+from utils.tensorboard_helper import TensorBoardHelper
+
+
+def compute_generator_loss(config, adv_data, adv_output, adv_targetG, model_all_l1):
     lambd = config['lambd']
     lambd_layers = config['lambd_layers']
     include_likelihood = config['generator_include_likelihood']
@@ -204,9 +209,11 @@ def main():
                         help='how many batches to wait before logging training status')
     parser.add_argument('--save-model', action='store_true', default=False,
                         help='For Saving the current Model')
-    parser.add_argument('--run-dir', type=str, default='.',
+    parser.add_argument('--run-dir', type=str, default=None,
             metavar='DIR',
             help='Directory under which model and outputs are saved')
+    parser.add_argument('--run-suffix', type=str, default='', required=False,
+                        help='Will be appended to the run directory provided')
 
     # Arguments specific to adversarial training
     parser.add_argument('--generator-lr', type=float, default=0.05,
@@ -232,6 +239,17 @@ def main():
     # Add arguments from SparseInputRecoverer
     SparseInputRecoverer.add_sparse_recovery_arguments(parser)
     args = parser.parse_args()
+
+    config = args
+    # dataset name is 'MNIST'
+    config.dataset_name = 'mnist'
+    dataset_helper = DatasetHelper.get_dataset(config.dataset_name)
+    dataset_helper.setup_config(config)
+
+    # Setup runs directory, tensorboard helper and sparse input recoverer
+    rh.setup_run_dir(config, 'train_runs')
+    tbh = TensorBoardHelper(config.run_dir)
+    sparse_input_recoverer = SparseInputRecoverer(config, tbh, verbose=True)
 
     # Set config_dict from args
     config_dict = vars(args)
