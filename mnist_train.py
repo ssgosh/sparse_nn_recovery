@@ -248,7 +248,7 @@ def main():
     config = args
     # dataset name is 'MNIST'
     config.dataset_name = 'mnist'
-    dataset_helper = DatasetHelper.get_dataset(config.dataset_name)
+    dataset_helper: DatasetHelper = DatasetHelper.get_dataset(config.dataset_name)
     dataset_helper.setup_config(config)
 
     # Setup runs directory, tensorboard helper and sparse input recoverer
@@ -378,8 +378,11 @@ def main():
             sparsity_mode=config.recovery_penalty_mode,
             num_real_classes=dataset_helper.get_num_classes(),
             dataset_len=dataset_len,
-            each_entry_shape=(1, 28, 28),
+            each_entry_shape=dataset_helper.get_each_entry_shape(),
             device=device)
+        images, targets = dataset_recoverer.recover_image_dataset()
+        print("Recovered images, targets", images.shape, targets.shape, targets.detach().numpy())
+        sys.exit(0)
 
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
     for epoch in range(1, args.epochs + 1):

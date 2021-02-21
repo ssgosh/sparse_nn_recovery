@@ -33,6 +33,14 @@ class DatasetHelper(ABC):
         config.image_zero = zero
         config.image_one = one
 
+    @abstractmethod
+    def get_num_classes(self):
+        pass
+
+    @abstractmethod
+    def get_each_entry_shape(self):
+        pass
+
 
 class MNISTdatasetHelper(DatasetHelper):
     def __init__(self):
