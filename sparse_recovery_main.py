@@ -79,7 +79,7 @@ def setup_config(config):
 
 def setup_everything(argv):
     parser = add_main_script_arguments()
-    SparseInputRecoverer.add_sparse_recovery_arguments(parser)
+    SparseInputRecoverer.add_command_line_arguments(parser)
     config = parser.parse_args(argv)
     config, include_layer, labels = setup_config(config)
 

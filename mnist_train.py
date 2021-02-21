@@ -178,7 +178,8 @@ def main():
         }
     generator_modes = list(include_layer.keys())
     # Training settings
-    parser = argparse.ArgumentParser(description='Modified PyTorch MNIST Example')
+    parser = argparse.ArgumentParser(description='Modified PyTorch MNIST Example',
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     # Training mode
     #
@@ -192,21 +193,21 @@ def main():
                         choices=available_train_modes,
                         help='Training mode. One of: ' + ', '.join(available_train_modes))
     parser.add_argument('--batch-size', type=int, default=32, metavar='N',
-                        help='input batch size for training (default: 32)')
+                        help='input batch size for training')
     parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
-                        help='input batch size for testing (default: 1000)')
+                        help='input batch size for testing ')
     parser.add_argument('--epochs', type=int, default=14, metavar='N',
-                        help='number of epochs to train (default: 14)')
+                        help='number of epochs to train')
     parser.add_argument('--lr', type=float, default=1.0, metavar='LR',
-                        help='learning rate (default: 1.0)')
+                        help='learning rate')
     parser.add_argument('--gamma', type=float, default=0.7, metavar='M',
-                        help='Learning rate step gamma (default: 0.7)')
+                        help='Learning rate step gamma')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
     parser.add_argument('--dry-run', action='store_true', default=False,
                         help='quickly check a single pass')
     parser.add_argument('--seed', type=int, default=1, metavar='S',
-                        help='random seed (default: 1)')
+                        help='random seed')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                         help='how many batches to wait before logging training status')
     parser.add_argument('--save-model', action='store_true', default=False,
@@ -214,13 +215,13 @@ def main():
     parser.add_argument('--run-dir', type=str, default=None,
             metavar='DIR',
             help='Directory under which model and outputs are saved')
-    parser.add_argument('--run-suffix', type=str, default='', required=False,
+    parser.add_argument('--run-suffix', type=str, default='', required=False, metavar='S',
                         help='Will be appended to the run directory provided')
 
     # Arguments specific to adversarial training
     parser.add_argument('--generator-lr', type=float, default=0.05,
                         metavar='GLR',
-                        help='learning rate for image generation (default: 0.05)')
+                        help='learning rate for image generation')
 
     parser.add_argument('--generator-mode', type=str, default='input only',
             metavar='GM',
@@ -238,9 +239,9 @@ def main():
     #include_likelihood = config_dict['generator_include_likelihood']
     #include_layer = config_dict['generator_include_layer']
 
-    AdversarialTrainer.add_adversarial_training_arguments(parser)
-    SparseInputDatasetRecoverer.add_adversarial_training_arguments(parser)
-    SparseInputRecoverer.add_sparse_recovery_arguments(parser)
+    AdversarialTrainer.add_command_line_arguments(parser)
+    SparseInputDatasetRecoverer.add_command_line_arguments(parser)
+    SparseInputRecoverer.add_command_line_arguments(parser)
 
     args = parser.parse_args()
 

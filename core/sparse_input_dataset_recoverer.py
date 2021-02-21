@@ -12,7 +12,7 @@ from core.sparse_input_recoverer import SparseInputRecoverer
 class SparseInputDatasetRecoverer:
 
     @staticmethod
-    def add_sparse_recovery_arguments(parser: argparse.ArgumentParser):
+    def add_command_line_arguments(parser: argparse.ArgumentParser):
         parser.add_argument('--recovery-batch-size', type=int, default=128, required=False, metavar='N',
                             help='Batch size for image generation')
 

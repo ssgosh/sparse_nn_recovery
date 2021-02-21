@@ -31,7 +31,7 @@ class SparseInputRecoverer:
     all_penalty_modes = list(include_layer_map.keys())
 
     @staticmethod
-    def add_sparse_recovery_arguments(parser: argparse.ArgumentParser):
+    def add_command_line_arguments(parser: argparse.ArgumentParser):
         parser.add_argument('--recovery-num-steps', type=int, default=1000, required=False, metavar='N',
                             help='Number of steps of gradient descent for image generation')
         parser.add_argument('--recovery-lr', type=float, metavar='LR',
