@@ -406,6 +406,8 @@ def main():
             if args.train_mode == 'adversarial-batches':
                 adversarial_trainer.generate_m_images_train_k_batches_adversarial(
                     m=config.num_adversarial_images_batch_mode, k=config.num_adversarial_train_batches)
+            elif args.train_mode == 'adversarial-epoch':
+                adversarial_trainer.generate_m_images_train_one_epoch_adversarial(m=config.num_adversarial_images_epoch_mode)
         test(model, device, test_loader)
         scheduler.step()
 
