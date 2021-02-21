@@ -1,7 +1,7 @@
 import argparse
 import pytest
-print("module name: ", __name__)
-pytest.register_assert_rewrite(__name__)
+#print("module name: ", __name__)
+#pytest.register_assert_rewrite(__name__)
 #from unittest import TestCase
 
 import torch
@@ -35,11 +35,9 @@ class SparseInputDatasetRecoverer:
 
     def recover_image_dataset_internal(self, model, output_shape, num_real_classes, batch_size, num_steps,
                               include_layer, sparsity_mode, device):
-        #tc = TestCase()
         assert output_shape[0] % batch_size == 0,\
             f"Number of images to generate not divisible by image recovery " \
             f"batch size: output_shape[0] = {output_shape[0]}, batch_size = {batch_size} "
-        #tc.assertEqual(output_shape[0] % batch_size, 0)
         images = []
         targets = []
         batch_shape = list(output_shape)
