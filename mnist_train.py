@@ -407,6 +407,10 @@ def main():
                 adversarial_trainer.generate_m_images_train_k_batches_adversarial(
                     m=config.num_adversarial_images_batch_mode, k=config.num_adversarial_train_batches)
             elif args.train_mode == 'adversarial-epoch':
+                if epoch == 1:
+                    print('Pre-training for 1 epoch')
+                    adversarial_trainer.train_one_epoch_real()
+                    #train(args, model, device, train_loader, optimizer, epoch)
                 adversarial_trainer.generate_m_images_train_one_epoch_adversarial(m=config.num_adversarial_images_epoch_mode)
         test(model, device, test_loader)
         scheduler.step()
