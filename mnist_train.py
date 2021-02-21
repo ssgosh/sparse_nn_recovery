@@ -12,6 +12,8 @@ from PIL import Image
 import numpy as np
 import pathlib
 
+from core.adversarial_training import AdversarialTrainer
+from core.sparse_input_dataset_recoverer import SparseInputDatasetRecoverer
 from core.sparse_input_recoverer import SparseInputRecoverer
 from models.mnist_model import ExampleCNNNet
 from models.mnist_mlp import MLPNet, MLPNet3Layer
@@ -189,8 +191,8 @@ def main():
                         metavar='MODE',
                         choices=available_train_modes,
                         help='Training mode. One of: ' + ', '.join(available_train_modes))
-    parser.add_argument('--batch-size', type=int, default=64, metavar='N',
-                        help='input batch size for training (default: 64)')
+    parser.add_argument('--batch-size', type=int, default=32, metavar='N',
+                        help='input batch size for training (default: 32)')
     parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
                         help='input batch size for testing (default: 1000)')
     parser.add_argument('--epochs', type=int, default=14, metavar='N',
@@ -236,8 +238,10 @@ def main():
     #include_likelihood = config_dict['generator_include_likelihood']
     #include_layer = config_dict['generator_include_layer']
 
-    # Add arguments from SparseInputRecoverer
+    AdversarialTrainer.add_adversarial_training_arguments(parser)
+    SparseInputDatasetRecoverer.add_adversarial_training_arguments(parser)
     SparseInputRecoverer.add_sparse_recovery_arguments(parser)
+
     args = parser.parse_args()
 
     config = args
@@ -358,6 +362,19 @@ def main():
     if args.train_mode == 'adversarial-continuous':
         optD = optimizer
         optG = optim.Adam([images], lr=args.generator_lr)
+
+    # Setup sparse dataset recovery here, after model etc are all set up
+    if args.train_mode in [ 'adversarial-epoch', 'adversarial-batches' ]:
+        dataset_recoverer = SparseInputDatasetRecoverer(
+            sparse_input_recoverer,
+            model,
+            num_recovery_steps=config.recovery_num_steps,
+            batch_size=config.recovery_batch_size,
+            sparsity_mode=config.recovery_penalty_mode,
+            num_real_classes=dataset_helper.get_num_classes(),
+            dataset_len=n,
+            each_entry_shape=(1, 28, 28),
+            device=device)
 
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
     for epoch in range(1, args.epochs + 1):
