@@ -330,7 +330,7 @@ def main():
     train_loader = torch.utils.data.DataLoader(dataset1,**train_kwargs)
     test_loader = torch.utils.data.DataLoader(dataset2, **test_kwargs)
 
-    if args.train_mode == 'adversarial':
+    if args.train_mode == 'adversarial-continuous':
         # 1000 images of size 28x28, 1 channel
         mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
         # initialize images with a Gaussian ball close to mnist 0
@@ -355,7 +355,7 @@ def main():
     #model = MLPNet3Layer(num_classes=20).to(device)
     #model = MaxNormMLP(num_classes=20).to(device)
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
-    if args.train_mode == 'adversarial':
+    if args.train_mode == 'adversarial-continuous':
         optD = optimizer
         optG = optim.Adam([images], lr=args.generator_lr)
 
@@ -363,10 +363,10 @@ def main():
     for epoch in range(1, args.epochs + 1):
         # Perform pre-training for 1 epoch in adversarial mode
         if args.train_mode == 'normal' or epoch == 0:
-            if args.train_mode == 'adversarial':
+            if args.train_mode == 'adversarial-continuous':
                 print('Performing pre-training for 1 epoch')
             train(args, model, device, train_loader, optimizer, epoch)
-        elif args.train_mode == 'adversarial':
+        elif args.train_mode == 'adversarial-continuous':
             adversarial_train(args, config_dict, model, device, train_loader,
                               adversarial_train_loader, optD, optG, epoch)
         else:
