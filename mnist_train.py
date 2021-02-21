@@ -12,6 +12,7 @@ from PIL import Image
 import numpy as np
 import pathlib
 
+from core.sparse_input_recoverer import SparseInputRecoverer
 from models.mnist_model import ExampleCNNNet
 from models.mnist_mlp import MLPNet, MLPNet3Layer
 from models.mnist_max_norm_mlp import MaxNormMLP
@@ -177,10 +178,12 @@ def main():
     # 'adversarial' does adversarial training, with a single loop for
     # adversarial examples
     #
-    # 'normal' just does supervised training 
+    # 'normal' just does supervised training
+    available_train_modes = ['normal', 'adversarial-continuous', 'adversarial-epoch', 'adversarial-batches']
     parser.add_argument('--train-mode', type=str, default='normal',
-            metavar='MODE',
-            help='Training mode: adversarial or normal')
+                        metavar='MODE',
+                        choices=available_train_modes,
+                        help='Training mode. One of: ' + ', '.join(available_train_modes))
     parser.add_argument('--batch-size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
     parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
@@ -223,17 +226,19 @@ def main():
     #                    dest='generator_include_likelihood',
     #                    action='store_true', default=True,
     #                    help='include likelihood loss')
-    #include_likelihood = config['generator_include_likelihood']
-    #include_layer = config['generator_include_layer']
+    #include_likelihood = config_dict['generator_include_likelihood']
+    #include_layer = config_dict['generator_include_layer']
 
+    # Add arguments from SparseInputRecoverer
+    SparseInputRecoverer.add_sparse_recovery_arguments(parser)
     args = parser.parse_args()
 
-    # Set config from args
-    config = vars(args)
-    config['lambd'] = 0.1
-    config['lambd_layers'] = [ 0.1, 0.1, 0.1]
-    config['generator_include_likelihood'] = True
-    config['generator_include_layer'] = include_layer[args.generator_mode]
+    # Set config_dict from args
+    config_dict = vars(args)
+    config_dict['lambd'] = 0.1
+    config_dict['lambd_layers'] = [0.1, 0.1, 0.1]
+    config_dict['generator_include_likelihood'] = True
+    config_dict['generator_include_layer'] = include_layer[args.generator_mode]
 
     use_cuda = not args.no_cuda and torch.cuda.is_available()
 
@@ -344,8 +349,8 @@ def main():
                 print('Performing pre-training for 1 epoch')
             train(args, model, device, train_loader, optimizer, epoch)
         elif args.train_mode == 'adversarial':
-            adversarial_train(args, config, model, device, train_loader,
-                    adversarial_train_loader, optD, optG, epoch)
+            adversarial_train(args, config_dict, model, device, train_loader,
+                              adversarial_train_loader, optD, optG, epoch)
         else:
             raise ValueError("invalid train_mode : " + args.train_mode)
         test(model, device, test_loader)
