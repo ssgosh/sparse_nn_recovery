@@ -113,8 +113,8 @@ def main():
         config.targets = targets
         images_list, post_processed_images_list = sparse_input_recoverer.recover_and_plot_images_varying_penalty(
             initial_image,
-            include_likelihood=config.include_likelihood,
-            num_steps=config.num_recovery_steps,
+            include_likelihood=config.recovery_include_likelihood,
+            num_steps=config.recovery_num_steps,
             labels=config.labels,
             model=model,
             include_layer=include_layer,
@@ -128,7 +128,7 @@ def main():
         targets = torch.tensor([config.digit])
         config.num_targets = n
         config.targets = targets
-        label = config.penalty_mode
+        label = config.recovery_penalty_mode
         recovered_image = sparse_input_recoverer.recover_and_plot_single_digit(
             initial_image, label, targets, include_layer=include_layer, model=model)
         torch.save(recovered_image, f"{config.run_dir}/ckpt/recovered_image.pt")

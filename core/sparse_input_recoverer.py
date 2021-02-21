@@ -34,15 +34,18 @@ class SparseInputRecoverer:
     def add_sparse_recovery_arguments(parser: argparse.ArgumentParser):
         parser.add_argument('--recovery-num-steps', type=int, default=1000, required=False,
                             help='Number of steps of gradient descent for image generation')
+        parser.add_argument('--recovery-lr', type=float, metavar='LR',
+                            default=0.5, required=False,
+                            help='Learning rate for sparse recovery')
         parser.add_argument('--recovery-lambd', type=float, metavar='L',
                             default=0.1, required=False,
                             help='L1 penalty lambda on each layer')
         parser.add_argument('--recovery-penalty-mode', type=str, default='input only', required=False,
                             help='When mode is single-digit, which penalty mode should be used')
-        parser.add_argument('--recovery-disable-pgd', dest='use_pgd', action='store_false',
+        parser.add_argument('--recovery-disable-pgd', dest='recovery_use_pgd', action='store_false',
                             default=True, required=False,
                             help='Disable Projected Gradient Descent (clipping)')
-        parser.add_argument('--recovery-enable-pgd', dest='use_pgd', action='store_true',
+        parser.add_argument('--recovery-enable-pgd', dest='recovery_use_pgd', action='store_true',
                             default=True, required=False,
                             help='Enable Projected Gradient Descent (clipping)')
 
@@ -83,7 +86,7 @@ class SparseInputRecoverer:
 
     def recover_image_batch_internal(self, model, images, targets, num_steps, include_layer, penalty_mode,
                             include_likelihood, batch_idx):
-        optimizer = optim.Adam([images], lr=0.5)
+        optimizer = optim.Adam([images], lr=self.config.recovery_lr)
 
         # lambda for input
         lambd = self.config.recovery_lambd
