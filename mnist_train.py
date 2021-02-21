@@ -365,6 +365,10 @@ def main():
 
     # Setup sparse dataset recovery here, after model etc are all set up
     if args.train_mode in [ 'adversarial-epoch', 'adversarial-batches' ]:
+        if args.train_mode == 'adversarial-epoch':
+            dataset_len = config.num_adversarial_images_epoch_mode
+        elif args.train_mode == 'adversarial-batches':
+            dataset_len = config.num_adversarial_images_batch_mode
         dataset_recoverer = SparseInputDatasetRecoverer(
             sparse_input_recoverer,
             model,
@@ -372,7 +376,7 @@ def main():
             batch_size=config.recovery_batch_size,
             sparsity_mode=config.recovery_penalty_mode,
             num_real_classes=dataset_helper.get_num_classes(),
-            dataset_len=n,
+            dataset_len=dataset_len,
             each_entry_shape=(1, 28, 28),
             device=device)
 

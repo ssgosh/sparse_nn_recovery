@@ -90,13 +90,10 @@ class AdversarialTrainer:
     # def train_one_epoch_adversarial(self):
     #    pass
 
-    # Generates m image batches and returns a train loader from it
-    # Say adversarial image batch size is 32
-    # and m is 10
-    # Then 320 images will be generated
+    # Generates m images and returns a train loader from it
     # Returned train loader is infinite and does not pass on gradients to the images
-    def generate_m_image_batches(self, m):
-        self.sparse_input_dataset_recoverer.dataset_len = m * self.adv_training_batch_size
+    def generate_m_images(self, m):
+        self.sparse_input_dataset_recoverer.dataset_len = m #* self.adv_training_batch_size
         images, targets = self.sparse_input_dataset_recoverer.recover_image_dataset()
 
         # Fake labels are real_label + num_classes. E.g. Fake digit 0 has class 10, fake digit 1 has class 11 and so on
@@ -112,8 +109,8 @@ class AdversarialTrainer:
                                                       **{'batch_size': self.adv_training_batch_size, 'shuffle': True})
         return adversarial_train_loader
 
-    def generate_m_image_batches_train_one_epoch_adversarial(self, m):
-        adversarial_train_loader = self.generate_m_image_batches(m)
+    def generate_m_images_train_one_epoch_adversarial(self, m):
+        adversarial_train_loader = self.generate_m_images(m)
         # Now train
         self.model.train()
         # Note that we're using the loader here directly and not the cached iterator.
@@ -131,8 +128,8 @@ class AdversarialTrainer:
     # Say k is 100.
     # Then 100 batches of real data and 100 batches each of size 32 from above 320 images
     # will be used for adversarial training
-    def generate_m_image_batches_train_k_batches_adversarial(self, m, k):
-        adversarial_train_loader = self.generate_m_image_batches(m)
+    def generate_m_images_train_k_batches_adversarial(self, m, k):
+        adversarial_train_loader = self.generate_m_images(m)
 
         # Need to set this before training
         self.model.train()
