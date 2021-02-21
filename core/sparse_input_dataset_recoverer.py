@@ -1,3 +1,5 @@
+import argparse
+
 import torch
 
 from core.sparse_input_recoverer import SparseInputRecoverer
@@ -8,6 +10,11 @@ from core.sparse_input_recoverer import SparseInputRecoverer
 # Use this later in adversarial training, please add num_real_classes to targets to create fake
 # class targets
 class SparseInputDatasetRecoverer:
+
+    @staticmethod
+    def add_sparse_recovery_arguments(parser: argparse.ArgumentParser):
+        parser.add_argument('--recovery-batch-size', type=int, default=128, required=False, metavar='N',
+                            help='Batch size for image generation')
 
     def __init__(self, sparse_input_recoverer : SparseInputRecoverer, model, num_recovery_steps, batch_size,
                  sparsity_mode, num_real_classes, dataset_len, each_entry_shape, device):

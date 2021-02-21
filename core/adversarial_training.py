@@ -1,3 +1,5 @@
+import argparse
+
 import torch
 import torch.nn.functional as F
 
@@ -32,6 +34,18 @@ class TrainLogger():
 
 
 class AdversarialTrainer:
+    @staticmethod
+    def add_adversarial_training_arguments(parser : argparse.ArgumentParser):
+        # Add arguments specific to adversarial-epoch and adversarial-batches mode
+        # Adversarial batch size is same as the train batch size
+        parser.add_argument('--num-adversarial-train-batches', type=int, default=100,
+                            metavar='k', help='Number of batches to train for before regenerating images if in '
+                                              '"adversarial-batches" mode')
+        parser.add_argument('--num-adversarial-image-gen-batches-batch-mode', type=int, default=20,
+                            metavar='m', help='Number of batches of images to generate in "adversarial-batches" mode')
+        parser.add_argument('--num-adversarial-image-gen-batches-epoch-mode', type=int, default=300,
+                            metavar='m', help='Number of batches of images to generate in "adversarial-epoch" mode')
+
     def __init__(self, real_data_train_loader, sparse_input_dataset_recoverer: SparseInputDatasetRecoverer,
                  model, opt_model, adv_training_batch_size, device, log_interval, dry_run):
         self.adv_training_batch_size = adv_training_batch_size  # Same batch size is used for both real and adversarial training

@@ -18,7 +18,7 @@ class TestSparseInputDatasetRecoverer(TestCase):
         n = 20
         bs = 4
         dataset_recoverer = SparseInputDatasetRecoverer(sparse_input_recoverer, model, num_recovery_steps=10,
-                                                        batch_size=bs, sparsity_mode=config.penalty_mode,
+                                                        batch_size=bs, sparsity_mode=config.recovery_penalty_mode,
                                                         num_real_classes=10, dataset_len=n,
                                                         each_entry_shape=(1, 28, 28), device='cpu')
 
@@ -31,7 +31,7 @@ class TestSparseInputDatasetRecoverer(TestCase):
         images, targets = dataset_recoverer.recover_image_dataset_internal(model, output_shape=(100, 1, 28, 28),
                                                                            num_real_classes=5, batch_size=10,
                                                                            num_steps=10, include_layer=include_layer,
-                                                                           sparsity_mode=config.penalty_mode,
+                                                                           sparsity_mode=config.recovery_penalty_mode,
                                                                            device='cpu')
         assert images.shape == (100, 1, 28, 28)
         assert targets.shape[0] == 100
