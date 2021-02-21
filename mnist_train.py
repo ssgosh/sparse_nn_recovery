@@ -216,8 +216,12 @@ def main():
                         help='random seed')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                         help='how many batches to wait before logging training status')
-    parser.add_argument('--save-model', action='store_true', default=False,
+    parser.add_argument('--save-model', action='store_true', default=True,
+                        dest='save_model',
                         help='For Saving the current Model')
+    parser.add_argument('--no-save-model', action='store_false', default=True,
+                        dest='save_model',
+                        help='Do not save the current Model')
     parser.add_argument('--run-dir', type=str, default=None,
             metavar='DIR',
             help='Directory under which model and outputs are saved')
