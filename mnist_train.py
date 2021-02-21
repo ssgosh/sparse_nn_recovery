@@ -192,6 +192,12 @@ def main():
                         metavar='MODE',
                         choices=available_train_modes,
                         help='Training mode. One of: ' + ', '.join(available_train_modes))
+    parser.add_argument('--pretrain', action='store_true', default=True,
+                        dest='pretrain',
+                        help='Pretrain before adversarial training')
+    parser.add_argument('--no-pretrain', action='store_false', default=True,
+                        dest='pretrain',
+                        help='Do not pretrain')
     parser.add_argument('--batch-size', type=int, default=32, metavar='N',
                         help='input batch size for training')
     parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
@@ -407,7 +413,7 @@ def main():
                 adversarial_trainer.generate_m_images_train_k_batches_adversarial(
                     m=config.num_adversarial_images_batch_mode, k=config.num_adversarial_train_batches)
             elif args.train_mode == 'adversarial-epoch':
-                if epoch == 1:
+                if args.pretrain and epoch == 1:
                     print('Pre-training for 1 epoch')
                     adversarial_trainer.train_one_epoch_real()
                     #train(args, model, device, train_loader, optimizer, epoch)

@@ -75,7 +75,8 @@ class SparseInputRecoverer:
     def clip_if_needed(self, images):
         if self.config.recovery_use_pgd:
             with torch.no_grad():
-                torch.clip(images, self.image_zero, self.image_one, out=images)
+                #torch.clip(images, self.image_zero, self.image_one, out=images)
+                torch.clamp(images, self.image_zero, self.image_one, out=images)
 
     # include_layer: boolean vector of whether to include a layer's l1 penalty
     def recover_image_batch(self, model, images, targets, num_steps, include_layer, penalty_mode,
