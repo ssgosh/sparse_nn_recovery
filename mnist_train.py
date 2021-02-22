@@ -12,16 +12,25 @@ from PIL import Image
 import numpy as np
 import pathlib
 
+from core.adversarial_training import AdversarialTrainer
+from core.sparse_input_dataset_recoverer import SparseInputDatasetRecoverer
+from core.sparse_input_recoverer import SparseInputRecoverer
 from models.mnist_model import ExampleCNNNet
 from models.mnist_mlp import MLPNet, MLPNet3Layer
 from models.mnist_max_norm_mlp import MaxNormMLP
+from utils.dataset_helper import DatasetHelper
 from utils.infinite_dataloader import InfiniteDataLoader
 from utils.batched_tensor_view_data_loader import BatchedTensorViewDataLoader
 import utils.mnist_helper as mh
+from utils import runs_helper as rh
+from utils.ckpt_saver import CkptSaver
 
 
 # Penalized L1 Loss for training adversarial images
-def compute_generator_loss(config, adv_data, adv_output, adv_targetG, model_all_l1): 
+from utils.tensorboard_helper import TensorBoardHelper
+
+
+def compute_generator_loss(config, adv_data, adv_output, adv_targetG, model_all_l1):
     lambd = config['lambd']
     lambd_layers = config['lambd_layers']
     include_likelihood = config['generator_include_likelihood']
@@ -153,7 +162,7 @@ def test(model, device, test_loader):
 
     test_loss /= len(test_loader.dataset)
 
-    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
+    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
 
@@ -170,45 +179,65 @@ def main():
         }
     generator_modes = list(include_layer.keys())
     # Training settings
-    parser = argparse.ArgumentParser(description='Modified PyTorch MNIST Example')
+    parser = argparse.ArgumentParser(description='Modified PyTorch MNIST Example',
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     # Training mode
     #
     # 'adversarial' does adversarial training, with a single loop for
     # adversarial examples
     #
-    # 'normal' just does supervised training 
+    # 'normal' just does supervised training
+    available_train_modes = ['normal', 'adversarial-continuous', 'adversarial-epoch', 'adversarial-batches']
     parser.add_argument('--train-mode', type=str, default='normal',
-            metavar='MODE',
-            help='Training mode: adversarial or normal')
-    parser.add_argument('--batch-size', type=int, default=64, metavar='N',
-                        help='input batch size for training (default: 64)')
+                        metavar='MODE',
+                        choices=available_train_modes,
+                        help='Training mode. One of: ' + ', '.join(available_train_modes))
+    parser.add_argument('--pretrain', action='store_true', default=True,
+                        dest='pretrain',
+                        help='Pretrain before adversarial training')
+    parser.add_argument('--no-pretrain', action='store_false', default=True,
+                        dest='pretrain',
+                        help='Do not pretrain')
+    parser.add_argument('--batch-size', type=int, default=32, metavar='N',
+                        help='input batch size for training')
     parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
-                        help='input batch size for testing (default: 1000)')
+                        help='input batch size for testing ')
     parser.add_argument('--epochs', type=int, default=14, metavar='N',
-                        help='number of epochs to train (default: 14)')
+                        help='number of epochs to train')
     parser.add_argument('--lr', type=float, default=1.0, metavar='LR',
-                        help='learning rate (default: 1.0)')
+                        help='learning rate')
     parser.add_argument('--gamma', type=float, default=0.7, metavar='M',
-                        help='Learning rate step gamma (default: 0.7)')
+                        help='Learning rate step gamma')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
     parser.add_argument('--dry-run', action='store_true', default=False,
                         help='quickly check a single pass')
     parser.add_argument('--seed', type=int, default=1, metavar='S',
-                        help='random seed (default: 1)')
+                        help='random seed')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                         help='how many batches to wait before logging training status')
-    parser.add_argument('--save-model', action='store_true', default=False,
+    parser.add_argument('--save-model', action='store_true', default=True,
+                        dest='save_model',
                         help='For Saving the current Model')
-    parser.add_argument('--run-dir', type=str, default='.',
+    parser.add_argument('--no-save-model', action='store_false', default=True,
+                        dest='save_model',
+                        help='Do not save the current Model')
+    parser.add_argument('--run-dir', type=str, default=None,
             metavar='DIR',
             help='Directory under which model and outputs are saved')
+    parser.add_argument('--run-suffix', type=str, default='', required=False, metavar='S',
+                        help='Will be appended to the run directory provided')
+    parser.add_argument('--early-epoch', action='store_true', default=False,
+                        dest='early_epoch',
+                        help='Finish epoch early (for debugging)')
+    parser.add_argument('--num-batches-early-epoch', type=int, default=10, metavar='N',
+                        help='Number of batches before epoch finishes')
 
     # Arguments specific to adversarial training
     parser.add_argument('--generator-lr', type=float, default=0.05,
                         metavar='GLR',
-                        help='learning rate for image generation (default: 0.05)')
+                        help='learning rate for image generation')
 
     parser.add_argument('--generator-mode', type=str, default='input only',
             metavar='GM',
@@ -223,17 +252,42 @@ def main():
     #                    dest='generator_include_likelihood',
     #                    action='store_true', default=True,
     #                    help='include likelihood loss')
-    #include_likelihood = config['generator_include_likelihood']
-    #include_layer = config['generator_include_layer']
+    #include_likelihood = config_dict['generator_include_likelihood']
+    #include_layer = config_dict['generator_include_layer']
+
+    AdversarialTrainer.add_command_line_arguments(parser)
+    SparseInputDatasetRecoverer.add_command_line_arguments(parser)
+    SparseInputRecoverer.add_command_line_arguments(parser)
 
     args = parser.parse_args()
 
-    # Set config from args
-    config = vars(args)
-    config['lambd'] = 0.1
-    config['lambd_layers'] = [ 0.1, 0.1, 0.1]
-    config['generator_include_likelihood'] = True
-    config['generator_include_layer'] = include_layer[args.generator_mode]
+    config = args
+    SparseInputRecoverer.setup_default_config(config)
+    # dataset name is 'MNIST'
+    config.dataset_name = 'mnist'
+    dataset_helper: DatasetHelper = DatasetHelper.get_dataset(config.dataset_name)
+    dataset_helper.setup_config(config)
+
+    # Setup runs directory, tensorboard helper and sparse input recoverer
+    rh.setup_run_dir(config, 'train_runs')
+    tbh = TensorBoardHelper(config.run_dir)
+    sparse_input_recoverer = SparseInputRecoverer(config, tbh, verbose=True)
+    config.ckpt_dir = f"{args.run_dir}/ckpt/"
+    config.ckpt_save_path = pathlib.Path(f"mnist_cnn.pt")
+    ckpt_saver = CkptSaver(config.ckpt_dir)
+    # Log config to tensorboard
+    tbh.log_config_as_text(config)
+    tbh.flush()
+    #tbh.close()
+    #print("Exiting...")
+    #sys.exit(0)
+
+    # Set config_dict from args
+    config_dict = vars(args)
+    config_dict['lambd'] = 0.1
+    config_dict['lambd_layers'] = [0.1, 0.1, 0.1]
+    config_dict['generator_include_likelihood'] = True
+    config_dict['generator_include_layer'] = include_layer[args.generator_mode]
 
     use_cuda = not args.no_cuda and torch.cuda.is_available()
 
@@ -307,7 +361,7 @@ def main():
     train_loader = torch.utils.data.DataLoader(dataset1,**train_kwargs)
     test_loader = torch.utils.data.DataLoader(dataset2, **test_kwargs)
 
-    if args.train_mode == 'adversarial':
+    if args.train_mode == 'adversarial-continuous':
         # 1000 images of size 28x28, 1 channel
         mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
         # initialize images with a Gaussian ball close to mnist 0
@@ -327,38 +381,83 @@ def main():
         #print(batch_a[0], batch_b[0], batch_c[0])
         #sys.exit(0)
 
+    model_classname = 'ExampleCNNNet'
     model = ExampleCNNNet(20).to(device)
     #model = MLPNet().to(device)
     #model = MLPNet3Layer(num_classes=20).to(device)
     #model = MaxNormMLP(num_classes=20).to(device)
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
-    if args.train_mode == 'adversarial':
+    if args.train_mode == 'adversarial-continuous':
         optD = optimizer
         optG = optim.Adam([images], lr=args.generator_lr)
 
+    # Setup sparse dataset recovery here, after model etc are all set up
+    if args.train_mode in [ 'adversarial-epoch', 'adversarial-batches' ]:
+        if args.train_mode == 'adversarial-epoch':
+            dataset_len = config.num_adversarial_images_epoch_mode
+        elif args.train_mode == 'adversarial-batches':
+            dataset_len = config.num_adversarial_images_batch_mode
+        dataset_recoverer = SparseInputDatasetRecoverer(
+            sparse_input_recoverer,
+            model,
+            num_recovery_steps=config.recovery_num_steps,
+            batch_size=config.recovery_batch_size,
+            sparsity_mode=config.recovery_penalty_mode,
+            num_real_classes=dataset_helper.get_num_classes(),
+            dataset_len=dataset_len,
+            each_entry_shape=dataset_helper.get_each_entry_shape(),
+            device=device, ckpt_saver=ckpt_saver)
+        #images, targets = dataset_recoverer.recover_image_dataset()
+        #print("Recovered images, targets", images.shape, targets.shape, targets.detach().numpy())
+        #sys.exit(0)
+        # Now we can create an AdversarialTrainer!!!!!
+        adversarial_trainer = AdversarialTrainer(train_loader, dataset_recoverer, model, optimizer, config.batch_size,
+                                                 device, config.log_interval, config.dry_run, config.early_epoch,
+                                                 config.num_batches_early_epoch)
+
+
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
-    for epoch in range(1, args.epochs + 1):
-        # Perform pre-training for 1 epoch in adversarial mode
-        if args.train_mode == 'normal' or epoch == 0:
-            if args.train_mode == 'adversarial':
-                print('Performing pre-training for 1 epoch')
-            train(args, model, device, train_loader, optimizer, epoch)
-        elif args.train_mode == 'adversarial':
-            adversarial_train(args, config, model, device, train_loader,
-                    adversarial_train_loader, optD, optG, epoch)
+    for epoch in range(0, args.epochs):
+        if args.train_mode not in ['adversarial-batches', 'adversarial-epoch']:
+            # Perform pre-training for 1 epoch in adversarial mode
+            if args.train_mode == 'normal' or epoch == 0:
+                if args.train_mode == 'adversarial-continuous':
+                    print('Performing pre-training for 1 epoch')
+                train(args, model, device, train_loader, optimizer, epoch)
+            elif args.train_mode == 'adversarial-continuous':
+                adversarial_train(args, config_dict, model, device, train_loader,
+                                  adversarial_train_loader, optD, optG, epoch)
+            else:
+                raise ValueError("invalid train_mode : " + args.train_mode)
         else:
-            raise ValueError("invalid train_mode : " + args.train_mode)
+            if args.pretrain and epoch == 0:
+                print('Pre-training for 1 epoch')
+                adversarial_trainer.train_one_epoch_real()
+                # train(args, model, device, train_loader, optimizer, epoch)
+            else:
+                if args.train_mode == 'adversarial-batches':
+                    epoch_over = False
+                    while not epoch_over:
+                        epoch_over = adversarial_trainer.generate_m_images_train_k_batches_adversarial(
+                            m=config.num_adversarial_images_batch_mode, k=config.num_adversarial_train_batches)
+                elif args.train_mode == 'adversarial-epoch':
+                    adversarial_trainer.generate_m_images_train_one_epoch_adversarial(m=config.num_adversarial_images_epoch_mode)
         test(model, device, test_loader)
+        ckpt_saver.save_model(model, epoch, model_classname)
         scheduler.step()
 
     if args.save_model:
-        save_path = pathlib.Path(f"{args.run_dir}/ckpt/mnist_cnn.pt")
+        save_path = config.ckpt_save_path 
         save_path.parent.mkdir(exist_ok=True, parents=True)
+        print("Saving model to : ", save_path)
         torch.save(model.state_dict(), save_path)
         #torch.save(model.state_dict(), "mnist_max_norm_mlp.pt")
         #torch.save(model.state_dict(), "mnist_cnn_adv_normal_init.pt")
 
+    tbh.close()
 
 if __name__ == '__main__':
     main()
+    #import cProfile
+    #cProfile.run('main()')
 

@@ -3,16 +3,16 @@ import sys
 import time
 
 def inner_loop(mode, penalty_mode, num_steps, pgd, digits, lambdas, timestamp):
-    folder = f"image_lambda_runs/{mode}/{penalty_mode.replace(' ','_')}/num-steps_{num_steps}/{pgd}/{timestamp}"
+    folder = f"image_lambda_runs/{mode}/{penalty_mode.replace(' ','_')}/num-recovery-steps_{num_steps}/{pgd}/{timestamp}"
     for digit in digits:
         for i, lambd in enumerate(lambdas):
             cmd = f'python3 mnist_sparse_recovery.py --mode {mode} ' \
                     f'--digit {digit} ' \
-                    f'--penalty-mode "{penalty_mode}" ' \
-                    f'--lambd {lambd} ' \
+                    f'--recovery-penalty-mode "{penalty_mode}" ' \
+                    f'--recovery-lambd {lambd} ' \
                     f'--run-suffix _lambda_{lambd} ' \
                     f'--run-dir {folder}/{digit}/{i:0>2d}' \
-                    f' --num-steps {num_steps}' \
+                    f' --recovery-num-steps {num_steps}' \
                     f' --{pgd}' \
 
             print(cmd)
@@ -31,7 +31,7 @@ def mega_loop():
     penalty_mode = "input only"
     num_steps = 1000
     timestamp = time.strftime('%b%d_%H-%M-%S')
-    pgd = 'enable-pgd' # or 'enable-pgd'
+    pgd = 'recovery-enable-pgd' # or 'enable-pgd'
 
 
     for penalty_mode in ["input only", "all layers"]:

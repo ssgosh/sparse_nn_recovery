@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import argparse
 import math
 
 import torch
@@ -13,6 +14,48 @@ from utils.model_context_manager import model_eval_no_grad, images_require_grad
 
 
 class SparseInputRecoverer:
+
+    # Dictionary of string penalty modes to array of boolean values,
+    # indicating whether penalty is on/off for the corresponding layer in that mode
+    include_layer_map = {
+        "no penalty": [False, False, False, False],
+        "input only": [True, False, False, False],
+        "all layers": [True, True, True, True],
+        "layer 1 only": [False, True, False, False],
+        "layer 2 only": [False, False, True, False],
+        "layer 3 only": [False, False, False, True],
+        "all but input": [False, True, True, True],
+    }
+
+    # All available penalty modes
+    all_penalty_modes = list(include_layer_map.keys())
+
+    @staticmethod
+    def add_command_line_arguments(parser: argparse.ArgumentParser):
+        parser.add_argument('--recovery-num-steps', type=int, default=1000, required=False, metavar='N',
+                            help='Number of steps of gradient descent for image generation')
+        parser.add_argument('--recovery-lr', type=float, metavar='LR',
+                            default=0.5, required=False,
+                            help='Learning rate for sparse recovery')
+        parser.add_argument('--recovery-lambd', type=float, metavar='L',
+                            default=0.1, required=False,
+                            help='L1 penalty lambda on each layer')
+        parser.add_argument('--recovery-penalty-mode', type=str, default='input only', required=False, metavar='PM',
+                            help='When mode is single-digit, which penalty mode should be used')
+        parser.add_argument('--recovery-disable-pgd', dest='recovery_use_pgd', action='store_false',
+                            default=True, required=False,
+                            help='Disable Projected Gradient Descent (clipping)')
+        parser.add_argument('--recovery-enable-pgd', dest='recovery_use_pgd', action='store_true',
+                            default=True, required=False,
+                            help='Enable Projected Gradient Descent (clipping)')
+
+
+    @staticmethod
+    def setup_default_config(config):
+        config.include_layer = SparseInputRecoverer.include_layer_map
+        config.labels = SparseInputRecoverer.all_penalty_modes
+        config.recovery_include_likelihood = True
+        config.recovery_lambd_layers = 3 * [config.recovery_lambd]  # [0.1, 0.1, 0.1]
 
     def __init__(self, config, tbh, verbose=False):
         """
@@ -30,9 +73,10 @@ class SparseInputRecoverer:
 
     # Clip the pixels to between (mnist_zero, mnist_one)
     def clip_if_needed(self, images):
-        if self.config.use_pgd:
+        if self.config.recovery_use_pgd:
             with torch.no_grad():
-                torch.clip(images, self.image_zero, self.image_one, out=images)
+                #torch.clip(images, self.image_zero, self.image_one, out=images)
+                torch.clamp(images, self.image_zero, self.image_one, out=images)
 
     # include_layer: boolean vector of whether to include a layer's l1 penalty
     def recover_image_batch(self, model, images, targets, num_steps, include_layer, penalty_mode,
@@ -42,62 +86,21 @@ class SparseInputRecoverer:
                                              include_likelihood, batch_idx)
 
     def recover_image_batch_internal(self, model, images, targets, num_steps, include_layer, penalty_mode,
-                            include_likelihood, batch_idx):
-        optimizer = optim.Adam([images], lr=0.5)
+                                     include_likelihood, batch_idx):
+        optimizer = optim.Adam([images], lr=self.config.recovery_lr)
 
-        # lambda for input
-        lambd = self.config.lambd
-        # lambd = 0.01
-        # lambda for each layer
-        lambd_layers = self.config.lambd_layers  # [0.1, 0.1, 0.1]
-        # lambd_layers = [0.01, 0.01, 0.01]
-        # lambd2 = 1.
         start = num_steps * batch_idx + 1
         for i in range(start, start + num_steps):
-            losses = {}
-            probs = {}
-            sparsity = {}
             optimizer.zero_grad()
-            output = model(images)
-            if include_likelihood:
-                nll_loss = F.nll_loss(output, targets)
-            else:
-                nll_loss = torch.tensor(0.)
-
-            losses[f"nll_loss"] = nll_loss.item()
-
-            # include l1 penalty only if it's given as true for that layer
-            l1_loss = torch.tensor(0.)
-            if include_layer[0]:
-                l1_loss = lambd * (torch.norm(images - self.image_zero, 1)
-                                   / torch.numel(images))
-
-            losses[f"input_l1_loss"] = l1_loss.item()
-
-            l1_layers = torch.tensor(0.)
-            for idx, (include, lamb, l1) in enumerate(zip(include_layer[1:], lambd_layers,
-                                                          model.all_l1)):
-                if include:
-                    layer_loss = lamb * l1
-                    l1_layers += layer_loss
-                    losses[f"layer_{idx}_l1_loss"] = layer_loss.item()
-
-            losses[f"hidden_layers_l1_loss"] = l1_layers.item()
-            losses[f"all_layers_l1_loss"] = l1_loss.item() + l1_layers.item()
-
-            loss = nll_loss + l1_loss + l1_layers
+            loss, losses, output, probs, sparsity = self.forward(model, images, targets, include_layer,
+                                                                 include_likelihood)
             loss.backward()
-
-            # Do step before computation of metrics which will change on backprop
+            # step is done after metrics computations.
+            # Hence metrics are for the batch as they came in, not as they went out
             optimizer.step()
             self.clip_if_needed(images)
 
-            losses[f"total_loss"] = loss.item()
-
-            self.metrics_helper.compute_probs(output, probs, targets)
-            self.metrics_helper.compute_sparsities(images, model, targets, sparsity)
-
-            if self.verbose:
+            if self.verbose and i % 100 == 0:
                 print("Iter: ", i, ", Loss: %.3f" % loss.item(),
                       f"Prob of {targets[0]} %.3f" %
                       pow(math.e, output[0][targets[0].item()].item()),
@@ -110,10 +113,47 @@ class SparseInputRecoverer:
                 self.tbh.add_tensorboard_stuff(penalty_mode, model, images, losses, probs,
                                                sparsity, i)
 
+    def forward(self, model, images, targets, include_layer, include_likelihood):
+        # lambda for input
+        lambd = self.config.recovery_lambd
+        # lambd = 0.01
+        # lambda for each layer
+        lambd_layers = self.config.recovery_lambd_layers  # [0.1, 0.1, 0.1]
+        # lambd_layers = [0.01, 0.01, 0.01]
+        # lambd2 = 1.
+        losses = {}
+        probs = {}
+        sparsity = {}
+        output = model(images)
+        if include_likelihood:
+            nll_loss = F.nll_loss(output, targets)
+        else:
+            nll_loss = torch.tensor(0.)
+        losses[f"nll_loss"] = nll_loss.item()
+        # include l1 penalty only if it's given as true for that layer
+        l1_loss = torch.tensor(0.)
+        if include_layer[0]:
+            l1_loss = lambd * (torch.norm(images - self.image_zero, 1)
+                               / torch.numel(images))
+        losses[f"input_l1_loss"] = l1_loss.item()
+        l1_layers = torch.tensor(0.)
+        for idx, (include, lamb, l1) in enumerate(zip(include_layer[1:], lambd_layers,
+                                                      model.all_l1)):
+            if include:
+                layer_loss = lamb * l1
+                l1_layers += layer_loss
+                losses[f"layer_{idx}_l1_loss"] = layer_loss.item()
+        losses[f"hidden_layers_l1_loss"] = l1_layers.item()
+        losses[f"all_layers_l1_loss"] = l1_loss.item() + l1_layers.item()
+        loss = nll_loss + l1_loss + l1_layers
+        losses[f"total_loss"] = loss.item()
+        self.metrics_helper.compute_probs(output, probs, targets)
+        self.metrics_helper.compute_sparsities(images, model, targets, sparsity)
+        return loss, losses, output, probs, sparsity
 
     # Single digit, single label
     def recover_and_plot_single_digit(self, initial_image, label, targets, include_layer, model):
-        self.recover_image_batch(model, initial_image, targets, self.config.num_steps, include_layer[label], label,
+        self.recover_image_batch(model, initial_image, targets, self.config.recovery_num_steps, include_layer[label], label,
                                  include_likelihood=True)
         plotter.plot_single_digit(initial_image.detach()[0][0], targets[0], label,
                                   filtered=False)
