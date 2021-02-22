@@ -161,11 +161,13 @@ class AdversarialTrainer:
         stopped_early = True
         epoch_over = False
         early_epoch = False
+        i = 0
         while stopped_early:
-            for i, (real_batch, adv_batch) in enumerate(zip(self.real_data_train_iterator, adversarial_train_loader)):
+            for (real_batch, adv_batch) in zip(self.real_data_train_iterator, adversarial_train_loader):
                 real_images, real_targets = real_batch
                 fake_images, _, fake_targets = adv_batch
                 self.train_one_batch_adversarial(real_images, real_targets, fake_images, fake_targets)
+                i += 1
                 self.next_real_batch += 1  # Keep track of batch number
                 # Say total batches = 1000
                 # early epoch batches = 10
@@ -177,6 +179,7 @@ class AdversarialTrainer:
                     break
                 if i >= k: # This breaks at 100th batch,
                     stopped_early = False
+                    sys.stdout.write('\n')  # For log_batch stuff to persist on console
                     break
             if stopped_early or early_epoch: # Rolls over to the next epoch
                 # Get another iterator to the dataset since this one is done
