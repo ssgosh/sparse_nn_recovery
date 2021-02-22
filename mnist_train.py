@@ -23,6 +23,7 @@ from utils.infinite_dataloader import InfiniteDataLoader
 from utils.batched_tensor_view_data_loader import BatchedTensorViewDataLoader
 import utils.mnist_helper as mh
 from utils import runs_helper as rh
+from utils.ckpt_saver import CkptSaver
 
 
 # Penalized L1 Loss for training adversarial images
@@ -271,7 +272,9 @@ def main():
     rh.setup_run_dir(config, 'train_runs')
     tbh = TensorBoardHelper(config.run_dir)
     sparse_input_recoverer = SparseInputRecoverer(config, tbh, verbose=True)
-    config.ckpt_save_path = pathlib.Path(f"{args.run_dir}/ckpt/mnist_cnn.pt")
+    config.ckpt_dir = f"{args.run_dir}/ckpt/"
+    config.ckpt_save_path = pathlib.Path(f"mnist_cnn.pt")
+    ckpt_saver = CkptSaver(config.ckpt_dir)
     # Log config to tensorboard
     tbh.log_config_as_text(config)
     tbh.flush()
@@ -402,7 +405,7 @@ def main():
             num_real_classes=dataset_helper.get_num_classes(),
             dataset_len=dataset_len,
             each_entry_shape=dataset_helper.get_each_entry_shape(),
-            device=device)
+            device=device, ckpt_saver=ckpt_saver)
         #images, targets = dataset_recoverer.recover_image_dataset()
         #print("Recovered images, targets", images.shape, targets.shape, targets.detach().numpy())
         #sys.exit(0)

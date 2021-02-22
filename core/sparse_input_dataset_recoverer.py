@@ -21,7 +21,7 @@ class SparseInputDatasetRecoverer:
                             help='Batch size for image generation')
 
     def __init__(self, sparse_input_recoverer : SparseInputRecoverer, model, num_recovery_steps, batch_size,
-                 sparsity_mode, num_real_classes, dataset_len, each_entry_shape, device):
+                 sparsity_mode, num_real_classes, dataset_len, each_entry_shape, device, ckpt_saver):
         self.sparse_input_recoverer = sparse_input_recoverer
         self.model = model
         self.include_layer_map = SparseInputRecoverer.include_layer_map
@@ -32,6 +32,7 @@ class SparseInputDatasetRecoverer:
         self.dataset_len = dataset_len
         self.each_entry_shape = each_entry_shape
         self.device = device
+        self.ckpt_saver = ckpt_saver
         self.tbh = self.sparse_input_recoverer.tbh
         self.dataset_epoch = 0
 
@@ -60,7 +61,8 @@ class SparseInputDatasetRecoverer:
         with torch.no_grad():
             images_tensor = torch.cat(images)
             targets_tensor = torch.cat(targets)
-            # Add first 100 images
+
+            # Add first 100 images to tensorboard
             n = images_tensor.shape[0]
             n = 100 if n > 100 else n
             first_100_images = torch.clone(images_tensor[0:n])
@@ -70,6 +72,10 @@ class SparseInputDatasetRecoverer:
             self.tbh.add_list(first_100_targets, f"{sparsity_mode}/dataset_targets", num_per_row=10, global_step=self.dataset_epoch)
 
             self.tbh.flush()
+
+            # Save to ckpt dir
+            self.ckpt_saver.save_images(images_tensor, targets_tensor, self.dataset_epoch)
+
             self.dataset_epoch += 1
 
         return images_tensor, targets_tensor

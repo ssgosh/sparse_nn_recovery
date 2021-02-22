@@ -61,6 +61,7 @@ class AdversarialTrainer:
         self.device = device
         self.early_epoch = early_epoch
         self.num_batches_early_epoch = num_batches_early_epoch
+        self.ckpt_saver = self.sparse_input_dataset_recoverer.ckpt_saver
 
         # Use a fixed iterator to iterate over the training dataset
         self.real_data_train_iterator = iter(self.real_data_train_loader)

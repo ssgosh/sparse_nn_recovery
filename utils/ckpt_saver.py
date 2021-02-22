@@ -10,14 +10,14 @@ class CkptSaver:
 
     def save_images(self, images, targets, dataset_epoch):
         path = self.get_ckpt_path(dataset_epoch)
-        print(path)
+        print("Writing images to : ", path)
         assert not path.exists()
         path.parent.mkdir(parents=True, exist_ok=True)
         torch.save({'images' : images, 'targets' : targets}, path)
 
     def load_images(self, dataset_epoch):
         path = self.get_ckpt_path(dataset_epoch)
-        print(path)
+        print("Loading images from : ", path)
         model_dict = torch.load(path)
         #print(model_dict)
         return model_dict['images'], model_dict['targets']
