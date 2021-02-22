@@ -84,6 +84,12 @@ class AdversarialTrainer:
     # Create a batch from real and adversarial data and call train_one_batch
     def train_one_batch_adversarial(self, real_batch_inputs, real_batch_targets,
                                     adversarial_batch_inputs, adversarial_batch_targets):
+        # Move everything to gpu before performing tensor operations
+        real_batch_inputs = real_batch_inputs.to(self.device)
+        adversarial_batch_inputs = adversarial_batch_inputs.to(self.device)
+        real_batch_targets = real_batch_targets.to(self.device)
+        adversarial_batch_targets = adversarial_batch_targets.to(self.device)
+
         batch_inputs = torch.cat([real_batch_inputs, adversarial_batch_inputs])
         batch_targets = torch.cat([real_batch_targets, adversarial_batch_targets])
         self.train_one_batch(batch_inputs, batch_targets)
