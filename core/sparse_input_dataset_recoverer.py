@@ -76,10 +76,11 @@ class SparseInputDatasetRecoverer:
         n = images_tensor.shape[0]
         n = 100 if n > 100 else n
         first_100_images = torch.clone(images_tensor[0:n])
-        first_100_targets = [foo.item() for foo in targets_tensor[0:n]]
+        first_100_targets = torch.clone(targets_tensor[0:n])
+        first_100_targets_list = [foo.item() for foo in targets_tensor[0:n]]
         self.tbh.add_image_grid(first_100_images, f"{sparsity_mode}/dataset_images", filtered=True, num_per_row=10,
                                 global_step=self.dataset_epoch)
-        self.tbh.add_list(first_100_targets, f"{sparsity_mode}/dataset_targets", num_per_row=10,
+        self.tbh.add_list(first_100_targets_list, f"{sparsity_mode}/dataset_targets", num_per_row=10,
                           global_step=self.dataset_epoch)
         # Run forward on this batch and get losses, probabilities and sparsity for logging
         loss, losses, output, probs, sparsity = self.sparse_input_recoverer.forward(
