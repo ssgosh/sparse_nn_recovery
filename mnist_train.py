@@ -417,7 +417,7 @@ def main():
 
 
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
-    for epoch in range(1, args.epochs + 1):
+    for epoch in range(0, args.epochs):
         if args.train_mode not in ['adversarial-batches', 'adversarial-epoch']:
             # Perform pre-training for 1 epoch in adversarial mode
             if args.train_mode == 'normal' or epoch == 0:
@@ -430,7 +430,7 @@ def main():
             else:
                 raise ValueError("invalid train_mode : " + args.train_mode)
         else:
-            if args.pretrain and epoch == 1:
+            if args.pretrain and epoch == 0:
                 print('Pre-training for 1 epoch')
                 adversarial_trainer.train_one_epoch_real()
                 # train(args, model, device, train_loader, optimizer, epoch)

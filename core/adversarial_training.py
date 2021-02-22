@@ -86,6 +86,7 @@ class AdversarialTrainer:
             count += 1
             if self.early_epoch and count >= self.num_batches_early_epoch:
                 print(f'\nBreaking due to early epoch after {count} batches')
+                self.next_real_batch = 0  # Need to reset this, else next epoch will immediately early-break
                 break
         self.epoch += 1
 
@@ -172,6 +173,7 @@ class AdversarialTrainer:
                 # This will make sure we break at 10th batch if early epoch is set
                 early_epoch = self.early_epoch and self.next_real_batch >= self.num_batches_early_epoch
                 if early_epoch:
+                    print(f'\nBreaking due to early epoch after {self.next_real_batch} batches')
                     break
                 if i >= k: # This breaks at 100th batch,
                     stopped_early = False
@@ -184,7 +186,6 @@ class AdversarialTrainer:
                 epoch_over = True
                 self.next_real_batch = 0
             if early_epoch:
-                print(f'\nBreaking due to early epoch after {self.next_real_batch} batches')
                 break
 
         return epoch_over
