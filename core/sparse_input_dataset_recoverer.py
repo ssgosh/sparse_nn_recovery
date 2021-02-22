@@ -32,6 +32,8 @@ class SparseInputDatasetRecoverer:
         self.dataset_len = dataset_len
         self.each_entry_shape = each_entry_shape
         self.device = device
+        self.tbh = self.sparse_input_recoverer.tbh
+        self.dataset_epoch = 0
 
     def recover_image_dataset_internal(self, model, output_shape, num_real_classes, batch_size, num_steps,
                               include_layer, sparsity_mode, device):
@@ -58,6 +60,16 @@ class SparseInputDatasetRecoverer:
         with torch.no_grad():
             images_tensor = torch.cat(images)
             targets_tensor = torch.cat(targets)
+            # Add first 100 images
+            n = images_tensor.shape[0]
+            n = 100 if n > 100 else n
+            first_100_images = torch.clone(images_tensor[0:n])
+            first_100_targets = [foo.item() for foo in targets_tensor[0:n]]
+            self.tbh.add_image_grid(first_100_images, f"{sparsity_mode}/dataset_images", filtered=True, num_per_row=10,
+                    global_step=self.dataset_epoch)
+            self.tbh.add_list(first_100_targets, f"{sparsity_mode}/dataset_targets", num_per_row=10, global_step=self.dataset_epoch)
+
+            self.dataset_epoch += 1
 
         return images_tensor, targets_tensor
 

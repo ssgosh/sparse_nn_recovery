@@ -1,4 +1,6 @@
+import torch
 import torchvision
+import pandas as pd
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -14,7 +16,7 @@ class TensorBoardHelper:
         images = images.detach()
         mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
         rng = (mnist_zero, mnist_one) if filtered else None
-        img_grid = torchvision.utils.make_grid(images, 3, normalize=True,
+        img_grid = torchvision.utils.make_grid(images, num_per_row, normalize=True,
                 range=rng, padding=2, pad_value=1.0,
                 scale_each=True)
         self.writer.add_image(tag, img_grid, global_step=global_step)
@@ -65,15 +67,34 @@ class TensorBoardHelper:
         #self.writer.add_images(f"{sparsity_mode}/Unfiltered Images", images, dataformats="NCHW",
         #        global_step=global_step)
         self.add_image_grid(images, f"{sparsity_mode}/Unfiltered Images",
-                            filtered=False, global_step=global_step)
+                            filtered=False, num_per_row=3, global_step=global_step)
         #add_figure(images, f"{sparsity_mode}/Unfiltered Images", global_step, sparsity_mode)
         filtered_images = mh.mnist_post_process_image_batch(images)
         #add_figure(filtered_images, f"{sparsity_mode}/Filtered Images", global_step, sparsity_mode)
         self.add_image_grid(filtered_images, f"{sparsity_mode}/Filtered Images",
-                            filtered=True, global_step=global_step)
+                            filtered=True, num_per_row=3, global_step=global_step)
         #self.writer.add_images(f"{sparsity_mode}/Filtered Images", filtered_images, dataformats="NCHW",
         #        global_step=global_step)
         self.log_dict(f"{sparsity_mode}/0-losses", losses, global_step)
         self.log_dict(f"{sparsity_mode}", probs, global_step)
         self.log_dict(f"{sparsity_mode}", sparsity, global_step)
+
+    # Adds a list as text
+    def add_list(self, lst, tag, num_per_row, global_step):
+        n = len(lst)
+        #text = ''
+        chunked_lst = []
+        lst = [ str(item) for item in lst ]
+        for i in range(0, n, num_per_row):
+            end = i+num_per_row
+            end = end if end < n else n
+            #chunk = ", ".join(lst[i:end])
+            #text += chunk + "  \n"
+            chunked_lst.append(lst[i:end])
+        #print(text)
+        #self.writer.add_text(tag, text, global_step)
+        df = pd.DataFrame(chunked_lst)
+        table = df.to_markdown()
+        print(table)
+        self.writer.add_text(tag, table, global_step)
 
