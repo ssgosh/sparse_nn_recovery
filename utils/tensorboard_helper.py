@@ -12,7 +12,7 @@ class TensorBoardHelper:
         self.writer = SummaryWriter(name)
 
 
-    def add_image_grid(self, images, tag, filtered, global_step):
+    def add_image_grid(self, images, tag, filtered, num_per_row, global_step):
         images = images.detach()
         mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
         rng = (mnist_zero, mnist_one) if filtered else None
@@ -95,6 +95,6 @@ class TensorBoardHelper:
         #self.writer.add_text(tag, text, global_step)
         df = pd.DataFrame(chunked_lst)
         table = df.to_markdown()
-        print(table)
+        #print(table)
         self.writer.add_text(tag, table, global_step)
 
