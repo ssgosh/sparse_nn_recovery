@@ -86,21 +86,14 @@ class SparseInputRecoverer:
                                              include_likelihood, batch_idx)
 
     def recover_image_batch_internal(self, model, images, targets, num_steps, include_layer, penalty_mode,
-                            include_likelihood, batch_idx):
+                                     include_likelihood, batch_idx):
         optimizer = optim.Adam([images], lr=self.config.recovery_lr)
 
-        # lambda for input
-        lambd = self.config.recovery_lambd
-        # lambd = 0.01
-        # lambda for each layer
-        lambd_layers = self.config.recovery_lambd_layers  # [0.1, 0.1, 0.1]
-        # lambd_layers = [0.01, 0.01, 0.01]
-        # lambd2 = 1.
         start = num_steps * batch_idx + 1
         for i in range(start, start + num_steps):
             optimizer.zero_grad()
             loss, losses, output, probs, sparsity = self.forward(model, images, targets, include_layer,
-                                                                 include_likelihood, lambd, lambd_layers)
+                                                                 include_likelihood)
             loss.backward()
             # step is done after metrics computations.
             # Hence metrics are for the batch as they came in, not as they went out
@@ -120,7 +113,14 @@ class SparseInputRecoverer:
                 self.tbh.add_tensorboard_stuff(penalty_mode, model, images, losses, probs,
                                                sparsity, i)
 
-    def forward(self, model, images, targets, include_layer, include_likelihood, lambd, lambd_layers):
+    def forward(self, model, images, targets, include_layer, include_likelihood):
+        # lambda for input
+        lambd = self.config.recovery_lambd
+        # lambd = 0.01
+        # lambda for each layer
+        lambd_layers = self.config.recovery_lambd_layers  # [0.1, 0.1, 0.1]
+        # lambd_layers = [0.01, 0.01, 0.01]
+        # lambd2 = 1.
         losses = {}
         probs = {}
         sparsity = {}

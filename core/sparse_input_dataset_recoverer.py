@@ -37,7 +37,7 @@ class SparseInputDatasetRecoverer:
         self.dataset_epoch = 0
 
     def recover_image_dataset_internal(self, model, output_shape, num_real_classes, batch_size, num_steps,
-                              include_layer, sparsity_mode, device):
+                              include_layer_map, sparsity_mode, device):
         assert output_shape[0] % batch_size == 0,\
             f"Number of images to generate not divisible by image recovery " \
             f"batch size: output_shape[0] = {output_shape[0]}, batch_size = {batch_size} "
@@ -52,7 +52,7 @@ class SparseInputDatasetRecoverer:
             images.append(image_batch)
             targets.append(targets_batch)
             self.sparse_input_recoverer.recover_image_batch(model, image_batch, targets_batch, num_steps,
-                                                            include_layer[sparsity_mode],
+                                                            include_layer_map[sparsity_mode],
                                                             sparsity_mode,
                                                             include_likelihood=True,
                                                             batch_idx=batch_idx)
@@ -71,6 +71,12 @@ class SparseInputDatasetRecoverer:
                     global_step=self.dataset_epoch)
             self.tbh.add_list(first_100_targets, f"{sparsity_mode}/dataset_targets", num_per_row=10, global_step=self.dataset_epoch)
 
+            # Run forward on this batch and get losses, probabilities and sparsity for logging
+            loss, losses, output, probs, sparsity = self.sparse_input_recoverer.forward(model, images, targets, include_layer_map[sparsity_mode],
+                                                include_likelihood=True)
+
+            self.tbh.log_dict(f"{sparsity_mode}", probs, global_step=self.dataset_epoch)
+            self.tbh.log_dict(f"{sparsity_mode}", sparsity, global_step=self.dataset_epoch)
             self.tbh.flush()
 
             # Save to ckpt dir
