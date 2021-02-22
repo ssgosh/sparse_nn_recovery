@@ -159,18 +159,32 @@ class AdversarialTrainer:
         # It may happen that we run through the end of the real dataset before we finish m batches.
         # In that case, we'll get another iterator to the loader
         stopped_early = True
+        epoch_over = False
         while stopped_early:
             for i, (real_batch, adv_batch) in enumerate(zip(self.real_data_train_iterator, adversarial_train_loader)):
                 real_images, real_targets = real_batch
                 fake_images, _, fake_targets = adv_batch
                 self.train_one_batch_adversarial(real_images, real_targets, fake_images, fake_targets)
                 self.next_real_batch += 1  # Keep track of batch number
-                if i >= k:
+                # Say total batches = 1000
+                # early epoch batches = 10
+                # k = 100
+                # This will make sure we break at 10th batch if early epoch is set
+                early_epoch = self.early_epoch and self.next_real_batch >= self.num_batches_early_epoch
+                if early_epoch:
+                    break
+                if i >= k: # This breaks at 100th batch,
                     stopped_early = False
                     break
-            if stopped_early:
+            if stopped_early or early_epoch: # Rolls over to the next epoch
                 # Get another iterator to the dataset since this one is done
                 # This will shuffle the dataset automatically if it's set in the train loader kwargs
                 self.real_data_train_iterator = iter(self.real_data_train_loader)
                 self.epoch += 1
+                epoch_over = True
                 self.next_real_batch = 0
+            if early_epoch:
+                print(f'\nBreaking due to early epoch after {self.next_real_batch} batches')
+                break
+
+        return epoch_over
