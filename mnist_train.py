@@ -271,6 +271,12 @@ def main():
     rh.setup_run_dir(config, 'train_runs')
     tbh = TensorBoardHelper(config.run_dir)
     sparse_input_recoverer = SparseInputRecoverer(config, tbh, verbose=True)
+    config.ckpt_save_path = pathlib.Path(f"{args.run_dir}/ckpt/mnist_cnn.pt")
+    # Log config to tensorboard
+    tbh.log_config_as_text(config)
+    #tbh.close()
+    #print("Exiting...")
+    #sys.exit(0)
 
     # Set config_dict from args
     config_dict = vars(args)
@@ -427,17 +433,19 @@ def main():
                     print('Pre-training for 1 epoch')
                     adversarial_trainer.train_one_epoch_real()
                     #train(args, model, device, train_loader, optimizer, epoch)
-                adversarial_trainer.generate_m_images_train_one_epoch_adversarial(m=config.num_adversarial_images_epoch_mode)
+                else:
+                    adversarial_trainer.generate_m_images_train_one_epoch_adversarial(m=config.num_adversarial_images_epoch_mode)
         test(model, device, test_loader)
         scheduler.step()
 
     if args.save_model:
-        save_path = pathlib.Path(f"{args.run_dir}/ckpt/mnist_cnn.pt")
+        save_path = config.ckpt_save_path 
         save_path.parent.mkdir(exist_ok=True, parents=True)
         torch.save(model.state_dict(), save_path)
         #torch.save(model.state_dict(), "mnist_max_norm_mlp.pt")
         #torch.save(model.state_dict(), "mnist_cnn_adv_normal_init.pt")
 
+    tbh.close()
 
 if __name__ == '__main__':
     main()

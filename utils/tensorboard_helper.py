@@ -1,6 +1,7 @@
 import torch
 import torchvision
 import pandas as pd
+import json
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -11,6 +12,9 @@ class TensorBoardHelper:
     def __init__(self, name=None):
         self.writer = SummaryWriter(name)
 
+    def close(self):
+        print("Closing SummaryWriter")
+        self.writer.close()
 
     def add_image_grid(self, images, tag, filtered, num_per_row, global_step):
         images = images.detach()
@@ -61,6 +65,17 @@ class TensorBoardHelper:
         config_dict = vars(config)
         hparams = { key:str(config_dict[key]) for key in config_dict }
         self.writer.add_hparams(hparams, {'dummy_metric' : 0.})
+
+    def log_config_as_text(self, config):
+        config_dict = vars(config)
+        #hparams = json.dumps(config_dict, indent=2)
+        #print("Logging config:")
+        #print(hparams)
+        hparams = { key:str(config_dict[key]) for key in config_dict }
+        df = pd.DataFrame.from_dict(hparams, orient='index')
+        text = df.to_markdown()
+        #print(text)
+        self.writer.add_text('config', text)
 
     def add_tensorboard_stuff(self, sparsity_mode, model, images, losses, probs,
                               sparsity, global_step):
