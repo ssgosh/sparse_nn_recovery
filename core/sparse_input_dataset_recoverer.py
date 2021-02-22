@@ -17,7 +17,7 @@ class SparseInputDatasetRecoverer:
 
     @staticmethod
     def add_command_line_arguments(parser: argparse.ArgumentParser):
-        parser.add_argument('--recovery-batch-size', type=int, default=128, required=False, metavar='N',
+        parser.add_argument('--recovery-batch-size', type=int, default=1024, required=False, metavar='N',
                             help='Batch size for image generation')
 
     def __init__(self, sparse_input_recoverer : SparseInputRecoverer, model, num_recovery_steps, batch_size,
