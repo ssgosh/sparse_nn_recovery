@@ -98,8 +98,14 @@ class SparseInputRecoverer:
         # lambd2 = 1.
         start = num_steps * batch_idx + 1
         for i in range(start, start + num_steps):
-            loss, losses, output, probs, sparsity = self.one_step(model, images, targets, optimizer, include_layer,
-                                                                  include_likelihood, lambd, lambd_layers)
+            optimizer.zero_grad()
+            loss, losses, output, probs, sparsity = self.forward(model, images, targets, include_layer,
+                                                                 include_likelihood, lambd, lambd_layers)
+            loss.backward()
+            # step is done after metrics computations.
+            # Hence metrics are for the batch as they came in, not as they went out
+            optimizer.step()
+            self.clip_if_needed(images)
 
             if self.verbose:
                 print("Iter: ", i, ", Loss: %.3f" % loss.item(),
@@ -114,11 +120,10 @@ class SparseInputRecoverer:
                 self.tbh.add_tensorboard_stuff(penalty_mode, model, images, losses, probs,
                                                sparsity, i)
 
-    def one_step(self, model, images, targets, optimizer, include_layer, include_likelihood, lambd, lambd_layers):
+    def forward(self, model, images, targets, include_layer, include_likelihood, lambd, lambd_layers):
         losses = {}
         probs = {}
         sparsity = {}
-        optimizer.zero_grad()
         output = model(images)
         if include_likelihood:
             nll_loss = F.nll_loss(output, targets)
@@ -141,10 +146,6 @@ class SparseInputRecoverer:
         losses[f"hidden_layers_l1_loss"] = l1_layers.item()
         losses[f"all_layers_l1_loss"] = l1_loss.item() + l1_layers.item()
         loss = nll_loss + l1_loss + l1_layers
-        loss.backward()
-        # Do step before computation of metrics which will change on backprop
-        optimizer.step()
-        self.clip_if_needed(images)
         losses[f"total_loss"] = loss.item()
         self.metrics_helper.compute_probs(output, probs, targets)
         self.metrics_helper.compute_sparsities(images, model, targets, sparsity)
