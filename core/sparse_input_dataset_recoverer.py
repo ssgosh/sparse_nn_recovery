@@ -69,6 +69,7 @@ class SparseInputDatasetRecoverer:
                     global_step=self.dataset_epoch)
             self.tbh.add_list(first_100_targets, f"{sparsity_mode}/dataset_targets", num_per_row=10, global_step=self.dataset_epoch)
 
+            self.tbh.flush()
             self.dataset_epoch += 1
 
         return images_tensor, targets_tensor

@@ -274,6 +274,7 @@ def main():
     config.ckpt_save_path = pathlib.Path(f"{args.run_dir}/ckpt/mnist_cnn.pt")
     # Log config to tensorboard
     tbh.log_config_as_text(config)
+    tbh.flush()
     #tbh.close()
     #print("Exiting...")
     #sys.exit(0)
@@ -441,6 +442,7 @@ def main():
     if args.save_model:
         save_path = config.ckpt_save_path 
         save_path.parent.mkdir(exist_ok=True, parents=True)
+        print("Saving model to : ", save_path)
         torch.save(model.state_dict(), save_path)
         #torch.save(model.state_dict(), "mnist_max_norm_mlp.pt")
         #torch.save(model.state_dict(), "mnist_cnn_adv_normal_init.pt")

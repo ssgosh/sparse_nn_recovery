@@ -16,6 +16,10 @@ class TensorBoardHelper:
         print("Closing SummaryWriter")
         self.writer.close()
 
+    def flush(self):
+        print("Flushing SummaryWriter")
+        self.writer.flush()
+
     def add_image_grid(self, images, tag, filtered, num_per_row, global_step):
         images = images.detach()
         mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
