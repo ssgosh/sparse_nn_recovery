@@ -39,8 +39,14 @@ class CkptSaver:
     def load_model_from_path(self, model_class, path):
         pass
 
-    def load_model_from_epoch(self, model_class, epoch):
-        pass
+    def load_model_from_epoch(self, model_class, epoch, suffix=None):
+        save_path = self.get_model_ckpt_path(epoch, suffix)
+        print("Loading model from : ", save_path)
+        state_dict = torch.load(save_path)
+        model = model_class()
+        model.load_state_dict(state_dict)
+        return model
+
 
     def load_latest_model(self, model_class):
         pass

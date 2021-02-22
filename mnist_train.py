@@ -381,6 +381,7 @@ def main():
         #print(batch_a[0], batch_b[0], batch_c[0])
         #sys.exit(0)
 
+    model_classname = 'ExampleCNNNet'
     model = ExampleCNNNet(20).to(device)
     #model = MLPNet().to(device)
     #model = MLPNet3Layer(num_classes=20).to(device)
@@ -442,6 +443,7 @@ def main():
                 elif args.train_mode == 'adversarial-epoch':
                     adversarial_trainer.generate_m_images_train_one_epoch_adversarial(m=config.num_adversarial_images_epoch_mode)
         test(model, device, test_loader)
+        ckpt_saver.save_model(model, epoch, model_classname)
         scheduler.step()
 
     if args.save_model:
