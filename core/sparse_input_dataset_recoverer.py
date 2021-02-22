@@ -62,22 +62,7 @@ class SparseInputDatasetRecoverer:
             images_tensor = torch.cat(images)
             targets_tensor = torch.cat(targets)
 
-            # Add first 100 images to tensorboard
-            n = images_tensor.shape[0]
-            n = 100 if n > 100 else n
-            first_100_images = torch.clone(images_tensor[0:n])
-            first_100_targets = [foo.item() for foo in targets_tensor[0:n]]
-            self.tbh.add_image_grid(first_100_images, f"{sparsity_mode}/dataset_images", filtered=True, num_per_row=10,
-                    global_step=self.dataset_epoch)
-            self.tbh.add_list(first_100_targets, f"{sparsity_mode}/dataset_targets", num_per_row=10, global_step=self.dataset_epoch)
-
-            # Run forward on this batch and get losses, probabilities and sparsity for logging
-            loss, losses, output, probs, sparsity = self.sparse_input_recoverer.forward(model, images, targets, include_layer_map[sparsity_mode],
-                                                include_likelihood=True)
-
-            self.tbh.log_dict(f"{sparsity_mode}", probs, global_step=self.dataset_epoch)
-            self.tbh.log_dict(f"{sparsity_mode}", sparsity, global_step=self.dataset_epoch)
-            self.tbh.flush()
+            self.log_first_100_images_stats(model, images_tensor, targets_tensor, include_layer_map, sparsity_mode)
 
             # Save to ckpt dir
             self.ckpt_saver.save_images(images_tensor, targets_tensor, self.dataset_epoch)
@@ -85,6 +70,23 @@ class SparseInputDatasetRecoverer:
             self.dataset_epoch += 1
 
         return images_tensor, targets_tensor
+
+    def log_first_100_images_stats(self, model, images_tensor, targets_tensor, include_layer_map, sparsity_mode):
+        # Add first 100 images to tensorboard
+        n = images_tensor.shape[0]
+        n = 100 if n > 100 else n
+        first_100_images = torch.clone(images_tensor[0:n])
+        first_100_targets = [foo.item() for foo in targets_tensor[0:n]]
+        self.tbh.add_image_grid(first_100_images, f"{sparsity_mode}/dataset_images", filtered=True, num_per_row=10,
+                                global_step=self.dataset_epoch)
+        self.tbh.add_list(first_100_targets, f"{sparsity_mode}/dataset_targets", num_per_row=10,
+                          global_step=self.dataset_epoch)
+        # Run forward on this batch and get losses, probabilities and sparsity for logging
+        loss, losses, output, probs, sparsity = self.sparse_input_recoverer.forward(
+            model, first_100_images, first_100_targets, include_layer_map[sparsity_mode], include_likelihood=True)
+        self.tbh.log_dict(f"{sparsity_mode}", probs, global_step=self.dataset_epoch)
+        self.tbh.log_dict(f"{sparsity_mode}", sparsity, global_step=self.dataset_epoch)
+        self.tbh.flush()
 
     def recover_image_dataset(self):
         output_shape = [self.dataset_len] + list(self.each_entry_shape)
