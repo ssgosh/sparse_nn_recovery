@@ -14,7 +14,7 @@ class ShouldBreak(Exception):
     pass
 
 
-class TrainLogger():
+class TrainLogger:
     def __init__(self, trainer, log_interval, dry_run):
         self.trainer = trainer
         self.log_interval = log_interval
@@ -32,7 +32,6 @@ class TrainLogger():
                 sys.stdout.write('\n')
                 sys.stdout.flush()
                 raise ShouldBreak('Breaking because of dry run')
-
 
 
 class AdversarialTrainer:
@@ -160,6 +159,7 @@ class AdversarialTrainer:
         # In that case, we'll get another iterator to the loader
         stopped_early = True
         epoch_over = False
+        early_epoch = False
         while stopped_early:
             for i, (real_batch, adv_batch) in enumerate(zip(self.real_data_train_iterator, adversarial_train_loader)):
                 real_images, real_targets = real_batch
