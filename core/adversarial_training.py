@@ -49,7 +49,8 @@ class AdversarialTrainer:
                             metavar='m', help='Number of batches of images to generate in "adversarial-epoch" mode')
 
     def __init__(self, real_data_train_loader, sparse_input_dataset_recoverer: SparseInputDatasetRecoverer,
-                 model, opt_model, adv_training_batch_size, device, log_interval, dry_run):
+                 model, opt_model, adv_training_batch_size, device, log_interval, dry_run, early_epoch,
+                 num_batches_early_epoch):
         self.adv_training_batch_size = adv_training_batch_size  # Same batch size is used for both real and adversarial training
         self.real_data_train_loader = real_data_train_loader
         self.sparse_input_dataset_recoverer = sparse_input_dataset_recoverer
@@ -58,6 +59,8 @@ class AdversarialTrainer:
         self.next_real_batch = 0
         self.epoch = 0
         self.device = device
+        self.early_epoch = early_epoch
+        self.num_batches_early_epoch = num_batches_early_epoch
 
         # Use a fixed iterator to iterate over the training dataset
         self.real_data_train_iterator = iter(self.real_data_train_loader)
@@ -76,9 +79,14 @@ class AdversarialTrainer:
 
     # Train model on only real data for one full epoch. Used for pre-training.
     def train_one_epoch_real(self):
+        count = 0
         for self.next_real_batch, real_batch in enumerate(self.real_data_train_loader):
             real_images, real_targets = real_batch
             self.train_one_batch(real_images, real_targets)
+            count += 1
+            if self.early_epoch and count >= self.num_batches_early_epoch:
+                print(f'\nBreaking due to early epoch after {count} batches')
+                break
         self.epoch += 1
 
     # Create a batch from real and adversarial data and call train_one_batch
@@ -123,10 +131,15 @@ class AdversarialTrainer:
         self.model.train()
         # Note that we're using the loader here directly and not the cached iterator.
         # This creates a new iterator for the for loop, and iterates over all elements from start to end
+        count = 0
         for self.next_real_batch, (real_batch, adv_batch) in enumerate(zip(self.real_data_train_loader, adversarial_train_loader)):
             real_images, real_targets = real_batch
             fake_images, _, fake_targets = adv_batch
             self.train_one_batch_adversarial(real_images, real_targets, fake_images, fake_targets)
+            count += 1
+            if self.early_epoch and count >= self.num_batches_early_epoch:
+                print(f'\nBreaking due to early epoch after {count} batches')
+                break
 
         self.epoch += 1
 

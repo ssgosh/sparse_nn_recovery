@@ -227,6 +227,11 @@ def main():
             help='Directory under which model and outputs are saved')
     parser.add_argument('--run-suffix', type=str, default='', required=False, metavar='S',
                         help='Will be appended to the run directory provided')
+    parser.add_argument('--early-epoch', action='store_true', default=False,
+                        dest='early_epoch',
+                        help='Finish epoch early (for debugging)')
+    parser.add_argument('--num-batches-early-epoch', type=int, default=10, metavar='N',
+                        help='Number of batches before epoch finishes')
 
     # Arguments specific to adversarial training
     parser.add_argument('--generator-lr', type=float, default=0.05,
@@ -396,7 +401,8 @@ def main():
         #sys.exit(0)
         # Now we can create an AdversarialTrainer!!!!!
         adversarial_trainer = AdversarialTrainer(train_loader, dataset_recoverer, model, optimizer, config.batch_size,
-                                                 device, config.log_interval, config.dry_run)
+                                                 device, config.log_interval, config.dry_run, config.early_epoch,
+                                                 config.num_batches_early_epoch)
 
 
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
