@@ -16,10 +16,10 @@ class CkptSaver:
         path.parent.mkdir(parents=True, exist_ok=True)
         torch.save({'images': images, 'targets': targets}, path)
 
-    def load_images(self, dataset_epoch):
+    def load_images(self, dataset_epoch, device=None):
         path = self.get_image_ckpt_path(dataset_epoch)
         print("Loading images from : ", path)
-        model_dict = torch.load(path)
+        model_dict = torch.load(path, map_location=device)
         # print(model_dict)
         return model_dict['images'], model_dict['targets']
 
