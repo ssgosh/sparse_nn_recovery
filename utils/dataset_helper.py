@@ -12,9 +12,11 @@ class DatasetHelper(ABC):
         if classobj.dataset is None:
             assert dataset_name is not None
             if dataset_name == 'mnist':
-                return MNISTdatasetHelper()
+                classobj.dataset = MNISTdatasetHelper()
+                return classobj.dataset
             elif dataset_name == 'cifar':
-                return CIFARDatasetHelper()
+                classobj.dataset = CIFARDatasetHelper()
+                return classobj.dataset
             else:
                 raise ValueError("Invalid dataset name: %s" % dataset_name)
         else:

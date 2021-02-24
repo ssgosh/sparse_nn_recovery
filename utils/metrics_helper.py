@@ -6,12 +6,19 @@ import json
 import torch.nn.functional as F
 import torch
 
+from utils.dataset_helper import DatasetHelper
+
 
 def _accumulate_val_in_dict(d, key, val):
     d[key] = (d[key] + val) if key in d else val
 
 
 class MetricsHelper:
+    @classmethod
+    def get(cls):
+        zero, one = DatasetHelper.get_dataset().get_transformed_zero_one()
+        return cls(zero, one)
+
     def __init__(self, image_zero, image_one):
         self.image_zero = image_zero
         self.image_one = image_one

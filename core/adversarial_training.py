@@ -10,6 +10,8 @@ from utils.infinite_dataloader import InfiniteDataLoader
 
 import sys
 
+from utils.metrics_helper import MetricsHelper
+
 
 class ShouldBreak(Exception):
     pass
@@ -71,6 +73,7 @@ class AdversarialTrainer:
         self.tbh = self.sparse_input_dataset_recoverer.tbh
         self.sparsity_mode = self.sparse_input_dataset_recoverer.sparsity_mode
         self.train_dataset_len = len(self.real_data_train_loader)
+        self.metrics_helper : MetricsHelper = MetricsHelper.get()
 
     # Train model on the given batch. Used for real data or adversarial data training
     def train_one_batch(self, batch_inputs, batch_targets):
@@ -82,6 +85,7 @@ class AdversarialTrainer:
         loss.backward()
         self.opt_model.step()
         self.logger.log_batch(loss.item())
+        avg_real_probs = self.metrics_helper.compute_avg_prob(output, target)
         self.log_losses_to_tensorboard({'real_loss': real_loss.item(),
                                         'avg_real_probs' : avg_real_probs.item(),},
                                        self.epoch * self.get_batches_in_epoch() + self.next_real_batch)
@@ -122,10 +126,8 @@ class AdversarialTrainer:
         self.logger.log_batch(loss.item())
 
         # Compute Probabilities
-        real_probs = F.softmax(real_output, dim=1)
-        avg_real_probs = torch.mean(real_probs)
-        adv_probs = F.softmax(adv_output, dim=1)
-        avg_adv_probs = torch.mean(adv_probs)
+        avg_real_probs = self.metrics_helper.compute_avg_prob(real_output, real_targets)
+        avg_adv_probs = self.metrics_helper.compute_avg_prob(adv_output, adv_targets)
         self.log_losses_to_tensorboard(
             {
             'real_loss': real_loss.item(),
