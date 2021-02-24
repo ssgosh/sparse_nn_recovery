@@ -1,3 +1,5 @@
+import math
+
 import torch
 import torchvision
 
@@ -54,8 +56,19 @@ def foobar():
     writer.add_custom_scalars(layout)
     writer.close()
 
-foobar()
+def test_scalars():
+    writer = SummaryWriter()
 
+    for x in range(100):
+        writer.add_scalars("some/tag", {'x' : x, 'x*sin(x)' : x*math.sin(x)}, x)
+
+    for x in range(100):
+        writer.add_scalars("another/tag", {'x' : x, 'x*cos(x)' : x*math.cos(x)}, x)
+
+
+test_scalars()
+
+#foobar()
 #writer = tensorboard_setup()
 #main()
 
