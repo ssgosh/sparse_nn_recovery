@@ -7,6 +7,7 @@ import argparse
 import torch
 
 from core.sparse_input_recoverer import SparseInputRecoverer
+from utils.dataset_helper import DatasetHelper
 
 
 # Creates an entire dataset of images, targets by doing sparse recovery from the model.
@@ -35,6 +36,7 @@ class SparseInputDatasetRecoverer:
         self.ckpt_saver = ckpt_saver
         self.tbh = self.sparse_input_recoverer.tbh
         self.dataset_epoch = 0
+        self.image_zero = self.sparse_input_recoverer.image_zero
 
     def recover_image_dataset_internal(self, model, output_shape, num_real_classes, batch_size, num_steps,
                               include_layer_map, sparsity_mode, device):
@@ -111,15 +113,17 @@ class SparseInputDatasetRecoverer:
         for cls in range(num_classes):
             count = 0
             i = 0
-            # TODO: handle the case of not enough images with added condition i < targets.shape[0]
-            # TODO: Append torch.zeros() to entries as the remaining entires for this class in that case
-            while count < num_per_class:
-                assert i < targets.shape[0], "Handle above TODO"
+            while count < num_per_class and i < targets.shape[0]:
                 if targets[i].item() == cls:
                     entries.append(images[i])
                     tgt_entries.append(targets[i])
                     count += 1
                 i += 1
+            # Append all-zero images if not enough entries for this class
+            for j in range(count, num_per_class):
+                entries.append(torch.zeros_like(images[0]) + self.image_zero)
+                tgt_entries.append(torch.tensor(cls))
+
         return torch.stack(entries), torch.stack(tgt_entries)
 
     def recover_image_dataset(self):

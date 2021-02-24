@@ -27,6 +27,11 @@ class TensorBoardHelper:
         img_grid = torchvision.utils.make_grid(images, num_per_row, normalize=True,
                 range=rng, padding=2, pad_value=1.0,
                 scale_each=True)
+        # Resize image grid
+        size = img_grid.shape[1:]
+        size = [3 * item for item in size]
+        resize = torchvision.transforms.Resize(size)
+        img_grid = resize(img_grid)
         self.writer.add_image(tag, img_grid, global_step=global_step)
 
 
