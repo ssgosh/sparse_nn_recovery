@@ -3,6 +3,8 @@ import utils.mnist_helper as mh
 
 import math
 import json
+import torch.nn.functional as F
+import torch
 
 
 def _accumulate_val_in_dict(d, key, val):
@@ -13,6 +15,13 @@ class MetricsHelper:
     def __init__(self, image_zero, image_one):
         self.image_zero = image_zero
         self.image_one = image_one
+
+    def compute_avg_prob(self, output, target):
+        real_probs = F.softmax(output, dim=1)
+        a = torch.arange(target.shape[0])
+        probs = real_probs[a, target]   # a[i], target[i] denotes desired class probability for ith entry
+        avg_real_probs = torch.mean(probs)
+        return avg_real_probs
 
     # Computes average sparsity for each class in batch of images
     # Also for each layer for each class in batch

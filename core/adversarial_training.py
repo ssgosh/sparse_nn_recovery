@@ -82,7 +82,8 @@ class AdversarialTrainer:
         loss.backward()
         self.opt_model.step()
         self.logger.log_batch(loss.item())
-        self.log_losses_to_tensorboard({'real_loss': real_loss.item()},
+        self.log_losses_to_tensorboard({'real_loss': real_loss.item(),
+                                        'avg_real_probs' : avg_real_probs.item(),},
                                        self.epoch * self.get_batches_in_epoch() + self.next_real_batch)
 
     # Train model on only real data for one full epoch. Used for pre-training.
@@ -119,8 +120,21 @@ class AdversarialTrainer:
         loss.backward()
         self.opt_model.step()
         self.logger.log_batch(loss.item())
-        self.log_losses_to_tensorboard({'real_loss': real_loss.item(), 'adv_loss': adv_loss.item()},
-                                       self.epoch * self.get_batches_in_epoch() + self.next_real_batch)
+
+        # Compute Probabilities
+        real_probs = F.softmax(real_output, dim=1)
+        avg_real_probs = torch.mean(real_probs)
+        adv_probs = F.softmax(adv_output, dim=1)
+        avg_adv_probs = torch.mean(adv_probs)
+        self.log_losses_to_tensorboard(
+            {
+            'real_loss': real_loss.item(),
+            'adv_loss': adv_loss.item(),
+            'avg_real_probs': avg_real_probs.item(),
+            'avg_adv_probs': avg_adv_probs.item(),
+            },
+            self.epoch * self.get_batches_in_epoch() + self.next_real_batch
+        )
 
         #batch_inputs = torch.cat([real_batch_inputs, adversarial_batch_inputs])
         #batch_targets = torch.cat([real_batch_targets, adversarial_batch_targets])
