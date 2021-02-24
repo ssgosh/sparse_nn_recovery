@@ -5,6 +5,7 @@ import torch.nn.functional as F
 
 from core.sparse_input_dataset_recoverer import SparseInputDatasetRecoverer
 from utils.batched_tensor_view_data_loader import BatchedTensorViewDataLoader
+from utils.dataset_helper import DatasetHelper
 from utils.infinite_dataloader import InfiniteDataLoader
 
 import sys
@@ -24,7 +25,8 @@ class TrainLogger:
     def log_batch(self, lossval):
         if self.trainer.next_real_batch % self.log_interval == 0:
             sys.stdout.write('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                self.trainer.epoch, self.trainer.next_real_batch * self.trainer.adv_training_batch_size, self.train_dataset_len,
+                self.trainer.epoch, self.trainer.next_real_batch * self.trainer.adv_training_batch_size,
+                self.train_dataset_len * self.trainer.adv_training_batch_size,
                 100. * self.trainer.next_real_batch / self.train_dataset_len, lossval)
             )
             sys.stdout.write('\r')
@@ -68,16 +70,20 @@ class AdversarialTrainer:
         self.logger = TrainLogger(self, log_interval, dry_run)
         self.tbh = self.sparse_input_dataset_recoverer.tbh
         self.sparsity_mode = self.sparse_input_dataset_recoverer.sparsity_mode
+        self.train_dataset_len = len(self.real_data_train_loader)
 
     # Train model on the given batch. Used for real data or adversarial data training
     def train_one_batch(self, batch_inputs, batch_targets):
         data, target = batch_inputs.to(self.device), batch_targets.to(self.device)
         self.opt_model.zero_grad()
         output = self.model(data)
-        loss = F.nll_loss(output, target) + self.model.get_weight_decay()
+        real_loss = F.nll_loss(output, target)
+        loss = real_loss + self.model.get_weight_decay()
         loss.backward()
         self.opt_model.step()
         self.logger.log_batch(loss.item())
+        self.log_losses_to_tensorboard({'real_loss': real_loss.item()},
+                                       self.epoch * self.get_batches_in_epoch() + self.next_real_batch)
 
     # Train model on only real data for one full epoch. Used for pre-training.
     def train_one_epoch_real(self):
@@ -113,7 +119,8 @@ class AdversarialTrainer:
         loss.backward()
         self.opt_model.step()
         self.logger.log_batch(loss.item())
-        self.log_losses_to_tensorboard({'real_loss': real_loss.item(), 'adv_loss': adv_loss.item()}, self.next_real_batch)
+        self.log_losses_to_tensorboard({'real_loss': real_loss.item(), 'adv_loss': adv_loss.item()},
+                                       self.epoch * self.get_batches_in_epoch() + self.next_real_batch)
 
         #batch_inputs = torch.cat([real_batch_inputs, adversarial_batch_inputs])
         #batch_targets = torch.cat([real_batch_targets, adversarial_batch_targets])
@@ -211,3 +218,9 @@ class AdversarialTrainer:
 
     def log_losses_to_tensorboard(self, losses_dict, global_step):
         self.tbh.log_dict(f"{self.sparsity_mode}", losses_dict, global_step)
+
+    def get_batches_in_epoch(self):
+        if self.early_epoch:
+            return self.num_batches_early_epoch
+        else:
+            return self.train_dataset_len
