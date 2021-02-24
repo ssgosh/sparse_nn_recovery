@@ -62,7 +62,8 @@ class SparseInputDatasetRecoverer:
             images_tensor = torch.cat(images)
             targets_tensor = torch.cat(targets)
 
-            self.log_first_100_images_stats(model, images_tensor, targets_tensor, include_layer_map, sparsity_mode)
+            #self.log_first_100_images_stats(model, images_tensor, targets_tensor, include_layer_map, sparsity_mode)
+            self.log_regular_batch_stats(model, images_tensor, targets_tensor, include_layer_map, sparsity_mode)
 
             # Save to ckpt dir
             self.ckpt_saver.save_images(images_tensor, targets_tensor, self.dataset_epoch)
@@ -88,6 +89,38 @@ class SparseInputDatasetRecoverer:
         self.tbh.log_dict(f"{sparsity_mode}", probs, global_step=self.dataset_epoch)
         self.tbh.log_dict(f"{sparsity_mode}", sparsity, global_step=self.dataset_epoch)
         self.tbh.flush()
+
+    def log_regular_batch_stats(self, model, images_tensor, targets_tensor, include_layer_map, sparsity_mode):
+        images, targets = self.get_regular_batch(images_tensor, targets_tensor, self.num_real_classes, 10)
+        targets_list = [foo.item() for foo in targets]
+        self.tbh.add_image_grid(images, f"{sparsity_mode}/dataset_images", filtered=True, num_per_row=10,
+                                global_step=self.dataset_epoch)
+        self.tbh.add_list(targets_list, f"{sparsity_mode}/dataset_targets", num_per_row=10,
+                          global_step=self.dataset_epoch)
+        # Run forward on this batch and get losses, probabilities and sparsity for logging
+        loss, losses, output, probs, sparsity = self.sparse_input_recoverer.forward(
+            model, images, targets, include_layer_map[sparsity_mode], include_likelihood=True)
+        self.tbh.log_dict(f"{sparsity_mode}", probs, global_step=self.dataset_epoch)
+        self.tbh.log_dict(f"{sparsity_mode}", sparsity, global_step=self.dataset_epoch)
+        self.tbh.flush()
+
+    # Get a batch of 100 images with 10 images per class
+    def get_regular_batch(self, images, targets, num_classes, num_per_class):
+        entries = []
+        tgt_entries = []
+        for cls in range(num_classes):
+            count = 0
+            i = 0
+            # TODO: handle the case of not enough images with added condition i < targets.shape[0]
+            # TODO: Append torch.zeros() to entries as the remaining entires for this class in that case
+            while count < num_per_class:
+                assert i < targets.shape[0], "Handle above TODO"
+                if targets[i].item() == cls:
+                    entries.append(images[i])
+                    tgt_entries.append(targets[i])
+                    count += 1
+                i += 1
+        return torch.stack(entries), torch.stack(tgt_entries)
 
     def recover_image_dataset(self):
         output_shape = [self.dataset_len] + list(self.each_entry_shape)
