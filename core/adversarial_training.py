@@ -66,6 +66,8 @@ class AdversarialTrainer:
         self.real_data_train_iterator = iter(self.real_data_train_loader)
 
         self.logger = TrainLogger(self, log_interval, dry_run)
+        self.tbh = self.sparse_input_dataset_recoverer.tbh
+        self.sparsity_mode = self.sparse_input_dataset_recoverer.sparsity_mode
 
     # Train model on the given batch. Used for real data or adversarial data training
     def train_one_batch(self, batch_inputs, batch_targets):
@@ -94,14 +96,28 @@ class AdversarialTrainer:
     def train_one_batch_adversarial(self, real_batch_inputs, real_batch_targets,
                                     adversarial_batch_inputs, adversarial_batch_targets):
         # Move everything to gpu before performing tensor operations
-        real_batch_inputs = real_batch_inputs.to(self.device)
-        adversarial_batch_inputs = adversarial_batch_inputs.to(self.device)
-        real_batch_targets = real_batch_targets.to(self.device)
-        adversarial_batch_targets = adversarial_batch_targets.to(self.device)
+        real_data = real_batch_inputs.to(self.device)
+        adv_data = adversarial_batch_inputs.to(self.device)
+        real_targets = real_batch_targets.to(self.device)
+        adv_targets = adversarial_batch_targets.to(self.device)
 
-        batch_inputs = torch.cat([real_batch_inputs, adversarial_batch_inputs])
-        batch_targets = torch.cat([real_batch_targets, adversarial_batch_targets])
-        self.train_one_batch(batch_inputs, batch_targets)
+        self.opt_model.zero_grad()
+
+        real_output = self.model(real_data)
+        adv_output = self.model(adv_data)
+
+        real_loss = F.nll_loss(real_output, real_targets)
+        adv_loss = F.nll_loss(adv_output, adv_targets)
+        loss = real_loss + adv_loss + self.model.get_weight_decay()
+
+        loss.backward()
+        self.opt_model.step()
+        self.logger.log_batch(loss.item())
+        self.log_losses_to_tensorboard({'real_loss': real_loss.item(), 'adv_loss': adv_loss.item()}, self.next_real_batch)
+
+        #batch_inputs = torch.cat([real_batch_inputs, adversarial_batch_inputs])
+        #batch_targets = torch.cat([real_batch_targets, adversarial_batch_targets])
+        #self.train_one_batch(batch_inputs, batch_targets)
 
     # One epoch of adversarial training
     # def train_one_epoch_adversarial(self):
@@ -192,3 +208,6 @@ class AdversarialTrainer:
                 break
 
         return epoch_over
+
+    def log_losses_to_tensorboard(self, losses_dict, global_step):
+        self.tbh.log_dict(f"{self.sparsity_mode}", losses_dict, global_step)
