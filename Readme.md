@@ -66,4 +66,20 @@ What do we need to verify?
   Log **both aggregate and per-class stats**.
 * For (4) and (5), we should generate **test adversarial images** on each epoch, on which the network is not trained.
   We should log the **same stats as for (3)**.
-* For (6), 
+* For (6), keep aside half the training dataset and train a network B, before starting adversarial training.
+  We should generate adversarial images for network B using our process.
+  Use this as test data with fake classes.
+  Log the **same stats as for (3)**.
+* For (7), we should use above network B and generate adversarial images using a different process such as differential evolution. Log the **same stats as for (6)**.
+* (3), (4), (5), (6) and (7) are proxies for (8). Use as many different adversarial image generation proceses in (7) as possible.
+* 
+
+# Perturbing an in-distribution image
+
+We can create fooling images by perturbing a real data image with an adversarially generated image.
+
+Let image `P = clip(Q + \alpha * R)`, where `Q` is a real data image, and `R` is an adversarial image, with `class(R) != class(Q)`.
+Let Q be classified by the network `A` with high confidence (`> 0.9`).
+Then, find `0 < \alpha < \epislon` such that class(P) = class(R) with high confidence (> 0.9). Keep `\epsilon \in {0.1, 0.2, 0.3, 0.4, 0.5}`.
+
+Can we find such an `\alpha`?
