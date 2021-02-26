@@ -71,8 +71,11 @@ What do we need to verify?
   Use this as test data with fake classes.
   Log the **same stats as for (3)**.
 * For (7), we should use above network B and generate adversarial images using a different process such as differential evolution. Log the **same stats as for (6)**.
-* (3), (4), (5), (6) and (7) are proxies for (8). Use as many different adversarial image generation proceses in (7) as possible.
-* 
+* (3), (4), (5), (6) and (7) are proxies for (8).
+  Use as many adversarial image generation processes in (7) as possible.
+* For (9), log **training loss** and **average probability** of belonging to the real target class for each batch.
+  Log both **per-class and aggregate probabilities**.
+* For (10), after each epoch, log **same metrics as (9)** on test data.
 
 # Perturbing an in-distribution image
 
