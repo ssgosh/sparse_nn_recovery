@@ -77,6 +77,26 @@ What do we need to verify?
   Log both **per-class and aggregate probabilities**.
 * For (10), after each epoch, log **same metrics as (9)** on test data.
 
+## Final Model Selection
+
+Final model needs to be accurate on real data but robust to adversarial data.
+For this reason, we can use the harmonic mean of real data accuracy and adversarial data accuracy.
+Reason for taking harmonic mean instead of the arithmetic mean is that a low score in any one criterion results in a low score of the overall criterion.
+Hence, scoring high on the harmonic mean implies that all accuracies are reasonably high.
+Note that the F-score typically used in NLP is the harmonic mean of Precision and Recall.
+
+Adversarial data accuracy can be computed in one of the following ways:
+1) whether fake target class was correctly predicted
+2) whether final prediction points to a non-real class. 
+
+In case of more than one adversarial test dataset, harmonic mean should be taken in this way: 
+
+```2/H = 1/A_real + 1/n * \sum(1/A_adv_i for i in [1, n])```
+
+This is to give priority to the real data accuracy over adversarial robustness over various datasets.
+We should consider each intermittent adversarial dataset as a different dataset in this score computation,
+so that the final selected network performs well on each adversarial dataset.
+
 # Perturbing an in-distribution image
 
 We can create fooling images by perturbing a real data image with an adversarially generated image.
