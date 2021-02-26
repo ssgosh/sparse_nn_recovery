@@ -51,8 +51,19 @@ What do we need to verify?
 3. Our adversarial training ensure that the network does not forget past images it was trained on.
 4. Our adversarial training ensure that the network can detect adversarial images that it was not trained on, but generated via the same process on the most recent network
 5. Our adversarial training ensure that the network can detect adversarial images that it was not trained on, but generated via the same process on a past network.
-6. Our adversarial training ensure that the network can detect adversarial images that it was not trained on, but generated via the same process on a completely different network, trained on a different dataset of the same distribution.
-7. Our adversarial training ensure that the network can detect adversarial images that it was not trained on, and generated via a different process on the same or different dataset coming from the same distribution.
+6. Our adversarial training ensure that the network can detect adversarial images that it was not trained on, but generated via the **same process** on a completely different network, trained on a different dataset of the same distribution.
+7. Our adversarial training ensure that the network can detect adversarial images that it was not trained on, and generated via a **different process** on the same or different dataset coming from the same distribution. For example, use differential evolution to generate these images.
+8. Our adversarial training ensure that the final trained network does not have sparse adversarial images.
+9. Our adversarial training ensure that the network does well on real training data.
+10. Our adversarial training ensure that the network does well on real test data.
 
-For (1), we should log probability of image belonging to the target class, as well as sparsity of image.
-For (2), we don't know what metric 
+* For (0), we should log **average probability of adversarial image belonging to the target class**, as well as **average sparsity of image**. Should also do this **class-wise**.
+* For (1), we don't know what metric should be monitored, or if there is a metric other than human inspection.
+* For (2), we should log the current **adversarial batch's probability** of belonging to the fake class. Should also log the **loss**. Should also log this for **individual fake classes**.
+* For (3), we should keep around all past training images and evaluate on them after each epoch.
+  Target should be fake class while evaluation.
+  If this is too costly, only evaluate on a sample of 1000 images for each epoch. 
+  Log **both aggregate and per-class stats**.
+* For (4) and (5), we should generate **test adversarial images** on each epoch, on which the network is not trained.
+  We should log the **same stats as for (3)**.
+* For (6), 
