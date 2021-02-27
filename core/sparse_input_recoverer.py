@@ -73,6 +73,7 @@ class SparseInputRecoverer:
         # 'none' : disable tensorboard logging
         # 'stats_only' : log only stats, no images
         self.tensorboard_logging = 'all'
+        self.tensorboard_label = None
 
     # Clip the pixels to between (mnist_zero, mnist_one)
     def clip_if_needed(self, images):
@@ -86,7 +87,7 @@ class SparseInputRecoverer:
                             include_likelihood=True, batch_idx=0):
         with model_eval_no_grad(model), images_require_grad(images):
             self.recover_image_batch_internal(model, images, targets, num_steps, include_layer, penalty_mode,
-                                             include_likelihood, batch_idx)
+                                              include_likelihood, batch_idx)
 
     def recover_image_batch_internal(self, model, images, targets, num_steps, include_layer, penalty_mode,
                                      include_likelihood, batch_idx):
@@ -94,6 +95,7 @@ class SparseInputRecoverer:
 
         tb_log = self.tensorboard_logging != 'none'
         tb_add_images = self.tensorboard_logging == 'all'
+        tb_label = penalty_mode if self.tensorboard_label is None else self.tensorboard_label
         start = num_steps * batch_idx + 1
         for i in range(start, start + num_steps):
             optimizer.zero_grad()
@@ -115,7 +117,7 @@ class SparseInputRecoverer:
 
             if tb_log:
                 # Do tensorboard things
-                self.tbh.add_tensorboard_stuff(penalty_mode, images, losses, probs,
+                self.tbh.add_tensorboard_stuff(tb_label, images, losses, probs,
                                                sparsity, i, add_images=tb_add_images)
 
     def forward(self, model, images, targets, include_layer, include_likelihood):

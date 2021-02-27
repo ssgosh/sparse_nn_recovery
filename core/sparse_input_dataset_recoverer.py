@@ -48,7 +48,8 @@ class SparseInputDatasetRecoverer:
         batch_shape = list(output_shape)
         batch_shape[0] = batch_size
         num_batches = output_shape[0] // batch_size
-        start = self.dataset_epoch * num_batches
+        # Since we're separating plots for each batch, start can be kept 0
+        start = 0  # self.dataset_epoch * num_batches
         end = start + num_batches
         # or 'all', which will include images, or 'none', which will not log anything
         self.sparse_input_recoverer.tensorboard_logging = 'stats_only'
@@ -57,6 +58,8 @@ class SparseInputDatasetRecoverer:
             targets_batch = torch.randint(low=0, high=num_real_classes, size=(batch_size,)).to(device)
             images.append(image_batch)
             targets.append(targets_batch)
+            self.sparse_input_recoverer.tensorboard_label = \
+                f"recovery_detailed/epoch_{self.dataset_epoch}/batch_{batch_idx}"
             self.sparse_input_recoverer.recover_image_batch(model, image_batch, targets_batch, num_steps,
                                                             include_layer_map[sparsity_mode],
                                                             sparsity_mode,
