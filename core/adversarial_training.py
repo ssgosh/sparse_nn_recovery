@@ -6,6 +6,7 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 
 from core.sparse_input_dataset_recoverer import SparseInputDatasetRecoverer
+from core.tblabels import TBLabels
 from utils.batched_tensor_view_data_loader import BatchedTensorViewDataLoader
 from utils.dataset_helper import DatasetHelper
 from utils.infinite_dataloader import InfiniteDataLoader
@@ -13,7 +14,6 @@ from utils.infinite_dataloader import InfiniteDataLoader
 import sys
 
 from utils.metrics_helper import MetricsHelper
-
 
 class ShouldBreak(Exception):
     pass
@@ -93,6 +93,7 @@ class AdversarialTrainer:
         avg_real_probs = self.metrics_helper.compute_avg_prob(output, target)
         self.log_losses_to_tensorboard({'real_loss': real_loss.item(),
                                         'avg_real_probs' : avg_real_probs.item(),},
+                                       TBLabels.PER_BATCH_ADV_TRAINING,
                                        self.epoch * self.get_batches_in_epoch() + self.next_real_batch)
 
     # Train model on only real data for one full epoch. Used for pre-training.
@@ -140,6 +141,7 @@ class AdversarialTrainer:
             'avg_real_probs': avg_real_probs.item(),
             'avg_adv_probs': avg_adv_probs.item(),
             },
+            TBLabels.PER_BATCH_ADV_TRAINING,
             self.epoch * self.get_batches_in_epoch() + self.next_real_batch
         )
 
@@ -237,8 +239,8 @@ class AdversarialTrainer:
 
         return epoch_over
 
-    def log_losses_to_tensorboard(self, losses_dict, global_step):
-        self.tbh.log_dict(f"adversarial_training", losses_dict, global_step)
+    def log_losses_to_tensorboard(self, losses_dict, label, global_step):
+        self.tbh.log_dict(label, losses_dict, global_step)
 
     def get_batches_in_epoch(self):
         if self.early_epoch:

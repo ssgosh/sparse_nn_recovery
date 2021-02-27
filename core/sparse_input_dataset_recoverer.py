@@ -59,7 +59,7 @@ class SparseInputDatasetRecoverer:
             images.append(image_batch)
             targets.append(targets_batch)
             self.sparse_input_recoverer.tensorboard_label = \
-                f"recovery_detailed/epoch_{self.dataset_epoch}/batch_{batch_idx}"
+                f"zzz_recovery_detailed/epoch_{self.dataset_epoch}/batch_{batch_idx}"
             self.sparse_input_recoverer.recover_image_batch(model, image_batch, targets_batch, num_steps,
                                                             include_layer_map[sparsity_mode],
                                                             sparsity_mode,
