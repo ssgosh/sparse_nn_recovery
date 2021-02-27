@@ -100,17 +100,18 @@ class SparseInputDatasetRecoverer:
         self.tbh.flush()
 
     def log_regular_batch_stats(self, model, images_tensor, targets_tensor, include_layer_map, sparsity_mode):
+        label = "recovery_epoch"
         images, targets = self.get_regular_batch(images_tensor, targets_tensor, self.num_real_classes, 10)
         targets_list = [foo.item() for foo in targets]
-        self.tbh.add_image_grid(images, f"{sparsity_mode}/dataset_images", filtered=True, num_per_row=10,
+        self.tbh.add_image_grid(images, f"{label}/dataset_images", filtered=True, num_per_row=10,
                                 global_step=self.dataset_epoch)
-        self.tbh.add_list(targets_list, f"{sparsity_mode}/dataset_targets", num_per_row=10,
+        self.tbh.add_list(targets_list, f"{label}/dataset_targets", num_per_row=10,
                           global_step=self.dataset_epoch)
         # Run forward on this batch and get losses, probabilities and sparsity for logging
         loss, losses, output, probs, sparsity = self.sparse_input_recoverer.forward(
             model, images, targets, include_layer_map[sparsity_mode], include_likelihood=True)
-        self.tbh.log_dict(f"{sparsity_mode}", probs, global_step=self.dataset_epoch)
-        self.tbh.log_dict(f"{sparsity_mode}", sparsity, global_step=self.dataset_epoch)
+        self.tbh.log_dict(f"{label}", probs, global_step=self.dataset_epoch)
+        self.tbh.log_dict(f"{label}", sparsity, global_step=self.dataset_epoch)
         self.tbh.flush()
 
     # Get a batch of 100 images with 10 images per class

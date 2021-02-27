@@ -238,7 +238,7 @@ class AdversarialTrainer:
         return epoch_over
 
     def log_losses_to_tensorboard(self, losses_dict, global_step):
-        self.tbh.log_dict(f"{self.sparsity_mode}", losses_dict, global_step)
+        self.tbh.log_dict(f"adversarial_training", losses_dict, global_step)
 
     def get_batches_in_epoch(self):
         if self.early_epoch:

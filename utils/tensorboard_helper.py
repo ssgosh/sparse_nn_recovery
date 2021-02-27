@@ -88,17 +88,18 @@ class TensorBoardHelper:
 
     def add_tensorboard_stuff(self, sparsity_mode, images, losses, probs,
                               sparsity, global_step, add_images=True):
-        #self.writer.add_images(f"{sparsity_mode}/Unfiltered Images", images, dataformats="NCHW",
-        #        global_step=global_step)
-        self.add_image_grid(images, f"{sparsity_mode}/Unfiltered Images",
-                            filtered=False, num_per_row=3, global_step=global_step)
-        #add_figure(images, f"{sparsity_mode}/Unfiltered Images", global_step, sparsity_mode)
-        filtered_images = mh.mnist_post_process_image_batch(images)
-        #add_figure(filtered_images, f"{sparsity_mode}/Filtered Images", global_step, sparsity_mode)
-        self.add_image_grid(filtered_images, f"{sparsity_mode}/Filtered Images",
-                            filtered=True, num_per_row=3, global_step=global_step)
-        #self.writer.add_images(f"{sparsity_mode}/Filtered Images", filtered_images, dataformats="NCHW",
-        #        global_step=global_step)
+        if add_images:
+            #self.writer.add_images(f"{sparsity_mode}/Unfiltered Images", images, dataformats="NCHW",
+            #        global_step=global_step)
+            self.add_image_grid(images, f"{sparsity_mode}/Unfiltered Images",
+                                filtered=False, num_per_row=3, global_step=global_step)
+            #add_figure(images, f"{sparsity_mode}/Unfiltered Images", global_step, sparsity_mode)
+            filtered_images = mh.mnist_post_process_image_batch(images)
+            #add_figure(filtered_images, f"{sparsity_mode}/Filtered Images", global_step, sparsity_mode)
+            self.add_image_grid(filtered_images, f"{sparsity_mode}/Filtered Images",
+                                filtered=True, num_per_row=3, global_step=global_step)
+            #self.writer.add_images(f"{sparsity_mode}/Filtered Images", filtered_images, dataformats="NCHW",
+            #        global_step=global_step)
         self.log_dict(f"{sparsity_mode}/0-losses", losses, global_step)
         self.log_dict(f"{sparsity_mode}", probs, global_step)
         self.log_dict(f"{sparsity_mode}", sparsity, global_step)
