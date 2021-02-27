@@ -2,6 +2,8 @@ import argparse
 
 import torch
 import torch.nn.functional as F
+from torch.optim.lr_scheduler import StepLR
+from torch.utils.data import DataLoader
 
 from core.sparse_input_dataset_recoverer import SparseInputDatasetRecoverer
 from utils.batched_tensor_view_data_loader import BatchedTensorViewDataLoader
@@ -53,7 +55,8 @@ class AdversarialTrainer:
 
     def __init__(self, real_data_train_loader, sparse_input_dataset_recoverer: SparseInputDatasetRecoverer,
                  model, opt_model, adv_training_batch_size, device, log_interval, dry_run, early_epoch,
-                 num_batches_early_epoch):
+                 num_batches_early_epoch,
+                 test_loader : DataLoader, lr_scheduler_model : StepLR):
         self.adv_training_batch_size = adv_training_batch_size  # Same batch size is used for both real and adversarial training
         self.real_data_train_loader = real_data_train_loader
         self.sparse_input_dataset_recoverer = sparse_input_dataset_recoverer
@@ -65,6 +68,8 @@ class AdversarialTrainer:
         self.early_epoch = early_epoch
         self.num_batches_early_epoch = num_batches_early_epoch
         self.ckpt_saver = self.sparse_input_dataset_recoverer.ckpt_saver
+        self.test_loader = test_loader
+        self.lr_scheduler_model = lr_scheduler_model
 
         # Use a fixed iterator to iterate over the training dataset
         self.real_data_train_iterator = iter(self.real_data_train_loader)
@@ -240,3 +245,45 @@ class AdversarialTrainer:
             return self.num_batches_early_epoch
         else:
             return self.train_dataset_len
+
+    # Testing code
+    def test_real_data(self):
+        self.model.eval()
+        test_loss = 0
+        correct = 0
+        with torch.no_grad():
+            for count, (data, target) in enumerate(self.test_loader):
+                data, target = data.to(self.device), target.to(self.device)
+                output = self.model(data)
+                test_loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
+                pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
+                correct += pred.eq(target.view_as(pred)).sum().item()
+                if self.early_epoch and count >= 1:
+                    print(f'\nBreaking from test due to early epoch after {count} batches')
+                    break
+
+        test_loss /= len(self.test_loader.dataset)
+
+        print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
+            test_loss, correct, len(self.test_loader.dataset),
+            100. * correct / len(self.test_loader.dataset)))
+
+    def train_loop(self, num_epochs, train_mode, pretrain, config):
+        assert train_mode in [ 'adversarial-epoch', 'adversarial-batches' ]
+        for epoch in range(0, num_epochs):
+            if pretrain and epoch == 0:
+                print('Pre-training for 1 epoch')
+                self.train_one_epoch_real()
+                # train(args, model, device, train_loader, optimizer, epoch)
+            else:
+                if train_mode == 'adversarial-batches':
+                    epoch_over = False
+                    while not epoch_over:
+                        epoch_over = self.generate_m_images_train_k_batches_adversarial(
+                            m=config.num_adversarial_images_batch_mode, k=config.num_adversarial_train_batches)
+                elif train_mode == 'adversarial-epoch':
+                    self.generate_m_images_train_one_epoch_adversarial(
+                        m=config.num_adversarial_images_epoch_mode)
+            self.test_real_data()
+            self.ckpt_saver.save_model(self.model, epoch, config.model_classname)
+            self.lr_scheduler_model.step()

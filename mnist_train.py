@@ -381,7 +381,7 @@ def main():
         #print(batch_a[0], batch_b[0], batch_c[0])
         #sys.exit(0)
 
-    model_classname = 'ExampleCNNNet'
+    config.model_classname = 'ExampleCNNNet'
     model = ExampleCNNNet(20).to(device)
     #model = MLPNet().to(device)
     #model = MLPNet3Layer(num_classes=20).to(device)
@@ -390,6 +390,9 @@ def main():
     if args.train_mode == 'adversarial-continuous':
         optD = optimizer
         optG = optim.Adam([images], lr=args.generator_lr)
+
+    # Learning rate scheduler
+    scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
 
     # Setup sparse dataset recovery here, after model etc are all set up
     if args.train_mode in [ 'adversarial-epoch', 'adversarial-batches' ]:
@@ -413,12 +416,11 @@ def main():
         # Now we can create an AdversarialTrainer!!!!!
         adversarial_trainer = AdversarialTrainer(train_loader, dataset_recoverer, model, optimizer, config.batch_size,
                                                  device, config.log_interval, config.dry_run, config.early_epoch,
-                                                 config.num_batches_early_epoch)
+                                                 config.num_batches_early_epoch, test_loader, scheduler)
 
 
-    scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
-    for epoch in range(0, args.epochs):
-        if args.train_mode not in ['adversarial-batches', 'adversarial-epoch']:
+    if args.train_mode not in ['adversarial-batches', 'adversarial-epoch']:
+        for epoch in range(0, args.epochs):
             # Perform pre-training for 1 epoch in adversarial mode
             if args.train_mode == 'normal' or epoch == 0:
                 if args.train_mode == 'adversarial-continuous':
@@ -429,22 +431,11 @@ def main():
                                   adversarial_train_loader, optD, optG, epoch)
             else:
                 raise ValueError("invalid train_mode : " + args.train_mode)
-        else:
-            if args.pretrain and epoch == 0:
-                print('Pre-training for 1 epoch')
-                adversarial_trainer.train_one_epoch_real()
-                # train(args, model, device, train_loader, optimizer, epoch)
-            else:
-                if args.train_mode == 'adversarial-batches':
-                    epoch_over = False
-                    while not epoch_over:
-                        epoch_over = adversarial_trainer.generate_m_images_train_k_batches_adversarial(
-                            m=config.num_adversarial_images_batch_mode, k=config.num_adversarial_train_batches)
-                elif args.train_mode == 'adversarial-epoch':
-                    adversarial_trainer.generate_m_images_train_one_epoch_adversarial(m=config.num_adversarial_images_epoch_mode)
         test(model, device, test_loader)
-        ckpt_saver.save_model(model, epoch, model_classname)
+        ckpt_saver.save_model(model, epoch, config.model_classname)
         scheduler.step()
+    else:
+        adversarial_trainer.train_loop(args.epochs, args.train_mode, args.pretrain, config)
 
     if args.save_model:
         save_path = config.ckpt_save_path 

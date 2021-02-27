@@ -69,7 +69,11 @@ class SparseInputRecoverer:
         self.image_zero = config.image_zero
         self.image_one = config.image_one
         self.metrics_helper = MetricsHelper(self.image_zero, self.image_one)
-        self.tensorboard_logging = True
+        # 'all' : both images and stats
+        # 'none' : disable tensorboard logging
+        # 'stats_only' : log only stats, no images
+        self.tensorboard_logging = 'all'
+        self.tensorboard_label = None
 
     # Clip the pixels to between (mnist_zero, mnist_one)
     def clip_if_needed(self, images):
@@ -83,12 +87,15 @@ class SparseInputRecoverer:
                             include_likelihood=True, batch_idx=0):
         with model_eval_no_grad(model), images_require_grad(images):
             self.recover_image_batch_internal(model, images, targets, num_steps, include_layer, penalty_mode,
-                                             include_likelihood, batch_idx)
+                                              include_likelihood, batch_idx)
 
     def recover_image_batch_internal(self, model, images, targets, num_steps, include_layer, penalty_mode,
                                      include_likelihood, batch_idx):
         optimizer = optim.Adam([images], lr=self.config.recovery_lr)
 
+        tb_log = self.tensorboard_logging != 'none'
+        tb_add_images = self.tensorboard_logging == 'all'
+        tb_label = penalty_mode if self.tensorboard_label is None else self.tensorboard_label
         start = num_steps * batch_idx + 1
         for i in range(start, start + num_steps):
             optimizer.zero_grad()
@@ -108,10 +115,10 @@ class SparseInputRecoverer:
                           images.median().item(), images.mean().item(), images.std().item(), images.min().item(),
                           images.max().item()))
 
-            if self.tensorboard_logging:
+            if tb_log:
                 # Do tensorboard things
-                self.tbh.add_tensorboard_stuff(penalty_mode, model, images, losses, probs,
-                                               sparsity, i)
+                self.tbh.add_tensorboard_stuff(tb_label, images, losses, probs,
+                                               sparsity, i, add_images=tb_add_images)
 
     def forward(self, model, images, targets, include_layer, include_likelihood):
         # lambda for input
