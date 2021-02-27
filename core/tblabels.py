@@ -25,14 +25,14 @@ class TBLabels:
 
     # On adversarial training dataset generated in epoch i
     @staticmethod
-    def PER_EPOCH_ADV_TRAINING_AGGREGATE_TRAIN(i): return f"yyy_adversarial_training_per_epoch_stats_aggregate_train_{i}"
+    def PER_EPOCH_ADV_TRAINING_AGGREGATE_TRAIN(i): return f"yyy_adversarial_training_per_epoch_stats_aggregate_train_{i:4>0d}"
 
     # On real validation dataset and combined adversarial validation data from all past epochs
     PER_EPOCH_ADV_VALIDATIONING_AGGREGATE_VALIDATION = "adversarial_training_per_epoch_stats_aggregate_validation"
 
     # On intermittent adversarial validation datasets
     @staticmethod
-    def PER_EPOCH_ADV_TRAINING_AGGREGATE_VALIDATION(i): return f"yyy_adversarial_training_per_epoch_stats_aggregate_validation_{i}"
+    def PER_EPOCH_ADV_TRAINING_AGGREGATE_VALIDATION(i): return f"yyy_adversarial_training_per_epoch_stats_aggregate_validation_{i:4>0d}"
 
     # On external adversarial validation datasets, such as one-pixel attack, Differential Evolution, our held-out network B
     @staticmethod
@@ -46,14 +46,14 @@ class TBLabels:
 
     # On adversarial training dataset generated in epoch i
     @staticmethod
-    def PER_EPOCH_ADV_TRAINING_PER_CLASS_TRAIN(i): return f"zzz_adversarial_training_per_epoch_stats_per_class_train_{i}"
+    def PER_EPOCH_ADV_TRAINING_PER_CLASS_TRAIN(i): return f"zzz_adversarial_training_per_epoch_stats_per_class_train_{i:4>0d}"
 
     # On real validation dataset and combined adversarial validation data from all past epochs
     PER_EPOCH_ADV_VALIDATIONING_PER_CLASS_VALIDATION = "zzz_adversarial_training_per_epoch_stats_per_class_validation"
 
     # On intermittent adversarial validation datasets
     @staticmethod
-    def PER_EPOCH_ADV_TRAINING_PER_CLASS_VALIDATION(i): return f"zzz_adversarial_training_per_epoch_stats_per_class_validation_{i}"
+    def PER_EPOCH_ADV_TRAINING_PER_CLASS_VALIDATION(i): return f"zzz_adversarial_training_per_epoch_stats_per_class_validation_{i:4>0d}"
 
     # On external adversarial validation datasets, such as one-pixel attack, Differential Evolution, our held-out network B
     @staticmethod
