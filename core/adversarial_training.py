@@ -94,7 +94,10 @@ class AdversarialTrainer:
         self.log_losses_to_tensorboard({'real_loss': real_loss.item(),
                                         'avg_real_probs' : avg_real_probs.item(),},
                                        TBLabels.PER_BATCH_ADV_TRAINING_AGGREGATE,
-                                       self.epoch * self.get_batches_in_epoch() + self.next_real_batch)
+                                       self.global_step())
+
+    def global_step(self):
+        return self.epoch * self.get_batches_in_epoch() + self.next_real_batch
 
     # Train model on only real data for one full epoch. Used for pre-training.
     def train_one_epoch_real(self):
@@ -142,7 +145,7 @@ class AdversarialTrainer:
             'avg_adv_probs': avg_adv_probs.item(),
             },
             TBLabels.PER_BATCH_ADV_TRAINING_AGGREGATE,
-            self.epoch * self.get_batches_in_epoch() + self.next_real_batch
+            self.global_step()
         )
 
         #batch_inputs = torch.cat([real_batch_inputs, adversarial_batch_inputs])
