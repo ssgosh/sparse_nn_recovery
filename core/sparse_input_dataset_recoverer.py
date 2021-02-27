@@ -76,7 +76,7 @@ class SparseInputDatasetRecoverer:
             self.log_regular_batch_stats(model, images_tensor, targets_tensor, include_layer_map, sparsity_mode, dataset_epoch)
 
             # Save to ckpt dir
-            self.ckpt_saver.save_images(images_tensor, targets_tensor, dataset_epoch)
+            self.ckpt_saver.save_images(mode, images_tensor, targets_tensor, dataset_epoch)
 
             #self.dataset_epoch += 1
 
