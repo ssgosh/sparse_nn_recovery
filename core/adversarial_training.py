@@ -2,6 +2,8 @@ import argparse
 
 import torch
 import torch.nn.functional as F
+from torch.optim.lr_scheduler import StepLR
+from torch.utils.data import DataLoader
 
 from core.sparse_input_dataset_recoverer import SparseInputDatasetRecoverer
 from utils.batched_tensor_view_data_loader import BatchedTensorViewDataLoader
@@ -54,7 +56,7 @@ class AdversarialTrainer:
     def __init__(self, real_data_train_loader, sparse_input_dataset_recoverer: SparseInputDatasetRecoverer,
                  model, opt_model, adv_training_batch_size, device, log_interval, dry_run, early_epoch,
                  num_batches_early_epoch,
-                 test_loader, lr_scheduler_model):
+                 test_loader : DataLoader, lr_scheduler_model : StepLR):
         self.adv_training_batch_size = adv_training_batch_size  # Same batch size is used for both real and adversarial training
         self.real_data_train_loader = real_data_train_loader
         self.sparse_input_dataset_recoverer = sparse_input_dataset_recoverer
@@ -250,12 +252,15 @@ class AdversarialTrainer:
         test_loss = 0
         correct = 0
         with torch.no_grad():
-            for data, target in self.test_loader:
+            for count, (data, target) in enumerate(self.test_loader):
                 data, target = data.to(self.device), target.to(self.device)
                 output = self.model(data)
                 test_loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
                 pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
                 correct += pred.eq(target.view_as(pred)).sum().item()
+                if self.early_epoch and count >= 1:
+                    print(f'\nBreaking from test due to early epoch after {count} batches')
+                    break
 
         test_loss /= len(self.test_loader.dataset)
 
