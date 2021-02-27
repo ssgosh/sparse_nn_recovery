@@ -265,7 +265,7 @@ class AdversarialTrainer:
 
     def train_loop(self, num_epochs, train_mode, pretrain, config):
         assert train_mode in [ 'adversarial-epoch', 'adversarial-batches' ]
-        for epoch in range(0, num_epochs)
+        for epoch in range(0, num_epochs):
             if pretrain and epoch == 0:
                 print('Pre-training for 1 epoch')
                 self.train_one_epoch_real()
