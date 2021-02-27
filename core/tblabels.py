@@ -57,7 +57,6 @@ class TBLabels:
 
     # On external adversarial validation datasets, such as one-pixel attack, Differential Evolution, our held-out network B
     @staticmethod
-    @staticmethod
     def PER_EPOCH_ADV_TRAINING_PER_CLASS_EXTERNAL_VALIDATION(name): return f"zzz_adversarial_training_per_epoch_stats_per_class_external_validation_{name}"
 
     ####### Recovery stats ########
