@@ -1,7 +1,38 @@
-# Top-level labels shown in Tensorboard
 # TODO: Divide each label below into aggregate and per-class
 class TBLabels:
-    PER_BATCH_ADV_TRAINING = "adversarial_training_per_batch_stats"
-    PER_EPOCH_ADV_TRAINING = "adversarial_training_per_epoch_stats"
+    """
+    Top-level labels shown in Tensorboard
+
+    NOTE: This is the nomenclature:
+      Per-class: Stats for each class separately
+      Aggregate: Average over all classes
+      Per-Batch: Stats for one training batch only, reported every batch.
+      Per-Epoch: Stats reported every epoch.
+      {train/test}_{i}: Stats for ith intermittent (adversarial) {train/test} dataset
+      Overall:   Stats averaged over all intermittent datasets
+    """
+    # Per-batch. These are the ones we'll look at to see if our model is even training.
+    PER_BATCH_ADV_TRAINING_AGGREGATE = "adversarial_training_per_batch_stats_aggregate"
+    PER_BATCH_ADV_TRAINING_PER_CLASS = "adversarial_training_per_batch_stats_per_class"
+
+    # Per-epoch. These are the ones that we'll look at to make decisions.
+    # On real training data
+    PER_EPOCH_ADV_TRAINING_AGGREGATE_TRAIN = "adversarial_training_per_epoch_stats_aggregate_train"
+
+    # On adversarial training dataset generated in epoch i
+    @staticmethod
+    def PER_EPOCH_ADV_TRAINING_AGGREGATE_TRAIN(i): return f"adversarial_training_per_epoch_stats_aggregate_train_{i}"
+
+    # On combined adversarial training data from all past epochs
+    PER_EPOCH_ADV_TRAINING_AGGREGATE_TRAIN_OVERALL = "adversarial_training_per_epoch_stats_aggregate_train_overall"
+
+    @staticmethod
+    def PER_EPOCH_ADV_TRAINING_AGGREGATE_TEST(i): return f"adversarial_training_per_epoch_stats_aggregate_test_{i}"
+
+    @staticmethod
+    def PER_EPOCH_ADV_TRAINING_AGGREGATE_EXTERNAL_TEST(name): return f"adversarial_training_per_epoch_stats_aggregate_external_test_{name}"
+    PER_EPOCH_ADV_TRAINING_PER_CLASS = "adversarial_training_per_epoch_stats_per_class"
+
+    # Recovery stats. Internal ones are logged per recovery batch.
     RECOVERY_INTERNAL = "zzz_recovery_internal"
     RECOVERY_EPOCH = "recovery_epoch"
