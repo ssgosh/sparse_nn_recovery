@@ -70,6 +70,7 @@ class AdversarialTrainer:
         self.num_batches_early_epoch = num_batches_early_epoch
         self.ckpt_saver = self.sparse_input_dataset_recoverer.ckpt_saver
         self.test_loader = test_loader
+        self.valid_loader = self.test_loader    # For now, validation data is just test data. Will change later
         self.lr_scheduler_model = lr_scheduler_model
 
         # Use a fixed iterator to iterate over the training dataset
@@ -259,6 +260,19 @@ class AdversarialTrainer:
             test_loss, correct, len(self.test_loader.dataset),
             100. * correct / len(self.test_loader.dataset)))
 
+    def validate(self):
+        """
+        Validates performance on the following datasets:
+            - real validation data (self.valid_loader)
+            - all members of manager.train_sample
+            - all members of manager.valid
+        :return:
+        """
+        self.test_real_data()
+
+    def test(self, loader, data_type, tb_agg_label, tb_per_class_label):
+        pass
+
     def train_loop(self, num_epochs, train_mode, pretrain, config):
         assert train_mode in [ 'adversarial-epoch', 'adversarial-batches' ]
         for epoch in range(0, num_epochs):
@@ -275,6 +289,6 @@ class AdversarialTrainer:
                 elif train_mode == 'adversarial-epoch':
                     self.generate_m_images_train_one_epoch_adversarial(
                         m=config.num_adversarial_images_epoch_mode)
-            self.test_real_data()
+            self.validate()
             self.ckpt_saver.save_model(self.model, epoch, config.model_classname)
             self.lr_scheduler_model.step()
