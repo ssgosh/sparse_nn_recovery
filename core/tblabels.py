@@ -9,8 +9,8 @@ class TBLabels:
       Per-Batch:                Stats for one training batch only, reported every batch.
       Per-Epoch:                Stats reported every epoch.
       In case of per-epoch,
-      _{train/test}_{i}:         Adversarial Stats for ith intermittent (adversarial) {train/test} dataset
-      _{train/test}:            Adversarial Stats averaged over all intermittent datasets; Real data stats
+      _{train/validation}_{i}:         Adversarial Stats for ith intermittent (adversarial) {train/validation} dataset
+      _{train/validation}:            Adversarial Stats averaged over all intermittent datasets; Real data stats
     """
     # Per-batch. These are the ones we'll look at to see if our model is even training.
     PER_BATCH_ADV_TRAINING_AGGREGATE = "adversarial_training_per_batch_stats_aggregate"
@@ -24,14 +24,13 @@ class TBLabels:
     @staticmethod
     def PER_EPOCH_ADV_TRAINING_AGGREGATE_TRAIN(i): return f"adversarial_training_per_epoch_stats_aggregate_train_{i}"
 
-    # On combined adversarial training data from all past epochs
-    #PER_EPOCH_ADV_TRAINING_AGGREGATE_TRAIN_OVERALL = "adversarial_training_per_epoch_stats_aggregate_train_overall"
+    # On validation dataset and combined adversarial training data (1k samples each) from all past epochs
+    PER_EPOCH_ADV_TRAINING_AGGREGATE_TRAIN = "adversarial_training_per_epoch_stats_aggregate_train"
+    @staticmethod
+    def PER_EPOCH_ADV_TRAINING_AGGREGATE_VALIDATION(i): return f"adversarial_training_per_epoch_stats_aggregate_validation_{i}"
 
     @staticmethod
-    def PER_EPOCH_ADV_TRAINING_AGGREGATE_TEST(i): return f"adversarial_training_per_epoch_stats_aggregate_test_{i}"
-
-    @staticmethod
-    def PER_EPOCH_ADV_TRAINING_AGGREGATE_EXTERNAL_TEST(name): return f"adversarial_training_per_epoch_stats_aggregate_external_test_{name}"
+    def PER_EPOCH_ADV_TRAINING_AGGREGATE_EXTERNAL_VALIDATION(name): return f"adversarial_training_per_epoch_stats_aggregate_external_validation_{name}"
     PER_EPOCH_ADV_TRAINING_PER_CLASS = "adversarial_training_per_epoch_stats_per_class"
 
     # Recovery stats. Internal ones are logged per recovery batch.
