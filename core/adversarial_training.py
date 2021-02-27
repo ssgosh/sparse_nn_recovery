@@ -5,7 +5,9 @@ import torch.nn.functional as F
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 
+from core.adversarial_dataset_manager import AdversarialDatasetManager
 from core.sparse_input_dataset_recoverer import SparseInputDatasetRecoverer
+from core.tblabels import TBLabels
 from utils.batched_tensor_view_data_loader import BatchedTensorViewDataLoader
 from utils.dataset_helper import DatasetHelper
 from utils.infinite_dataloader import InfiniteDataLoader
@@ -13,7 +15,6 @@ from utils.infinite_dataloader import InfiniteDataLoader
 import sys
 
 from utils.metrics_helper import MetricsHelper
-
 
 class ShouldBreak(Exception):
     pass
@@ -80,6 +81,10 @@ class AdversarialTrainer:
         self.train_dataset_len = len(self.real_data_train_loader)
         self.metrics_helper : MetricsHelper = MetricsHelper.get()
 
+        self.dataset_mgr = AdversarialDatasetManager(sparse_input_dataset_recoverer,
+                                                     train_batch_size=adv_training_batch_size,
+                                                     test_batch_size=test_loader.batch_size)
+
     # Train model on the given batch. Used for real data or adversarial data training
     def train_one_batch(self, batch_inputs, batch_targets):
         data, target = batch_inputs.to(self.device), batch_targets.to(self.device)
@@ -93,7 +98,11 @@ class AdversarialTrainer:
         avg_real_probs = self.metrics_helper.compute_avg_prob(output, target)
         self.log_losses_to_tensorboard({'real_loss': real_loss.item(),
                                         'avg_real_probs' : avg_real_probs.item(),},
-                                       self.epoch * self.get_batches_in_epoch() + self.next_real_batch)
+                                       TBLabels.PER_BATCH_ADV_TRAINING_AGGREGATE,
+                                       self.global_step())
+
+    def global_step(self):
+        return self.epoch * self.get_batches_in_epoch() + self.next_real_batch
 
     # Train model on only real data for one full epoch. Used for pre-training.
     def train_one_epoch_real(self):
@@ -140,7 +149,8 @@ class AdversarialTrainer:
             'avg_real_probs': avg_real_probs.item(),
             'avg_adv_probs': avg_adv_probs.item(),
             },
-            self.epoch * self.get_batches_in_epoch() + self.next_real_batch
+            TBLabels.PER_BATCH_ADV_TRAINING_AGGREGATE,
+            self.global_step()
         )
 
         #batch_inputs = torch.cat([real_batch_inputs, adversarial_batch_inputs])
@@ -151,27 +161,8 @@ class AdversarialTrainer:
     # def train_one_epoch_adversarial(self):
     #    pass
 
-    # Generates m images and returns a train loader from it
-    # Returned train loader is infinite and does not pass on gradients to the images
-    def generate_m_images(self, m):
-        self.sparse_input_dataset_recoverer.dataset_len = m #* self.adv_training_batch_size
-        images, targets = self.sparse_input_dataset_recoverer.recover_image_dataset()
-
-        # Fake labels are real_label + num_classes. E.g. Fake digit 0 has class 10, fake digit 1 has class 11 and so on
-        fake_class_targets = targets.detach() + self.sparse_input_dataset_recoverer.num_real_classes
-
-        # Infinite, batched data loader. We don't need to propagate gradients to the dataset here, hence not using
-        # BatchedTensorViewDataLoader
-        # adversarial_train_loader = BatchedTensorViewDataLoader(self.adv_training_batch_size,
-        #                                                       images, targets, fake_class_targets)
-        adversarial_dataset = torch.utils.data.TensorDataset(images,
-                                                             targets, fake_class_targets)
-        adversarial_train_loader = InfiniteDataLoader(adversarial_dataset,
-                                                      **{'batch_size': self.adv_training_batch_size, 'shuffle': True})
-        return adversarial_train_loader
-
     def generate_m_images_train_one_epoch_adversarial(self, m):
-        adversarial_train_loader = self.generate_m_images(m)
+        adversarial_train_loader = self.dataset_mgr.get_new_train_loader(m)
         # Now train
         self.model.train()
         # Note that we're using the loader here directly and not the cached iterator.
@@ -195,7 +186,7 @@ class AdversarialTrainer:
     # Then 100 batches of real data and 100 batches each of size 32 from above 320 images
     # will be used for adversarial training
     def generate_m_images_train_k_batches_adversarial(self, m, k):
-        adversarial_train_loader = self.generate_m_images(m)
+        adversarial_train_loader = self.dataset_mgr.get_new_train_loader(m)
 
         # Need to set this before training
         self.model.train()
@@ -237,8 +228,8 @@ class AdversarialTrainer:
 
         return epoch_over
 
-    def log_losses_to_tensorboard(self, losses_dict, global_step):
-        self.tbh.log_dict(f"{self.sparsity_mode}", losses_dict, global_step)
+    def log_losses_to_tensorboard(self, losses_dict, label, global_step):
+        self.tbh.log_dict(label, losses_dict, global_step)
 
     def get_batches_in_epoch(self):
         if self.early_epoch:
