@@ -61,11 +61,12 @@ class TBLabels:
 
     ####### Recovery stats ########
 
-    # Internal ones are logged per recovery batch.
-    RECOVERY_INTERNAL_AGGREGATE = "zzz_recovery_internal_aggregate"
-    RECOVERY_INTERNAL_PER_CLASS = "zzz_recovery_internal_per_class"
+    # Internal ones are logged per recovery batch. No separate aggregate and per-class for this,
+    # since we're mostly not going to look at it.
+    # RECOVERY_INTERNAL_AGGREGATE = "zzz_recovery_internal_aggregate"
+    RECOVERY_INTERNAL = "zzz_recovery_internal"
 
     # recovery_epoch is logged once every epoch on a sample of 100 recovered images
-    RECOVERY_EPOCH_AGGREGATE = "recovery_epoch_aggregate"
-    RECOVERY_EPOCH_PER_CLASS = "recovery_epoch_per_class"
+    RECOVERY_EPOCH = "recovery_epoch"
+    # RECOVERY_EPOCH_PER_CLASS = "recovery_epoch_per_class"
 

@@ -101,7 +101,7 @@ class SparseInputDatasetRecoverer:
         self.tbh.flush()
 
     def log_regular_batch_stats(self, model, images_tensor, targets_tensor, include_layer_map, sparsity_mode):
-        label = "recovery_epoch"
+        label = TBLabels.RECOVERY_EPOCH #"recovery_epoch"
         images, targets = self.get_regular_batch(images_tensor, targets_tensor, self.num_real_classes, 10)
         targets_list = [foo.item() for foo in targets]
         self.tbh.add_image_grid(images, f"{label}/dataset_images", filtered=True, num_per_row=10,
