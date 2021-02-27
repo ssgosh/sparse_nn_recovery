@@ -81,7 +81,9 @@ class AdversarialTrainer:
         self.train_dataset_len = len(self.real_data_train_loader)
         self.metrics_helper : MetricsHelper = MetricsHelper.get()
 
-        self.dataset_mgr = AdversarialDatasetManager(sparse_input_dataset_recoverer)
+        self.dataset_mgr = AdversarialDatasetManager(sparse_input_dataset_recoverer,
+                                                     train_batch_size=adv_training_batch_size,
+                                                     test_batch_size=test_loader.batch_size)
 
     # Train model on the given batch. Used for real data or adversarial data training
     def train_one_batch(self, batch_inputs, batch_targets):
@@ -160,7 +162,7 @@ class AdversarialTrainer:
     #    pass
 
     def generate_m_images_train_one_epoch_adversarial(self, m):
-        adversarial_train_loader = self.dataset_mgr.generate_m_images(m, self.adv_training_batch_size)
+        adversarial_train_loader = self.dataset_mgr.get_new_train_loader(m)
         # Now train
         self.model.train()
         # Note that we're using the loader here directly and not the cached iterator.
@@ -184,7 +186,7 @@ class AdversarialTrainer:
     # Then 100 batches of real data and 100 batches each of size 32 from above 320 images
     # will be used for adversarial training
     def generate_m_images_train_k_batches_adversarial(self, m, k):
-        adversarial_train_loader = self.dataset_mgr.generate_m_images(m, self.adv_training_batch_size)
+        adversarial_train_loader = self.dataset_mgr.get_new_train_loader(m)
 
         # Need to set this before training
         self.model.train()
