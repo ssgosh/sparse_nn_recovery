@@ -69,7 +69,10 @@ class SparseInputRecoverer:
         self.image_zero = config.image_zero
         self.image_one = config.image_one
         self.metrics_helper = MetricsHelper(self.image_zero, self.image_one)
-        self.tensorboard_logging = True
+        # 'all' : both images and stats
+        # 'none' : disable tensorboard logging
+        # 'stats_only' : log only stats, no images
+        self.tensorboard_logging = 'all'
 
     # Clip the pixels to between (mnist_zero, mnist_one)
     def clip_if_needed(self, images):
