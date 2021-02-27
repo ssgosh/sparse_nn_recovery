@@ -47,7 +47,7 @@ class SparseInputDatasetRecoverer:
         targets = []
         batch_shape = list(output_shape)
         batch_shape[0] = batch_size
-        self.sparse_input_recoverer.tensorboard_logging = False
+        self.sparse_input_recoverer.tensorboard_logging = 'stats_only' # or 'all', which will include images
         for batch_idx in range(output_shape[0] // batch_size):
             image_batch = torch.randn(batch_shape).to(device)
             targets_batch = torch.randint(low=0, high=num_real_classes, size=(batch_size,)).to(device)

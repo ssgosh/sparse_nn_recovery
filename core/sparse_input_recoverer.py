@@ -89,6 +89,8 @@ class SparseInputRecoverer:
                                      include_likelihood, batch_idx):
         optimizer = optim.Adam([images], lr=self.config.recovery_lr)
 
+        tb_log = self.tensorboard_logging != 'none'
+        tb_add_images = self.tensorboard_logging == 'all'
         start = num_steps * batch_idx + 1
         for i in range(start, start + num_steps):
             optimizer.zero_grad()
@@ -108,10 +110,10 @@ class SparseInputRecoverer:
                           images.median().item(), images.mean().item(), images.std().item(), images.min().item(),
                           images.max().item()))
 
-            if self.tensorboard_logging:
+            if tb_log:
                 # Do tensorboard things
-                self.tbh.add_tensorboard_stuff(penalty_mode, model, images, losses, probs,
-                                               sparsity, i)
+                self.tbh.add_tensorboard_stuff(penalty_mode, images, losses, probs,
+                                               sparsity, i, add_images=tb_add_images)
 
     def forward(self, model, images, targets, include_layer, include_likelihood):
         # lambda for input

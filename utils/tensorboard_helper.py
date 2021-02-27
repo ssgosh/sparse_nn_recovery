@@ -86,8 +86,8 @@ class TensorBoardHelper:
         #print(text)
         self.writer.add_text('config', text)
 
-    def add_tensorboard_stuff(self, sparsity_mode, model, images, losses, probs,
-                              sparsity, global_step):
+    def add_tensorboard_stuff(self, sparsity_mode, images, losses, probs,
+                              sparsity, global_step, add_images=True):
         #self.writer.add_images(f"{sparsity_mode}/Unfiltered Images", images, dataformats="NCHW",
         #        global_step=global_step)
         self.add_image_grid(images, f"{sparsity_mode}/Unfiltered Images",
