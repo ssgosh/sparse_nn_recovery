@@ -303,6 +303,7 @@ class AdversarialTrainer:
         correct = 0
         mLabels = MLabels(data_type)
         metrics = {}
+        mh = MetricsHelper.get()
         with torch.no_grad():
             for count, tup in enumerate(loader):
 
@@ -312,6 +313,7 @@ class AdversarialTrainer:
 
                 data, target = data.to(self.device), target.to(self.device)
                 output = self.model(data)
+                mh.accumulate_batch_stats(output, target)
                 loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
                 pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
                 correct += pred.eq(target.view_as(pred)).sum().item()

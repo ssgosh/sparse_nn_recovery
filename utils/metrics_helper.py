@@ -1,3 +1,4 @@
+#from __future__ import annotations
 import utils.image_processor as imp
 import utils.mnist_helper as mh
 
@@ -15,13 +16,16 @@ def _accumulate_val_in_dict(d, key, val):
 
 class MetricsHelper:
     @classmethod
-    def get(cls):
+    def get(cls) -> 'MetricsHelper':
         zero, one = DatasetHelper.get_dataset().get_transformed_zero_one()
         return cls(zero, one)
 
-    def __init__(self, image_zero, image_one):
+    def __init__(self, image_zero, image_one, mlabels=None):
         self.image_zero = image_zero
         self.image_one = image_one
+        self.agg = {}
+        self.per_class = {}
+        self.mlabels = mlabels
 
     def compute_avg_prob(self, output, target):
         real_probs = F.softmax(output, dim=1)
@@ -105,3 +109,6 @@ class MetricsHelper:
             per_class[key] /= count[tgt]
 
         # print(json.dumps(probs, indent=2))
+
+    def accumulate_batch_stats(self, output, target):
+        pass
