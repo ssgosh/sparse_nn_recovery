@@ -270,15 +270,19 @@ class AdversarialTrainer:
         :return:
         """
         # Test on real validation data
-        stats = self.test(
+        metrics = self.test(
             self.valid_loader,
             data_type='real',
-            tb_agg_label=TBLabels.PER_EPOCH_ADV_AGGREGATE_VALIDATION_OVERALL,
-            tb_per_class_label=TBLabels.PER_EPOCH_ADV_PER_CLASS_VALIDATION_OVERALL,
             acc=None
         )
 
-        self.log_stats(stats, self.epoch)
+        metrics.log(
+            self.tbh,
+            tb_agg_label = TBLabels.PER_EPOCH_ADV_AGGREGATE_VALIDATION_OVERALL,
+            tb_per_class_label = TBLabels.PER_EPOCH_ADV_PER_CLASS_VALIDATION_OVERALL,
+            global_step=self.epoch
+        )
+        # self.log_stats(stats, self.epoch)
         # Test on past adversarial train data
         # for i, loader in enumerate(self.dataset_mgr.train_sample):
         #     self.test(
@@ -288,7 +292,7 @@ class AdversarialTrainer:
         #         tb_per_class_label=TBLabels.PER_EPOCH_ADV_TRAINING_PER_CLASS_VALIDATION_OVERALL
         #     )
 
-    def test(self, loader, data_type, tb_agg_label, tb_per_class_label, acc):
+    def test(self, loader, data_type, acc) -> MetricsHelper:
         """
 
         :param loader: DataLoader
@@ -302,7 +306,6 @@ class AdversarialTrainer:
         loss = 0
         correct = 0
         mlabels = MLabels(data_type)
-        metrics = {}
         mh = MetricsHelper.get(mlabels)
         with torch.no_grad():
             for count, tup in enumerate(loader):
@@ -327,7 +330,7 @@ class AdversarialTrainer:
         print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
             loss, correct, len(loader.dataset),
             100. * correct / len(loader.dataset)))
-        return metrics
+        return mh
 
     def train_loop(self, num_epochs, train_mode, pretrain, config):
         assert train_mode in [ 'adversarial-epoch', 'adversarial-batches' ]

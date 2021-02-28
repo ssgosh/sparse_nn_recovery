@@ -8,6 +8,7 @@ import torch
 
 from core.mlabels import MLabels
 from utils.dataset_helper import DatasetHelper
+from utils.tensorboard_helper import TensorBoardHelper
 
 
 def _accumulate_val_in_dict(d, key, val):
@@ -131,3 +132,7 @@ class MetricsHelper:
 
     def accumulate_batch_stats(self, output, target):
         pass
+
+    def log(self, tbh : TensorBoardHelper, tb_agg_label, tb_per_class_label, global_step):
+        tbh.log_dict(tb_agg_label, self.agg, global_step)
+        tbh.log_dict(tb_per_class_label, self.per_class, global_step)
