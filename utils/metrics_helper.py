@@ -43,10 +43,13 @@ class MetricsHelper:
         overall_metrics.mlabels = metrics_list[0].mlabels
         n = len(metrics_list)
         overall_metrics.numel = sum([m.numel for m in metrics_list])
+        overall_metrics.correct = sum([m.correct for m in metrics_list])
         for key in metrics_list[0].agg:
             overall_metrics.agg[key] = sum([m.agg[key] for m in metrics_list]) / n
         for key in metrics_list[0].per_class:
             overall_metrics.per_class[key] = sum([m.per_class[key] for m in metrics_list]) / n
+        overall_metrics.initialized = True
+        overall_metrics.finalized = True
         return overall_metrics
 
     def __init__(self, image_zero, image_one, mlabels : MLabels = None, num_real_fake_classes=None):
@@ -62,6 +65,9 @@ class MetricsHelper:
         self.num_batches = 0
         self.numel = 0
         self.per_class_numel = torch.zeros(size=(num_real_fake_classes,))
+
+        self.initialized = False    # Someone has to add some metrics using accumulate_batch_stats() for this to happen.
+        self.finalized = False
 
     def compute_reduce_prob(self, output, target, reduce='avg'):
         assert reduce in ['sum', 'avg']
@@ -151,6 +157,8 @@ class MetricsHelper:
         # print(json.dumps(probs, indent=2))
 
     def accumulate_batch_stats(self, output, target):
+        assert not self.finalized
+        self.initialized = True
         self.numel += target.shape[0]
         loss = F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
         pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
@@ -162,10 +170,13 @@ class MetricsHelper:
         _accumulate_val_in_dict(self.agg, self.mlabels.avg_prob, sum_probs)
 
     def log(self, name, tbh : TensorBoardHelper, tb_agg_label, tb_per_class_label, global_step):
-        if self.numel == 0 : return
+        if not self.initialized : return
+        assert self.finalized
         print(f'Test set {name}:',
-              'Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)'.format(
-                  self.agg[self.mlabels.avg_loss], self.correct, self.numel,
+              'Average loss: {:.4f}, '.format(self.agg[self.mlabels.avg_loss]),
+              'Average Prob: {:.4f}, '.format(self.agg[self.mlabels.avg_prob]),
+              'Accuracy: {}/{} ({:.2f}%)'.format(
+                  self.correct, self.numel,
                   100. * self.correct / self.numel))
         tbh.log_dict(tb_agg_label, self.agg, global_step)
         tbh.log_dict(tb_per_class_label, self.per_class, global_step)
@@ -174,4 +185,5 @@ class MetricsHelper:
     def finalize_stats(self):
         for key in self.agg:
             self.agg[key] /= self.numel
+        self.finalized = True
 

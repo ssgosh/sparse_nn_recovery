@@ -286,7 +286,7 @@ class AdversarialTrainer:
         tb_per_class_label = TBLabels.PER_EPOCH_ADV_PER_CLASS_TRAIN_OVERALL
         tb_per_class_label_i = TBLabels.PER_EPOCH_ADV_PER_CLASS_TRAIN
 
-        self.test_and_log_intermittent_datasets('train', datasets, tb_agg_label, tb_agg_label_i, tb_per_class_label,
+        self.test_and_log_intermittent_datasets('adversarial_train', datasets, tb_agg_label, tb_agg_label_i, tb_per_class_label,
                                                 tb_per_class_label_i)
 
         # Test on past adversarial validation data
