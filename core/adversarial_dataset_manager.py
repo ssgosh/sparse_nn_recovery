@@ -4,8 +4,10 @@ from torch.utils.data import DataLoader, TensorDataset
 from core.sparse_input_dataset_recoverer import SparseInputDatasetRecoverer
 from utils.infinite_dataloader import InfiniteDataLoader
 
+
 def safe_clone(x):
     return torch.clone(x.detach())
+
 
 class AdversarialDatasetManager:
     def __init__(self,
@@ -62,7 +64,6 @@ class AdversarialDatasetManager:
         self.valid.append(self.generate_m_images(v, 'valid'))
         self.test.append(self.generate_m_images(t, 'test'))
 
-
     def get_sample(self, images, targets, fake_class_targets, sample_size, batch_size):
         batch_size = sample_size if sample_size < batch_size else batch_size
         print("Generating Sample, size =", sample_size, "batch size =", batch_size)
@@ -81,3 +82,4 @@ class AdversarialDatasetManager:
         assert len(self.valid) == self.dataset_epoch
         assert len(self.test) == self.dataset_epoch
         return self.train
+

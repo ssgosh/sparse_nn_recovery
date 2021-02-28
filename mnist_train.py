@@ -4,6 +4,7 @@ import sys
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+from torch.utils.data import Subset, DataLoader
 from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
 import matplotlib.pyplot as plot
@@ -360,6 +361,9 @@ def main():
                        transform=test_transform)
     train_loader = torch.utils.data.DataLoader(dataset1,**train_kwargs)
     test_loader = torch.utils.data.DataLoader(dataset2, **test_kwargs)
+    full_train_data = datasets.MNIST('./data', train=True, download=True,
+                              transform=test_transform)
+    train_samples = DataLoader(Subset(full_train_data, indices=torch.randperm(len(full_train_data))[0:10000]), **test_kwargs)
 
     if args.train_mode == 'adversarial-continuous':
         # 1000 images of size 28x28, 1 channel
@@ -414,7 +418,7 @@ def main():
         #print("Recovered images, targets", images.shape, targets.shape, targets.detach().numpy())
         #sys.exit(0)
         # Now we can create an AdversarialTrainer!!!!!
-        adversarial_trainer = AdversarialTrainer(train_loader, dataset_recoverer, model, optimizer, config.batch_size,
+        adversarial_trainer = AdversarialTrainer(train_loader, train_samples, dataset_recoverer, model, optimizer, config.batch_size,
                                                  device, config.log_interval, config.dry_run, config.early_epoch,
                                                  config.num_batches_early_epoch, test_loader, scheduler)
 

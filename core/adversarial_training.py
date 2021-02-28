@@ -6,6 +6,7 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 
 from core.adversarial_dataset_manager import AdversarialDatasetManager
+from core.mlabels import MLabels
 from core.sparse_input_dataset_recoverer import SparseInputDatasetRecoverer
 from core.tblabels import TBLabels
 from utils.batched_tensor_view_data_loader import BatchedTensorViewDataLoader
@@ -54,12 +55,13 @@ class AdversarialTrainer:
         parser.add_argument('--num-adversarial-images-epoch-mode', type=int, default=10240,
                             metavar='m', help='Number of batches of images to generate in "adversarial-epoch" mode')
 
-    def __init__(self, real_data_train_loader, sparse_input_dataset_recoverer: SparseInputDatasetRecoverer,
+    def __init__(self, real_data_train_loader, real_data_train_samples, sparse_input_dataset_recoverer: SparseInputDatasetRecoverer,
                  model, opt_model, adv_training_batch_size, device, log_interval, dry_run, early_epoch,
                  num_batches_early_epoch,
                  test_loader : DataLoader, lr_scheduler_model : StepLR):
         self.adv_training_batch_size = adv_training_batch_size  # Same batch size is used for both real and adversarial training
         self.real_data_train_loader = real_data_train_loader
+        self.real_data_train_samples = real_data_train_samples
         self.sparse_input_dataset_recoverer = sparse_input_dataset_recoverer
         self.model = model
         self.opt_model = opt_model
@@ -70,6 +72,7 @@ class AdversarialTrainer:
         self.num_batches_early_epoch = num_batches_early_epoch
         self.ckpt_saver = self.sparse_input_dataset_recoverer.ckpt_saver
         self.test_loader = test_loader
+        self.valid_loader = self.test_loader    # For now, validation data is just test data. Will change later
         self.lr_scheduler_model = lr_scheduler_model
 
         # Use a fixed iterator to iterate over the training dataset
@@ -95,10 +98,10 @@ class AdversarialTrainer:
         loss.backward()
         self.opt_model.step()
         self.logger.log_batch(loss.item())
-        avg_real_probs = self.metrics_helper.compute_avg_prob(output, target)
+        avg_real_probs = self.metrics_helper.compute_reduce_prob(output, target)
         self.log_losses_to_tensorboard({'real_loss': real_loss.item(),
                                         'avg_real_probs' : avg_real_probs.item(),},
-                                       TBLabels.PER_BATCH_ADV_TRAINING_AGGREGATE,
+                                       TBLabels.PER_BATCH_ADV_AGGREGATE,
                                        self.global_step())
 
     def global_step(self):
@@ -140,8 +143,8 @@ class AdversarialTrainer:
         self.logger.log_batch(loss.item())
 
         # Compute Probabilities
-        avg_real_probs = self.metrics_helper.compute_avg_prob(real_output, real_targets)
-        avg_adv_probs = self.metrics_helper.compute_avg_prob(adv_output, adv_targets)
+        avg_real_probs = self.metrics_helper.compute_reduce_prob(real_output, real_targets)
+        avg_adv_probs = self.metrics_helper.compute_reduce_prob(adv_output, adv_targets)
         self.log_losses_to_tensorboard(
             {
             'real_loss': real_loss.item(),
@@ -149,7 +152,7 @@ class AdversarialTrainer:
             'avg_real_probs': avg_real_probs.item(),
             'avg_adv_probs': avg_adv_probs.item(),
             },
-            TBLabels.PER_BATCH_ADV_TRAINING_AGGREGATE,
+            TBLabels.PER_BATCH_ADV_AGGREGATE,
             self.global_step()
         )
 
@@ -250,7 +253,7 @@ class AdversarialTrainer:
                 pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
                 correct += pred.eq(target.view_as(pred)).sum().item()
                 if self.early_epoch and count >= 1:
-                    print(f'\nBreaking from test due to early epoch after {count} batches')
+                    #print(f'\nBreaking from test due to early epoch after {count} batches')
                     break
 
         test_loss /= len(self.test_loader.dataset)
@@ -258,6 +261,108 @@ class AdversarialTrainer:
         print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
             test_loss, correct, len(self.test_loader.dataset),
             100. * correct / len(self.test_loader.dataset)))
+
+    def validate(self):
+        """
+        Validates performance on the following datasets:
+            - real validation data (self.valid_loader)
+            - all members of manager.train_sample
+            - all members of manager.valid
+        :return:
+        """
+        # Test on real validation data
+        print()
+        self.test_and_return_metrics(self.real_data_train_samples, data_type='real', acc=None).log(
+            'real_train_samples',
+            self.tbh,
+            tb_agg_label = TBLabels.PER_EPOCH_ADV_AGGREGATE_TRAIN_OVERALL,
+            tb_per_class_label = TBLabels.PER_EPOCH_ADV_PER_CLASS_TRAIN_OVERALL,
+            global_step=self.epoch
+        )
+
+        self.test_and_return_metrics(self.valid_loader, data_type='real', acc=None).log(
+            'real_validation_data',
+            self.tbh,
+            tb_agg_label = TBLabels.PER_EPOCH_ADV_AGGREGATE_VALIDATION_OVERALL,
+            tb_per_class_label = TBLabels.PER_EPOCH_ADV_PER_CLASS_VALIDATION_OVERALL,
+            global_step=self.epoch
+        )
+
+        # Test on past adversarial train data
+        datasets = self.dataset_mgr.train_sample
+        tb_agg_label = TBLabels.PER_EPOCH_ADV_AGGREGATE_TRAIN_OVERALL
+        tb_agg_label_i = TBLabels.PER_EPOCH_ADV_AGGREGATE_TRAIN
+        tb_per_class_label = TBLabels.PER_EPOCH_ADV_PER_CLASS_TRAIN_OVERALL
+        tb_per_class_label_i = TBLabels.PER_EPOCH_ADV_PER_CLASS_TRAIN
+
+        self.test_and_log_intermittent_datasets('adversarial_train_samples', datasets, tb_agg_label, tb_agg_label_i, tb_per_class_label,
+                                                tb_per_class_label_i)
+
+        # Test on past adversarial validation data
+        self.test_and_log_intermittent_datasets('adversarial_validation_data', self.dataset_mgr.valid,
+                                                TBLabels.PER_EPOCH_ADV_AGGREGATE_VALIDATION_OVERALL,
+                                                TBLabels.PER_EPOCH_ADV_AGGREGATE_VALIDATION,
+                                                TBLabels.PER_EPOCH_ADV_PER_CLASS_VALIDATION_OVERALL,
+                                                TBLabels.PER_EPOCH_ADV_PER_CLASS_VALIDATION)
+        print()
+
+    def test_and_log_intermittent_datasets(self, prefix, datasets, tb_agg_label, tb_agg_label_i, tb_per_class_label,
+                                           tb_per_class_label_i):
+        overall_metrics = []
+        for i, loader in enumerate(datasets):
+            self.test_and_return_metrics(loader, data_type='adv', acc=overall_metrics).log(
+                f"{prefix}_{i}",
+                self.tbh,
+                tb_agg_label=tb_agg_label_i(i),
+                tb_per_class_label=tb_per_class_label_i(i),
+                global_step=self.epoch
+            )
+        MetricsHelper.reduce(overall_metrics).log(
+            f"{prefix}_overall",
+            self.tbh,
+            tb_agg_label=tb_agg_label,
+            tb_per_class_label=tb_per_class_label,
+            global_step=self.epoch
+        )
+
+    def test_and_return_metrics(self, loader, data_type, acc) -> MetricsHelper:
+        """
+
+        :param loader: DataLoader
+        :param data_type: 'real', 'adv'
+        :param tb_agg_label:
+        :param tb_per_class_label:
+        :param acc: dictionary in which to accumulate metrics. Useful for computing aggregate stats
+        :return: dictionary containing the stats
+        """
+        self.model.eval()
+        loss = 0
+        correct = 0
+        mlabels = MLabels(data_type)
+        metrics = MetricsHelper.get(mlabels)
+        with torch.no_grad():
+            for count, tup in enumerate(loader):
+
+                if data_type == 'real': data, target = tup
+                elif data_type == 'adv': data, _, target = tup # target is fake class here. _ is real class
+                else: assert False, f"Invalid data_type {data_type}"
+
+                data, target = data.to(self.device), target.to(self.device)
+                output = self.model(data)
+                metrics.accumulate_batch_stats(output, target)
+                #loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
+                #pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
+                #correct += pred.eq(target.view_as(pred)).sum().item()
+                if self.early_epoch and count >= 1:
+                    #print(f'\nBreaking from test due to early epoch after {count} batches')
+                    break
+
+        metrics.finalize_stats()
+        if acc is not None: acc.append(metrics)
+        #loss /= len(loader.dataset)
+        #accuracy = correct / len(loader.dataset)
+
+        return metrics
 
     def train_loop(self, num_epochs, train_mode, pretrain, config):
         assert train_mode in [ 'adversarial-epoch', 'adversarial-batches' ]
@@ -275,6 +380,9 @@ class AdversarialTrainer:
                 elif train_mode == 'adversarial-epoch':
                     self.generate_m_images_train_one_epoch_adversarial(
                         m=config.num_adversarial_images_epoch_mode)
-            self.test_real_data()
+            self.validate()
             self.ckpt_saver.save_model(self.model, epoch, config.model_classname)
             self.lr_scheduler_model.step()
+
+    def log_stats(self, stats, epoch):
+        self.tbh.log_dict('', stats, epoch)
