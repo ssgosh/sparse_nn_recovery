@@ -55,12 +55,13 @@ class AdversarialTrainer:
         parser.add_argument('--num-adversarial-images-epoch-mode', type=int, default=10240,
                             metavar='m', help='Number of batches of images to generate in "adversarial-epoch" mode')
 
-    def __init__(self, real_data_train_loader, sparse_input_dataset_recoverer: SparseInputDatasetRecoverer,
+    def __init__(self, real_data_train_loader, real_data_train_samples, sparse_input_dataset_recoverer: SparseInputDatasetRecoverer,
                  model, opt_model, adv_training_batch_size, device, log_interval, dry_run, early_epoch,
                  num_batches_early_epoch,
                  test_loader : DataLoader, lr_scheduler_model : StepLR):
         self.adv_training_batch_size = adv_training_batch_size  # Same batch size is used for both real and adversarial training
         self.real_data_train_loader = real_data_train_loader
+        self.real_data_train_samples = real_data_train_samples
         self.sparse_input_dataset_recoverer = sparse_input_dataset_recoverer
         self.model = model
         self.opt_model = opt_model
@@ -271,8 +272,16 @@ class AdversarialTrainer:
         """
         # Test on real validation data
         print()
+        self.test_and_return_metrics(self.real_data_train_samples, data_type='real', acc=None).log(
+            'real_train_samples',
+            self.tbh,
+            tb_agg_label = TBLabels.PER_EPOCH_ADV_AGGREGATE_TRAIN_OVERALL,
+            tb_per_class_label = TBLabels.PER_EPOCH_ADV_PER_CLASS_TRAIN_OVERALL,
+            global_step=self.epoch
+        )
+
         self.test_and_return_metrics(self.valid_loader, data_type='real', acc=None).log(
-            'real_validation',
+            'real_validation_data',
             self.tbh,
             tb_agg_label = TBLabels.PER_EPOCH_ADV_AGGREGATE_VALIDATION_OVERALL,
             tb_per_class_label = TBLabels.PER_EPOCH_ADV_PER_CLASS_VALIDATION_OVERALL,
@@ -286,11 +295,11 @@ class AdversarialTrainer:
         tb_per_class_label = TBLabels.PER_EPOCH_ADV_PER_CLASS_TRAIN_OVERALL
         tb_per_class_label_i = TBLabels.PER_EPOCH_ADV_PER_CLASS_TRAIN
 
-        self.test_and_log_intermittent_datasets('adversarial_train', datasets, tb_agg_label, tb_agg_label_i, tb_per_class_label,
+        self.test_and_log_intermittent_datasets('adversarial_train_samples', datasets, tb_agg_label, tb_agg_label_i, tb_per_class_label,
                                                 tb_per_class_label_i)
 
         # Test on past adversarial validation data
-        self.test_and_log_intermittent_datasets('adversarial_validation', self.dataset_mgr.valid,
+        self.test_and_log_intermittent_datasets('adversarial_validation_data', self.dataset_mgr.valid,
                                                 TBLabels.PER_EPOCH_ADV_AGGREGATE_VALIDATION_OVERALL,
                                                 TBLabels.PER_EPOCH_ADV_AGGREGATE_VALIDATION,
                                                 TBLabels.PER_EPOCH_ADV_PER_CLASS_VALIDATION_OVERALL,

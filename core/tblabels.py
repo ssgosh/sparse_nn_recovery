@@ -25,18 +25,18 @@ class TBLabels:
 
     # On adversarial training dataset generated in epoch i
     @staticmethod
-    def PER_EPOCH_ADV_AGGREGATE_TRAIN(i): return f"yyy_adversarial_training_per_epoch_stats_aggregate_train_{i:4>0d}"
+    def PER_EPOCH_ADV_AGGREGATE_TRAIN(i): return f"yyy_adversarial_training_per_epoch_stats_aggregate_train_samples_{i:4>0d}"
 
     # On real validation dataset and combined adversarial validation data from all past epochs
     PER_EPOCH_ADV_AGGREGATE_VALIDATION_OVERALL = "adversarial_training_per_epoch_stats_aggregate_validation_data"
 
     # On intermittent adversarial validation datasets
     @staticmethod
-    def PER_EPOCH_ADV_AGGREGATE_VALIDATION(i): return f"yyy_adversarial_training_per_epoch_stats_aggregate_validation_{i:4>0d}"
+    def PER_EPOCH_ADV_AGGREGATE_VALIDATION(i): return f"yyy_adversarial_training_per_epoch_stats_aggregate_validation_data_{i:4>0d}"
 
     # On external adversarial validation datasets, such as one-pixel attack, Differential Evolution, our held-out network B
     @staticmethod
-    def PER_EPOCH_ADV_AGGREGATE_EXTERNAL_VALIDATION(name): return f"adversarial_training_per_epoch_stats_aggregate_external_validation_{name}"
+    def PER_EPOCH_ADV_AGGREGATE_EXTERNAL_VALIDATION(name): return f"adversarial_training_per_epoch_stats_aggregate_external_validation_data_{name}"
 
     ####### PER-CLASS versions of above stats ##############
 
