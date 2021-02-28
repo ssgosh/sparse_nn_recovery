@@ -299,7 +299,7 @@ class AdversarialTrainer:
                                            tb_per_class_label_i):
         overall_metrics = []
         for i, loader in enumerate(datasets):
-            self.test_and_return_metrics(loader, data_type='adversarial', acc=overall_metrics).log(
+            self.test_and_return_metrics(loader, data_type='adv', acc=overall_metrics).log(
                 self.tbh,
                 tb_agg_label=tb_agg_label_i(i),
                 tb_per_class_label=tb_per_class_label_i(i),

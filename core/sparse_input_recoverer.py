@@ -68,7 +68,7 @@ class SparseInputRecoverer:
         self.tbh = tbh
         self.image_zero = config.image_zero
         self.image_one = config.image_one
-        self.metrics_helper = MetricsHelper(self.image_zero, self.image_one)
+        self.metrics_helper = MetricsHelper.get() # MetricsHelper(self.image_zero, self.image_one)
         # 'all' : both images and stats
         # 'none' : disable tensorboard logging
         # 'stats_only' : log only stats, no images

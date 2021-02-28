@@ -37,6 +37,7 @@ class MetricsHelper:
     @classmethod
     def reduce(cls, metrics_list):
         overall_metrics = cls.get()
+        if not metrics_list: return overall_metrics
         n = len(metrics_list)
         for key in metrics_list[0].agg:
             overall_metrics.agg[key] = sum([m.agg[key] for m in metrics_list]) / n
@@ -55,7 +56,7 @@ class MetricsHelper:
         # Updated on each call to accumulate_batch_stats
         self.num_batches = 0
         self.numel = 0
-        self.per_class_numel = torch.zeros(num_real_fake_classes)
+        self.per_class_numel = torch.zeros(size=(num_real_fake_classes,))
 
     def compute_reduce_prob(self, output, target, reduce='avg'):
         assert reduce in ['sum', 'avg']
