@@ -1,9 +1,12 @@
+import sys
 import torch
 import torchvision
 import pandas as pd
 import json
 
 from torch.utils.tensorboard import SummaryWriter
+from torchvision.transforms import ToPILImage
+import torch.nn.functional as F
 
 import utils.mnist_helper as mh
 
@@ -28,10 +31,20 @@ class TensorBoardHelper:
                 range=rng, padding=2, pad_value=1.0,
                 scale_each=True)
         # Resize image grid
-        size = img_grid.shape[1:]
-        size = [3 * item for item in size]
-        resize = torchvision.transforms.Resize(size)
-        img_grid = resize(img_grid)
+        #print(images.shape)
+        #print(img_grid.shape)
+        #size = img_grid.shape[1:]
+        #print(size)
+        #size = [3 * item for item in size]
+        #print(size)
+        img_grid = torch.unsqueeze(img_grid, 0)
+        #print(img_grid.shape)
+        img_grid = F.interpolate(img_grid, scale_factor=3.0).squeeze(0)
+        #print(img_grid.shape)
+        #sys.exit(1)
+        #resize = torchvision.transforms.Resize(size)
+        #toPIL = ToPILImage()
+        #img_grid = resize(toPIL(   img_grid.detach().clone().cpu()   ))
         self.writer.add_image(tag, img_grid, global_step=global_step)
 
 
