@@ -38,7 +38,7 @@ class SparseInputRecoverer:
                             default=0.5, required=False,
                             help='Learning rate for sparse recovery')
         parser.add_argument('--recovery-lambd', type=float, metavar='L',
-                            default=0.1, required=False,
+                            default=5.0, required=False,
                             help='L1 penalty lambda on each layer')
         parser.add_argument('--recovery-penalty-mode', type=str, default='input only', required=False, metavar='PM',
                             help='When mode is single-digit, which penalty mode should be used')
