@@ -6,6 +6,7 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 
 from core.adversarial_dataset_manager import AdversarialDatasetManager
+from core.mlabels import MLabels
 from core.sparse_input_dataset_recoverer import SparseInputDatasetRecoverer
 from core.tblabels import TBLabels
 from utils.batched_tensor_view_data_loader import BatchedTensorViewDataLoader
@@ -290,14 +291,41 @@ class AdversarialTrainer:
     def test(self, loader, data_type, tb_agg_label, tb_per_class_label, acc):
         """
 
-        :param loader:
-        :param data_type:
+        :param loader: DataLoader
+        :param data_type: 'real', 'adv'
         :param tb_agg_label:
         :param tb_per_class_label:
         :param acc: dictionary in which to accumulate metrics. Useful for computing aggregate stats
         :return: dictionary containing the stats
         """
-        return {}
+        self.model.eval()
+        loss = 0
+        correct = 0
+        mLabels = MLabels(data_type)
+        metrics = {}
+        with torch.no_grad():
+            for count, tup in enumerate(loader):
+
+                if data_type == 'real': data, target = tup
+                elif data_type == 'adv': data, _, target = tup # target is fake class here. _ is real class
+                else: assert False, f"Invalid data_type {data_type}"
+
+                data, target = data.to(self.device), target.to(self.device)
+                output = self.model(data)
+                loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
+                pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
+                correct += pred.eq(target.view_as(pred)).sum().item()
+                if self.early_epoch and count >= 1:
+                    print(f'\nBreaking from test due to early epoch after {count} batches')
+                    break
+
+        loss /= len(loader.dataset)
+        accuracy = correct / len(loader.dataset)
+
+        print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
+            loss, correct, len(loader.dataset),
+            100. * correct / len(loader.dataset)))
+        return metrics
 
     def train_loop(self, num_epochs, train_mode, pretrain, config):
         assert train_mode in [ 'adversarial-epoch', 'adversarial-batches' ]

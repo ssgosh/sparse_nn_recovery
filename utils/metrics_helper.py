@@ -84,3 +84,24 @@ class MetricsHelper:
             probs[key] /= count[tgt]
 
         #print(json.dumps(probs, indent=2))
+
+
+    # Compute and store average probability of each class in the batch
+    def compute_agg_per_class_probs_separately(self, output, targets, agg, per_class, mlabels):
+        count = {}
+        for idx, tgt in enumerate(targets):
+            _accumulate_val_in_dict(count, tgt.item(), 1)
+            prob = pow(math.e, output[idx][tgt.item()].item())
+            key = f"class_{tgt}/prob"
+            _accumulate_val_in_dict(per_class, key, prob)
+            key = mlabels.avg_prob
+            _accumulate_val_in_dict(agg, key, prob)
+
+        agg[mlabels.avg_prob] /= idx  # Find the average prob over entire batch
+        # print(json.dumps(probs, indent=2))
+        # print(json.dumps(count, indent=2))
+        for tgt in count:
+            key = f"class_{tgt}/prob"
+            per_class[key] /= count[tgt]
+
+        # print(json.dumps(probs, indent=2))
