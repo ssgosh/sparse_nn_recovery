@@ -1,4 +1,6 @@
 #from __future__ import annotations
+from typing import List
+
 import utils.image_processor as imp
 
 import math
@@ -35,10 +37,12 @@ class MetricsHelper:
         return cls(zero, one, mlabels, num_real_fake_classes)
 
     @classmethod
-    def reduce(cls, metrics_list):
+    def reduce(cls, metrics_list: List['MetricsHelper']):
         overall_metrics = cls.get()
         if not metrics_list: return overall_metrics
+        overall_metrics.mlabels = metrics_list[0].mlabels
         n = len(metrics_list)
+        overall_metrics.numel = sum([m.numel for m in metrics_list])
         for key in metrics_list[0].agg:
             overall_metrics.agg[key] = sum([m.agg[key] for m in metrics_list]) / n
         for key in metrics_list[0].per_class:
@@ -50,6 +54,7 @@ class MetricsHelper:
         self.image_one = image_one
         self.agg = {}
         self.per_class = {}
+        self.correct = 0
         self.mlabels = mlabels
 
         # Keep track of batch and number of elements
@@ -150,13 +155,18 @@ class MetricsHelper:
         loss = F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
         pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
         correct = pred.eq(target.view_as(pred)).sum().item()
-
+        self.correct += correct
         sum_probs = self.compute_reduce_prob(output, target, reduce='sum').item()
         _accumulate_val_in_dict(self.agg, self.mlabels.avg_loss, loss)
         _accumulate_val_in_dict(self.agg, self.mlabels.avg_accuracy, correct)
         _accumulate_val_in_dict(self.agg, self.mlabels.avg_prob, sum_probs)
 
-    def log(self, tbh : TensorBoardHelper, tb_agg_label, tb_per_class_label, global_step):
+    def log(self, name, tbh : TensorBoardHelper, tb_agg_label, tb_per_class_label, global_step):
+        if self.numel == 0 : return
+        print(f'Test set {name}:',
+              'Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)'.format(
+                  self.agg[self.mlabels.avg_loss], self.correct, self.numel,
+                  100. * self.correct / self.numel))
         tbh.log_dict(tb_agg_label, self.agg, global_step)
         tbh.log_dict(tb_per_class_label, self.per_class, global_step)
 

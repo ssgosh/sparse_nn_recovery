@@ -252,7 +252,7 @@ class AdversarialTrainer:
                 pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
                 correct += pred.eq(target.view_as(pred)).sum().item()
                 if self.early_epoch and count >= 1:
-                    print(f'\nBreaking from test due to early epoch after {count} batches')
+                    #print(f'\nBreaking from test due to early epoch after {count} batches')
                     break
 
         test_loss /= len(self.test_loader.dataset)
@@ -270,7 +270,9 @@ class AdversarialTrainer:
         :return:
         """
         # Test on real validation data
+        print()
         self.test_and_return_metrics(self.valid_loader, data_type='real', acc=None).log(
+            'real_validation',
             self.tbh,
             tb_agg_label = TBLabels.PER_EPOCH_ADV_AGGREGATE_VALIDATION_OVERALL,
             tb_per_class_label = TBLabels.PER_EPOCH_ADV_PER_CLASS_VALIDATION_OVERALL,
@@ -284,28 +286,30 @@ class AdversarialTrainer:
         tb_per_class_label = TBLabels.PER_EPOCH_ADV_PER_CLASS_TRAIN_OVERALL
         tb_per_class_label_i = TBLabels.PER_EPOCH_ADV_PER_CLASS_TRAIN
 
-        self.test_and_log_intermittent_datasets(datasets, tb_agg_label, tb_agg_label_i, tb_per_class_label,
+        self.test_and_log_intermittent_datasets('train', datasets, tb_agg_label, tb_agg_label_i, tb_per_class_label,
                                                 tb_per_class_label_i)
 
         # Test on past adversarial validation data
-        self.test_and_log_intermittent_datasets(self.dataset_mgr.valid,
+        self.test_and_log_intermittent_datasets('adversarial_validation', self.dataset_mgr.valid,
                                                 TBLabels.PER_EPOCH_ADV_AGGREGATE_VALIDATION_OVERALL,
                                                 TBLabels.PER_EPOCH_ADV_AGGREGATE_VALIDATION,
                                                 TBLabels.PER_EPOCH_ADV_PER_CLASS_VALIDATION_OVERALL,
                                                 TBLabels.PER_EPOCH_ADV_PER_CLASS_VALIDATION)
+        print()
 
-
-    def test_and_log_intermittent_datasets(self, datasets, tb_agg_label, tb_agg_label_i, tb_per_class_label,
+    def test_and_log_intermittent_datasets(self, prefix, datasets, tb_agg_label, tb_agg_label_i, tb_per_class_label,
                                            tb_per_class_label_i):
         overall_metrics = []
         for i, loader in enumerate(datasets):
             self.test_and_return_metrics(loader, data_type='adv', acc=overall_metrics).log(
+                f"{prefix}_{i}",
                 self.tbh,
                 tb_agg_label=tb_agg_label_i(i),
                 tb_per_class_label=tb_per_class_label_i(i),
                 global_step=self.epoch
             )
         MetricsHelper.reduce(overall_metrics).log(
+            f"{prefix}_overall",
             self.tbh,
             tb_agg_label=tb_agg_label,
             tb_per_class_label=tb_per_class_label,
@@ -341,17 +345,14 @@ class AdversarialTrainer:
                 #pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
                 #correct += pred.eq(target.view_as(pred)).sum().item()
                 if self.early_epoch and count >= 1:
-                    print(f'\nBreaking from test due to early epoch after {count} batches')
+                    #print(f'\nBreaking from test due to early epoch after {count} batches')
                     break
 
         metrics.finalize_stats()
-        if acc: acc.append(metrics)
+        if acc is not None: acc.append(metrics)
         #loss /= len(loader.dataset)
         #accuracy = correct / len(loader.dataset)
 
-        print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
-            loss, correct, len(loader.dataset),
-            100. * correct / len(loader.dataset)))
         return metrics
 
     def train_loop(self, num_epochs, train_mode, pretrain, config):
