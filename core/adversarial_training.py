@@ -97,7 +97,7 @@ class AdversarialTrainer:
         loss.backward()
         self.opt_model.step()
         self.logger.log_batch(loss.item())
-        avg_real_probs = self.metrics_helper.compute_avg_prob(output, target)
+        avg_real_probs = self.metrics_helper.compute_reduce_prob(output, target)
         self.log_losses_to_tensorboard({'real_loss': real_loss.item(),
                                         'avg_real_probs' : avg_real_probs.item(),},
                                        TBLabels.PER_BATCH_ADV_AGGREGATE,
@@ -142,8 +142,8 @@ class AdversarialTrainer:
         self.logger.log_batch(loss.item())
 
         # Compute Probabilities
-        avg_real_probs = self.metrics_helper.compute_avg_prob(real_output, real_targets)
-        avg_adv_probs = self.metrics_helper.compute_avg_prob(adv_output, adv_targets)
+        avg_real_probs = self.metrics_helper.compute_reduce_prob(real_output, real_targets)
+        avg_adv_probs = self.metrics_helper.compute_reduce_prob(adv_output, adv_targets)
         self.log_losses_to_tensorboard(
             {
             'real_loss': real_loss.item(),
@@ -324,6 +324,7 @@ class AdversarialTrainer:
                     print(f'\nBreaking from test due to early epoch after {count} batches')
                     break
 
+        mh.finalize_stats()
         #loss /= len(loader.dataset)
         #accuracy = correct / len(loader.dataset)
 

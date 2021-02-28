@@ -47,12 +47,16 @@ class MetricsHelper:
         self.numel = 0
         self.per_class_numel = torch.zeros(num_real_fake_classes)
 
-    def compute_avg_prob(self, output, target):
+    def compute_reduce_prob(self, output, target, reduce='avg'):
+        assert reduce in ['sum', 'avg']
         real_probs = F.softmax(output, dim=1)
         a = torch.arange(target.shape[0])
         probs = real_probs[a, target]   # a[i], target[i] denotes desired class probability for ith entry
-        avg_real_probs = torch.mean(probs)
-        return avg_real_probs
+        if reduce == 'avg':
+            reduction = torch.mean(probs)
+        elif reduce == 'sum':
+            reduction = torch.sum(probs)
+        return reduction
 
     # Computes average sparsity for each class in batch of images
     # Also for each layer for each class in batch
@@ -131,8 +135,22 @@ class MetricsHelper:
         # print(json.dumps(probs, indent=2))
 
     def accumulate_batch_stats(self, output, target):
-        pass
+        self.numel += target.shape[0]
+        loss = F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
+        pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
+        correct = pred.eq(target.view_as(pred)).sum().item()
+
+        sum_probs = self.compute_reduce_prob(output, target, reduce='sum').item()
+        _accumulate_val_in_dict(self.agg, self.mlabels.avg_loss, loss)
+        _accumulate_val_in_dict(self.agg, self.mlabels.avg_accuracy, correct)
+        _accumulate_val_in_dict(self.agg, self.mlabels.avg_prob, sum_probs)
 
     def log(self, tbh : TensorBoardHelper, tb_agg_label, tb_per_class_label, global_step):
         tbh.log_dict(tb_agg_label, self.agg, global_step)
         tbh.log_dict(tb_per_class_label, self.per_class, global_step)
+
+    # Divide by counts
+    def finalize_stats(self):
+        for key in self.agg:
+            self.agg[key] /= self.numel
+
