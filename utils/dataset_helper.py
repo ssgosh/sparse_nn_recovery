@@ -39,6 +39,10 @@ class DatasetHelper(ABC):
     def get_num_classes(self):
         pass
 
+    # No need to be abstractmethod
+    def get_num_real_fake_classes(self):
+        return 2 * self.get_num_classes()
+
     @abstractmethod
     def get_each_entry_shape(self):
         pass

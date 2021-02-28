@@ -301,9 +301,9 @@ class AdversarialTrainer:
         self.model.eval()
         loss = 0
         correct = 0
-        mLabels = MLabels(data_type)
+        mlabels = MLabels(data_type)
         metrics = {}
-        mh = MetricsHelper.get()
+        mh = MetricsHelper.get(mlabels)
         with torch.no_grad():
             for count, tup in enumerate(loader):
 
@@ -314,15 +314,15 @@ class AdversarialTrainer:
                 data, target = data.to(self.device), target.to(self.device)
                 output = self.model(data)
                 mh.accumulate_batch_stats(output, target)
-                loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
-                pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
-                correct += pred.eq(target.view_as(pred)).sum().item()
+                #loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
+                #pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
+                #correct += pred.eq(target.view_as(pred)).sum().item()
                 if self.early_epoch and count >= 1:
                     print(f'\nBreaking from test due to early epoch after {count} batches')
                     break
 
-        loss /= len(loader.dataset)
-        accuracy = correct / len(loader.dataset)
+        #loss /= len(loader.dataset)
+        #accuracy = correct / len(loader.dataset)
 
         print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
             loss, correct, len(loader.dataset),

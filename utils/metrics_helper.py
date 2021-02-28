@@ -1,12 +1,12 @@
 #from __future__ import annotations
 import utils.image_processor as imp
-import utils.mnist_helper as mh
 
 import math
 import json
 import torch.nn.functional as F
 import torch
 
+from core.mlabels import MLabels
 from utils.dataset_helper import DatasetHelper
 
 
@@ -14,18 +14,37 @@ def _accumulate_val_in_dict(d, key, val):
     d[key] = (d[key] + val) if key in d else val
 
 
+def _safe_divide(y, x):
+    """
+    Safely divide y by x. Performs division for non-zero denominator elements only.
+
+    Typically used to take per-class averages from per-class sums and per-class counts
+
+    :param y: sums of some metric such as loss, with one entry per class
+    :param x: number of occurrences of each class
+    :return: Nothing. division done in-place in y
+    """
+    y[x != 0] = y[x != 0] / x[x != 0]
+
 class MetricsHelper:
     @classmethod
-    def get(cls) -> 'MetricsHelper':
+    def get(cls, mlabels : MLabels = None) -> 'MetricsHelper':
         zero, one = DatasetHelper.get_dataset().get_transformed_zero_one()
-        return cls(zero, one)
+        num_real_fake_classes = DatasetHelper.get_dataset().get_num_real_fake_classes()
+        return cls(zero, one, mlabels, num_real_fake_classes)
 
-    def __init__(self, image_zero, image_one, mlabels=None):
+    def __init__(self, image_zero, image_one, mlabels : MLabels = None, num_real_fake_classes=None):
         self.image_zero = image_zero
         self.image_one = image_one
         self.agg = {}
         self.per_class = {}
         self.mlabels = mlabels
+
+        # Keep track of batch and number of elements
+        # Updated on each call to accumulate_batch_stats
+        self.num_batches = 0
+        self.numel = 0
+        self.per_class_numel = torch.zeros(num_real_fake_classes)
 
     def compute_avg_prob(self, output, target):
         real_probs = F.softmax(output, dim=1)
