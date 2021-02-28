@@ -270,29 +270,30 @@ class AdversarialTrainer:
         :return:
         """
         # Test on real validation data
-        metrics = self.test(
-            self.valid_loader,
-            data_type='real',
-            acc=None
-        )
-
-        metrics.log(
+        self.test_and_return_metrics(self.valid_loader, data_type='real', acc=None).log(
             self.tbh,
             tb_agg_label = TBLabels.PER_EPOCH_ADV_AGGREGATE_VALIDATION_OVERALL,
             tb_per_class_label = TBLabels.PER_EPOCH_ADV_PER_CLASS_VALIDATION_OVERALL,
             global_step=self.epoch
         )
-        # self.log_stats(stats, self.epoch)
-        # Test on past adversarial train data
-        # for i, loader in enumerate(self.dataset_mgr.train_sample):
-        #     self.test(
-        #         loader,
-        #         data_type='adversarial',
-        #         tb_agg_label=TBLabels.PER_EPOCH_ADV_TRAINING_AGGREGATE_VALIDATION,
-        #         tb_per_class_label=TBLabels.PER_EPOCH_ADV_TRAINING_PER_CLASS_VALIDATION_OVERALL
-        #     )
 
-    def test(self, loader, data_type, acc) -> MetricsHelper:
+        # Test on past adversarial train data
+        overall_metrics = []
+        for i, loader in enumerate(self.dataset_mgr.train_sample):
+            self.test_and_return_metrics(loader, data_type='adversarial', acc=overall_metrics).log(
+                self.tbh,
+                tb_agg_label = TBLabels.PER_EPOCH_ADV_AGGREGATE_TRAIN(i),
+                tb_per_class_label = TBLabels.PER_EPOCH_ADV_PER_CLASS_TRAIN(i),
+                global_step=self.epoch
+            )
+        MetricsHelper.reduce(overall_metrics).log(
+            self.tbh,
+            tb_agg_label=TBLabels.PER_EPOCH_ADV_AGGREGATE_TRAIN,
+            tb_per_class_label=TBLabels.PER_EPOCH_ADV_PER_CLASS_TRAIN,
+            global_step=self.epoch
+        )
+
+    def test_and_return_metrics(self, loader, data_type, acc) -> MetricsHelper:
         """
 
         :param loader: DataLoader
@@ -306,7 +307,7 @@ class AdversarialTrainer:
         loss = 0
         correct = 0
         mlabels = MLabels(data_type)
-        mh = MetricsHelper.get(mlabels)
+        metrics = MetricsHelper.get(mlabels)
         with torch.no_grad():
             for count, tup in enumerate(loader):
 
@@ -316,7 +317,7 @@ class AdversarialTrainer:
 
                 data, target = data.to(self.device), target.to(self.device)
                 output = self.model(data)
-                mh.accumulate_batch_stats(output, target)
+                metrics.accumulate_batch_stats(output, target)
                 #loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
                 #pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
                 #correct += pred.eq(target.view_as(pred)).sum().item()
@@ -324,14 +325,15 @@ class AdversarialTrainer:
                     print(f'\nBreaking from test due to early epoch after {count} batches')
                     break
 
-        mh.finalize_stats()
+        metrics.finalize_stats()
+        if acc: acc.append(metrics)
         #loss /= len(loader.dataset)
         #accuracy = correct / len(loader.dataset)
 
         print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
             loss, correct, len(loader.dataset),
             100. * correct / len(loader.dataset)))
-        return mh
+        return metrics
 
     def train_loop(self, num_epochs, train_mode, pretrain, config):
         assert train_mode in [ 'adversarial-epoch', 'adversarial-batches' ]

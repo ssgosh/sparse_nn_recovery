@@ -34,6 +34,16 @@ class MetricsHelper:
         num_real_fake_classes = DatasetHelper.get_dataset().get_num_real_fake_classes()
         return cls(zero, one, mlabels, num_real_fake_classes)
 
+    @classmethod
+    def reduce(cls, metrics_list):
+        overall_metrics = cls.get()
+        n = len(metrics_list)
+        for key in metrics_list[0].agg:
+            overall_metrics.agg[key] = sum([m.agg[key] for m in metrics_list]) / n
+        for key in metrics_list[0].per_class:
+            overall_metrics.per_class[key] = sum([m.per_class[key] for m in metrics_list]) / n
+        return overall_metrics
+
     def __init__(self, image_zero, image_one, mlabels : MLabels = None, num_real_fake_classes=None):
         self.image_zero = image_zero
         self.image_one = image_one
