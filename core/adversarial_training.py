@@ -278,18 +278,37 @@ class AdversarialTrainer:
         )
 
         # Test on past adversarial train data
+        datasets = self.dataset_mgr.train_sample
+        tb_agg_label = TBLabels.PER_EPOCH_ADV_AGGREGATE_TRAIN_OVERALL
+        tb_agg_label_i = TBLabels.PER_EPOCH_ADV_AGGREGATE_TRAIN
+        tb_per_class_label = TBLabels.PER_EPOCH_ADV_PER_CLASS_TRAIN_OVERALL
+        tb_per_class_label_i = TBLabels.PER_EPOCH_ADV_PER_CLASS_TRAIN
+
+        self.test_and_log_intermittent_datasets(datasets, tb_agg_label, tb_agg_label_i, tb_per_class_label,
+                                                tb_per_class_label_i)
+
+        # Test on past adversarial validation data
+        self.test_and_log_intermittent_datasets(self.dataset_mgr.valid,
+                                                TBLabels.PER_EPOCH_ADV_AGGREGATE_VALIDATION_OVERALL,
+                                                TBLabels.PER_EPOCH_ADV_AGGREGATE_VALIDATION,
+                                                TBLabels.PER_EPOCH_ADV_PER_CLASS_VALIDATION_OVERALL,
+                                                TBLabels.PER_EPOCH_ADV_PER_CLASS_VALIDATION)
+
+
+    def test_and_log_intermittent_datasets(self, datasets, tb_agg_label, tb_agg_label_i, tb_per_class_label,
+                                           tb_per_class_label_i):
         overall_metrics = []
-        for i, loader in enumerate(self.dataset_mgr.train_sample):
+        for i, loader in enumerate(datasets):
             self.test_and_return_metrics(loader, data_type='adversarial', acc=overall_metrics).log(
                 self.tbh,
-                tb_agg_label = TBLabels.PER_EPOCH_ADV_AGGREGATE_TRAIN(i),
-                tb_per_class_label = TBLabels.PER_EPOCH_ADV_PER_CLASS_TRAIN(i),
+                tb_agg_label=tb_agg_label_i(i),
+                tb_per_class_label=tb_per_class_label_i(i),
                 global_step=self.epoch
             )
         MetricsHelper.reduce(overall_metrics).log(
             self.tbh,
-            tb_agg_label=TBLabels.PER_EPOCH_ADV_AGGREGATE_TRAIN,
-            tb_per_class_label=TBLabels.PER_EPOCH_ADV_PER_CLASS_TRAIN,
+            tb_agg_label=tb_agg_label,
+            tb_per_class_label=tb_per_class_label,
             global_step=self.epoch
         )
 
