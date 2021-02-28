@@ -21,14 +21,14 @@ class TBLabels:
     # These are the ones that we'll look at to make decisions. #
 
     # On sample of 5k real training data points, and combined adversarial training data (1k samples each) from all past epochs
-    PER_EPOCH_ADV_AGGREGATE_TRAIN_OVERALL = "adversarial_training_per_epoch_stats_aggregate_train"
+    PER_EPOCH_ADV_AGGREGATE_TRAIN_OVERALL = "adversarial_training_per_epoch_stats_aggregate_train_samples"
 
     # On adversarial training dataset generated in epoch i
     @staticmethod
     def PER_EPOCH_ADV_AGGREGATE_TRAIN(i): return f"yyy_adversarial_training_per_epoch_stats_aggregate_train_{i:4>0d}"
 
     # On real validation dataset and combined adversarial validation data from all past epochs
-    PER_EPOCH_ADV_AGGREGATE_VALIDATION_OVERALL = "adversarial_training_per_epoch_stats_aggregate_validation"
+    PER_EPOCH_ADV_AGGREGATE_VALIDATION_OVERALL = "adversarial_training_per_epoch_stats_aggregate_validation_data"
 
     # On intermittent adversarial validation datasets
     @staticmethod
