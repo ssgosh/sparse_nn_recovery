@@ -99,7 +99,7 @@ class AdversarialTrainer:
         avg_real_probs = self.metrics_helper.compute_avg_prob(output, target)
         self.log_losses_to_tensorboard({'real_loss': real_loss.item(),
                                         'avg_real_probs' : avg_real_probs.item(),},
-                                       TBLabels.PER_BATCH_ADV_TRAINING_AGGREGATE,
+                                       TBLabels.PER_BATCH_ADV_AGGREGATE,
                                        self.global_step())
 
     def global_step(self):
@@ -150,7 +150,7 @@ class AdversarialTrainer:
             'avg_real_probs': avg_real_probs.item(),
             'avg_adv_probs': avg_adv_probs.item(),
             },
-            TBLabels.PER_BATCH_ADV_TRAINING_AGGREGATE,
+            TBLabels.PER_BATCH_ADV_AGGREGATE,
             self.global_step()
         )
 
@@ -268,10 +268,36 @@ class AdversarialTrainer:
             - all members of manager.valid
         :return:
         """
-        self.test_real_data()
+        # Test on real validation data
+        stats = self.test(
+            self.valid_loader,
+            data_type='real',
+            tb_agg_label=TBLabels.PER_EPOCH_ADV_AGGREGATE_VALIDATION_OVERALL,
+            tb_per_class_label=TBLabels.PER_EPOCH_ADV_PER_CLASS_VALIDATION_OVERALL,
+            acc=None
+        )
 
-    def test(self, loader, data_type, tb_agg_label, tb_per_class_label):
-        pass
+        self.log_stats(stats, self.epoch)
+        # Test on past adversarial train data
+        # for i, loader in enumerate(self.dataset_mgr.train_sample):
+        #     self.test(
+        #         loader,
+        #         data_type='adversarial',
+        #         tb_agg_label=TBLabels.PER_EPOCH_ADV_TRAINING_AGGREGATE_VALIDATION,
+        #         tb_per_class_label=TBLabels.PER_EPOCH_ADV_TRAINING_PER_CLASS_VALIDATION_OVERALL
+        #     )
+
+    def test(self, loader, data_type, tb_agg_label, tb_per_class_label, acc):
+        """
+
+        :param loader:
+        :param data_type:
+        :param tb_agg_label:
+        :param tb_per_class_label:
+        :param acc: dictionary in which to accumulate metrics. Useful for computing aggregate stats
+        :return: dictionary containing the stats
+        """
+        return {}
 
     def train_loop(self, num_epochs, train_mode, pretrain, config):
         assert train_mode in [ 'adversarial-epoch', 'adversarial-batches' ]
@@ -292,3 +318,6 @@ class AdversarialTrainer:
             self.validate()
             self.ckpt_saver.save_model(self.model, epoch, config.model_classname)
             self.lr_scheduler_model.step()
+
+    def log_stats(self, stats, epoch):
+        self.tbh.log_dict('', stats, epoch)

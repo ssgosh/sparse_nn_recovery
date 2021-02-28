@@ -68,7 +68,8 @@ class TensorBoardHelper:
 
     def log_dict(self, label, scalars, global_step):
         for key in scalars:
-            self.writer.add_scalar(f"{label}/{key}", scalars[key], global_step=global_step)
+            tag = f"{label}/{key}" if label else key
+            self.writer.add_scalar(tag, scalars[key], global_step=global_step)
 
     def log_config(self, config):
         config_dict = vars(config)
