@@ -131,7 +131,7 @@ class SparseInputDatasetRecoverer:
             # Append all-zero images if not enough entries for this class
             for j in range(count, num_per_class):
                 entries.append(torch.zeros_like(images[0]) + self.image_zero)
-                tgt_entries.append(torch.tensor(cls))
+                tgt_entries.append(torch.tensor(cls, device=targets.device))
 
         return torch.stack(entries), torch.stack(tgt_entries)
 
