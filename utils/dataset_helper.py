@@ -1,4 +1,7 @@
 from abc import ABC, abstractmethod
+
+from core.adversarial_training import AdversarialTrainer
+from models.mnist_model import ExampleCNNNet
 from utils import mnist_helper
 
 # Abstraction for Dataset-specific functionality, such as transformations,
@@ -34,6 +37,7 @@ class DatasetHelper(ABC):
         zero, one = self.get_transformed_zero_one()
         config.image_zero = zero
         config.image_one = one
+        self.update_config(config)
 
     @abstractmethod
     def get_num_classes(self):
@@ -45,6 +49,14 @@ class DatasetHelper(ABC):
 
     @abstractmethod
     def get_each_entry_shape(self):
+        pass
+
+    @abstractmethod
+    def get_model(self, model_mode, device):
+        pass
+
+    @abstractmethod
+    def update_config(self, config):
         pass
 
 
@@ -60,6 +72,19 @@ class MNISTdatasetHelper(DatasetHelper):
 
     def get_each_entry_shape(self):
         return (1, 28, 28)
+
+    def get_model(self, model_mode, device):
+        if model_mode == 'fake-classes': model = ExampleCNNNet(20).to(device)
+        elif model_mode == 'max-entropy': model = ExampleCNNNet(10).to(device)
+        else: raise ValueError(f"Invalid mode mode {model_mode}")
+        # model = MLPNet().to(device)
+        # model = MLPNet3Layer(num_classes=20).to(device)
+        # model = MaxNormMLP(num_classes=20).to(device)
+        return model
+
+    @abstractmethod
+    def update_config(self, config):
+        config.model_classname = 'ExampleCNNNet'
 
 
 class CIFARDatasetHelper(DatasetHelper):

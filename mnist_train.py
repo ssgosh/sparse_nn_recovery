@@ -385,11 +385,7 @@ def main():
         #print(batch_a[0], batch_b[0], batch_c[0])
         #sys.exit(0)
 
-    config.model_classname = 'ExampleCNNNet'
-    model = ExampleCNNNet(20).to(device)
-    #model = MLPNet().to(device)
-    #model = MLPNet3Layer(num_classes=20).to(device)
-    #model = MaxNormMLP(num_classes=20).to(device)
+    model = dataset_helper.get_model(config.adversarial_classification_mode, device)
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
     if args.train_mode == 'adversarial-continuous':
         optD = optimizer

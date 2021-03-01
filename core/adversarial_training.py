@@ -43,8 +43,10 @@ class TrainLogger:
 
 
 class AdversarialTrainer:
-    @staticmethod
-    def add_command_line_arguments(parser : argparse.ArgumentParser):
+    valid_adversarial_classification_modes = ['fake-classes', 'max-entropy']
+
+    @classmethod
+    def add_command_line_arguments(cls, parser : argparse.ArgumentParser):
         # Add arguments specific to adversarial-epoch and adversarial-batches mode
         # Adversarial batch size is same as the train batch size
         parser.add_argument('--num-adversarial-train-batches', type=int, default=100,
@@ -54,6 +56,10 @@ class AdversarialTrainer:
                             metavar='m', help='Number of batches of images to generate in "adversarial-batches" mode')
         parser.add_argument('--num-adversarial-images-epoch-mode', type=int, default=10240,
                             metavar='m', help='Number of batches of images to generate in "adversarial-epoch" mode')
+        parser.add_argument('--adversarial-classification-mode', type=str, default='max-entropy',
+                            metavar='CMODE', choices=cls.valid_adversarial_classification_modes,
+                            help='Whether to use fake classes or soft labels with equal probability on real classes '
+                                 'for adversarial examples. One of: ' + ', '.join(cls.valid_adversarial_classification_modes))
 
     def __init__(self, real_data_train_loader, real_data_train_samples, sparse_input_dataset_recoverer: SparseInputDatasetRecoverer,
                  model, opt_model, adv_training_batch_size, device, log_interval, dry_run, early_epoch,
