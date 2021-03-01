@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 
-from core.adversarial_training import AdversarialTrainer
 from models.mnist_model import ExampleCNNNet
 from utils import mnist_helper
+
 
 # Abstraction for Dataset-specific functionality, such as transformations,
 # values of transformed zero and one pixel values. Also provides a singleton for the datasethelper
@@ -82,7 +82,6 @@ class MNISTdatasetHelper(DatasetHelper):
         # model = MaxNormMLP(num_classes=20).to(device)
         return model
 
-    @abstractmethod
     def update_config(self, config):
         config.model_classname = 'ExampleCNNNet'
 
