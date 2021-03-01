@@ -39,12 +39,14 @@ class DatasetHelper(ABC):
         config.image_one = one
         self.update_config(config)
 
+    # XXX: Rename method to get_num_real_classes and update usage.
     @abstractmethod
     def get_num_classes(self):
         pass
 
     # No need to be abstractmethod
     def get_num_real_fake_classes(self):
+        # XXX: Change this to get_num_real_classes()
         return 2 * self.get_num_classes()
 
     @abstractmethod

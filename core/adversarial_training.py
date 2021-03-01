@@ -92,7 +92,7 @@ class AdversarialTrainer:
         self.tbh = self.sparse_input_dataset_recoverer.tbh
         self.sparsity_mode = self.sparse_input_dataset_recoverer.sparsity_mode
         self.train_dataset_len = len(self.real_data_train_loader)
-        self.metrics_helper : MetricsHelper = MetricsHelper.get()
+        self.metrics_helper : MetricsHelper = MetricsHelper.get(adversarial_classification_mode=adversarial_classification_mode)
 
         self.dataset_mgr = AdversarialDatasetManager(sparse_input_dataset_recoverer,
                                                      train_batch_size=adv_training_batch_size,
@@ -146,7 +146,7 @@ class AdversarialTrainer:
         adv_output = self.model(adv_data)
 
         real_loss = F.nll_loss(real_output, real_targets)
-        adv_loss = F.nll_loss(adv_output, adv_targets) if self.adv_use_soft_labels else F.kl_div(adv_soft_labels)
+        adv_loss = F.kl_div(adv_output, adv_soft_labels) if self.adv_use_soft_labels else F.nll_loss(adv_output, adv_targets)
         loss = real_loss + adv_loss + self.model.get_weight_decay()
 
         loss.backward()
@@ -354,7 +354,7 @@ class AdversarialTrainer:
         loss = 0
         correct = 0
         mlabels = MLabels(data_type)
-        metrics = MetricsHelper.get(mlabels)
+        metrics = MetricsHelper.get(mlabels, self.adversarial_classification_mode)
         with torch.no_grad():
             for count, tup in enumerate(loader):
 

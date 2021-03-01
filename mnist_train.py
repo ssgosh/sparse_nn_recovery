@@ -416,7 +416,8 @@ def main():
         # Now we can create an AdversarialTrainer!!!!!
         adversarial_trainer = AdversarialTrainer(train_loader, train_samples, dataset_recoverer, model, optimizer, config.batch_size,
                                                  device, config.log_interval, config.dry_run, config.early_epoch,
-                                                 config.num_batches_early_epoch, test_loader, scheduler)
+                                                 config.num_batches_early_epoch, test_loader, scheduler,
+                                                 config.adversarial_classification_mode)
 
 
     if args.train_mode not in ['adversarial-batches', 'adversarial-epoch']:

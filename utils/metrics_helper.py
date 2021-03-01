@@ -31,10 +31,11 @@ def _safe_divide(y, x):
 
 class MetricsHelper:
     @classmethod
-    def get(cls, mlabels : MLabels = None) -> 'MetricsHelper':
+    def get(cls, mlabels : MLabels = None, adversarial_classification_mode='max-entropy') -> 'MetricsHelper':
         zero, one = DatasetHelper.get_dataset().get_transformed_zero_one()
+        # XXX: Change this to get_num_classes. This is not valid in case of soft adversarial labels
         num_real_fake_classes = DatasetHelper.get_dataset().get_num_real_fake_classes()
-        return cls(zero, one, mlabels, num_real_fake_classes)
+        return cls(zero, one, mlabels, num_real_fake_classes, adversarial_classification_mode)
 
     @classmethod
     def reduce(cls, metrics_list: List['MetricsHelper']):
@@ -52,13 +53,15 @@ class MetricsHelper:
         overall_metrics.finalized = True
         return overall_metrics
 
-    def __init__(self, image_zero, image_one, mlabels : MLabels = None, num_real_fake_classes=None):
+    def __init__(self, image_zero, image_one, mlabels : MLabels = None, num_real_fake_classes=None,
+                 adversarial_classification_mode='max-entropy'):
         self.image_zero = image_zero
         self.image_one = image_one
         self.agg = {}
         self.per_class = {}
         self.correct = 0
         self.mlabels = mlabels
+        self.adversarial_classification_mode = adversarial_classification_mode
 
         # Keep track of batch and number of elements
         # Updated on each call to accumulate_batch_stats
@@ -69,11 +72,14 @@ class MetricsHelper:
         self.initialized = False    # Someone has to add some metrics using accumulate_batch_stats() for this to happen.
         self.finalized = False
 
-    def compute_reduce_prob(self, output, target, reduce='avg'):
+    def compute_reduce_prob(self, output, target, reduce='avg', adv_data=False):
         assert reduce in ['sum', 'avg']
         real_probs = F.softmax(output, dim=1)
         a = torch.arange(target.shape[0])
-        probs = real_probs[a, target]   # a[i], target[i] denotes desired class probability for ith entry
+        if adv_data and self.adversarial_classification_mode == 'max-entropy':
+            probs = torch.max(real_probs, dim=1)
+        else:
+            probs = real_probs[a, target] # a[i], target[i] denotes desired class probability for ith entry
         if reduce == 'avg':
             reduction = torch.mean(probs)
         elif reduce == 'sum':
