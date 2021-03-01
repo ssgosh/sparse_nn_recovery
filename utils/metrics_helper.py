@@ -77,7 +77,7 @@ class MetricsHelper:
         real_probs = F.softmax(output, dim=1)
         a = torch.arange(target.shape[0])
         if adv_data and self.adversarial_classification_mode == 'max-entropy':
-            probs = torch.max(real_probs, dim=1)
+            probs = torch.max(real_probs, dim=1)[0]
         else:
             probs = real_probs[a, target] # a[i], target[i] denotes desired class probability for ith entry
         if reduce == 'avg':
@@ -162,15 +162,25 @@ class MetricsHelper:
 
         # print(json.dumps(probs, indent=2))
 
-    def accumulate_batch_stats(self, output, target):
+    def accumulate_batch_stats(self, output, target, adv_data=False, adv_soft_labels=None):
         assert not self.finalized
         self.initialized = True
         self.numel += target.shape[0]
-        loss = F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
-        pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
-        correct = pred.eq(target.view_as(pred)).sum().item()
+        if adv_data and self.adversarial_classification_mode == 'max-entropy':
+            assert adv_soft_labels is not None
+            loss = F.kl_div(output, adv_soft_labels, reduction='sum').item()
+            probs = F.softmax(output, dim=1)
+            max_probs = probs.max(dim=1)[0]
+            # pred is True if adversarial data. If max prob amongst all classes is less than 0.5,
+            # we consider the model sufficiently confused on adversarial data
+            pred = max_probs < 0.5
+            correct = pred.sum().item()
+        else:
+            loss = F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
+            pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
+            correct = pred.eq(target.view_as(pred)).sum().item()
         self.correct += correct
-        sum_probs = self.compute_reduce_prob(output, target, reduce='sum').item()
+        sum_probs = self.compute_reduce_prob(output, target, reduce='sum', adv_data=adv_data).item()
         _accumulate_val_in_dict(self.agg, self.mlabels.avg_loss, loss)
         _accumulate_val_in_dict(self.agg, self.mlabels.avg_accuracy, correct)
         _accumulate_val_in_dict(self.agg, self.mlabels.avg_prob, sum_probs)

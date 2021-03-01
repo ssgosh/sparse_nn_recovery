@@ -42,6 +42,13 @@ class TrainLogger:
                 raise ShouldBreak('Breaking because of dry run')
 
 
+def get_soft_labels(batch_inputs):
+    n = DatasetHelper.get_dataset().get_num_classes()
+    N = batch_inputs.shape[0]
+    adv_soft_labels = torch.empty(N, n).fill_(1 / n)
+    return adv_soft_labels
+
+
 class AdversarialTrainer:
     valid_adversarial_classification_modes = ['fake-classes', 'max-entropy']
 
@@ -155,7 +162,7 @@ class AdversarialTrainer:
 
         # Compute Probabilities
         avg_real_probs = self.metrics_helper.compute_reduce_prob(real_output, real_targets)
-        avg_adv_probs = self.metrics_helper.compute_reduce_prob(adv_output, adv_targets)
+        avg_adv_probs = self.metrics_helper.compute_reduce_prob(adv_output, adv_targets, adv_data=True)
         self.log_losses_to_tensorboard(
             {
             'real_loss': real_loss.item(),
@@ -186,9 +193,7 @@ class AdversarialTrainer:
             real_images, real_targets = real_batch
             fake_images, _, fake_targets = adv_batch
             # XXX: Set this to a tensor of shape (N, num_classes), with all values 1 / num_classes
-            n = DatasetHelper.get_dataset().get_num_classes()
-            N = fake_images.shape[0]
-            adv_soft_labels = torch.empty(N, n).fill_(1 / n)
+            adv_soft_labels = get_soft_labels(fake_images)
             self.train_one_batch_adversarial(real_images, real_targets, fake_images, fake_targets, adv_soft_labels)
             count += 1
             if self.early_epoch and count >= self.num_batches_early_epoch:
@@ -355,6 +360,7 @@ class AdversarialTrainer:
         correct = 0
         mlabels = MLabels(data_type)
         metrics = MetricsHelper.get(mlabels, self.adversarial_classification_mode)
+        adv_data = data_type == 'adv'
         with torch.no_grad():
             for count, tup in enumerate(loader):
 
@@ -364,7 +370,8 @@ class AdversarialTrainer:
 
                 data, target = data.to(self.device), target.to(self.device)
                 output = self.model(data)
-                metrics.accumulate_batch_stats(output, target)
+                adv_soft_labels = get_soft_labels(data) if adv_data else None
+                metrics.accumulate_batch_stats(output, target, adv_data=adv_data, adv_soft_labels=adv_soft_labels)
                 #loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
                 #pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
                 #correct += pred.eq(target.view_as(pred)).sum().item()
