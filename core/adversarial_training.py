@@ -64,7 +64,8 @@ class AdversarialTrainer:
     def __init__(self, real_data_train_loader, real_data_train_samples, sparse_input_dataset_recoverer: SparseInputDatasetRecoverer,
                  model, opt_model, adv_training_batch_size, device, log_interval, dry_run, early_epoch,
                  num_batches_early_epoch,
-                 test_loader : DataLoader, lr_scheduler_model : StepLR):
+                 test_loader : DataLoader, lr_scheduler_model : StepLR,
+                 adversarial_classification_mode : str):
         self.adv_training_batch_size = adv_training_batch_size  # Same batch size is used for both real and adversarial training
         self.real_data_train_loader = real_data_train_loader
         self.real_data_train_samples = real_data_train_samples
@@ -80,6 +81,9 @@ class AdversarialTrainer:
         self.test_loader = test_loader
         self.valid_loader = self.test_loader    # For now, validation data is just test data. Will change later
         self.lr_scheduler_model = lr_scheduler_model
+        self.adversarial_classification_mode = adversarial_classification_mode
+        self.adv_use_soft_labels = adversarial_classification_mode == 'max-entropy'
+        self.adv_criterion = F.kl_div if self.adv_use_soft_labels else F.nll_loss
 
         # Use a fixed iterator to iterate over the training dataset
         self.real_data_train_iterator = iter(self.real_data_train_loader)
@@ -128,7 +132,8 @@ class AdversarialTrainer:
 
     # Create a batch from real and adversarial data and call train_one_batch
     def train_one_batch_adversarial(self, real_batch_inputs, real_batch_targets,
-                                    adversarial_batch_inputs, adversarial_batch_targets):
+                                    adversarial_batch_inputs, adversarial_batch_targets,
+                                    adv_soft_labels):
         # Move everything to gpu before performing tensor operations
         real_data = real_batch_inputs.to(self.device)
         adv_data = adversarial_batch_inputs.to(self.device)
@@ -141,7 +146,7 @@ class AdversarialTrainer:
         adv_output = self.model(adv_data)
 
         real_loss = F.nll_loss(real_output, real_targets)
-        adv_loss = F.nll_loss(adv_output, adv_targets)
+        adv_loss = F.nll_loss(adv_output, adv_targets) if self.adv_use_soft_labels else F.kl_div(adv_soft_labels)
         loss = real_loss + adv_loss + self.model.get_weight_decay()
 
         loss.backward()
@@ -180,7 +185,11 @@ class AdversarialTrainer:
         for self.next_real_batch, (real_batch, adv_batch) in enumerate(zip(self.real_data_train_loader, adversarial_train_loader)):
             real_images, real_targets = real_batch
             fake_images, _, fake_targets = adv_batch
-            self.train_one_batch_adversarial(real_images, real_targets, fake_images, fake_targets)
+            # XXX: Set this to a tensor of shape (N, num_classes), with all values 1 / num_classes
+            n = DatasetHelper.get_dataset().get_num_classes()
+            N = fake_images.shape[0]
+            adv_soft_labels = torch.empty(N, n).fill_(1 / n)
+            self.train_one_batch_adversarial(real_images, real_targets, fake_images, fake_targets, adv_soft_labels)
             count += 1
             if self.early_epoch and count >= self.num_batches_early_epoch:
                 print(f'\nBreaking due to early epoch after {count} batches')
