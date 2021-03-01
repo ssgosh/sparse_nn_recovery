@@ -385,11 +385,7 @@ def main():
         #print(batch_a[0], batch_b[0], batch_c[0])
         #sys.exit(0)
 
-    config.model_classname = 'ExampleCNNNet'
-    model = ExampleCNNNet(20).to(device)
-    #model = MLPNet().to(device)
-    #model = MLPNet3Layer(num_classes=20).to(device)
-    #model = MaxNormMLP(num_classes=20).to(device)
+    model = dataset_helper.get_model(config.adversarial_classification_mode, device)
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
     if args.train_mode == 'adversarial-continuous':
         optD = optimizer
@@ -420,7 +416,8 @@ def main():
         # Now we can create an AdversarialTrainer!!!!!
         adversarial_trainer = AdversarialTrainer(train_loader, train_samples, dataset_recoverer, model, optimizer, config.batch_size,
                                                  device, config.log_interval, config.dry_run, config.early_epoch,
-                                                 config.num_batches_early_epoch, test_loader, scheduler)
+                                                 config.num_batches_early_epoch, test_loader, scheduler,
+                                                 config.adversarial_classification_mode)
 
 
     if args.train_mode not in ['adversarial-batches', 'adversarial-epoch']:
