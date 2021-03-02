@@ -12,6 +12,7 @@ import pathlib
 from core.adversarial_training import AdversarialTrainer
 from core.sparse_input_dataset_recoverer import SparseInputDatasetRecoverer
 from core.sparse_input_recoverer import SparseInputRecoverer
+from datasets.dataset_helper import DatasetHelper
 from datasets.dataset_helper_factory import DatasetHelperFactory
 from utils.batched_tensor_view_data_loader import BatchedTensorViewDataLoader
 import utils.mnist_helper as mh
@@ -262,7 +263,7 @@ def main():
     SparseInputRecoverer.setup_default_config(config)
     # dataset name is 'MNIST'
     #config.dataset_name = 'mnist'
-    dataset_helper: DatasetHelperFactory = DatasetHelperFactory.get(config.dataset)
+    dataset_helper: DatasetHelper = DatasetHelperFactory.get(config.dataset)
     dataset_helper.setup_config(config)
 
     # Setup runs directory, tensorboard helper and sparse input recoverer
@@ -372,8 +373,8 @@ def main():
     #
     # dataset2 = datasets.MNIST('./data', train=False,
     #                    transform=test_transform)
-    dataset1 = dataset_helper.get_dataset(train=True, transform=train_transform)
-    dataset2 = dataset_helper.get_dataset(train=False, transform=test_transform)
+    dataset1 = dataset_helper.get_dataset(which='train', transform=train_transform)
+    dataset2 = dataset_helper.get_dataset(which='test', transform=test_transform)
     print(f"Dataset name : {config.dataset}, train_len = {len(dataset1)}, test_len = {len(dataset2)}")
     train_loader = torch.utils.data.DataLoader(dataset1,**train_kwargs)
     test_loader = torch.utils.data.DataLoader(dataset2, **test_kwargs)

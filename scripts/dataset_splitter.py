@@ -23,7 +23,7 @@ parser.add_argument('--dataset', type=str, default='mnist',
                     help='Which dataset to split (e.g. MNIST)')
 config = parser.parse_args()
 transform = transforms.ToTensor()
-ds = DatasetHelperFactory.get(config.dataset).get_dataset(train=True, transform=transform)
+ds = DatasetHelperFactory.get(config.dataset).get_dataset(which='train', transform=transform)
 #ds = DatasetHelperFactory.get(config.dataset).get_dataset(train=True, transform=None)
 
 
@@ -64,11 +64,12 @@ def get_dataset_stats(name, dataset : Dataset):
 def compare_with_loaded(idx, name, train):
     global transform, ds
     saved = (Subset(ds, idx))
-    loaded = (DatasetHelperFactory.get_new(name).get_dataset(train, transform))
+    which = "train" if train else "test"
+    loaded = (DatasetHelperFactory.get_new(name).get_dataset(which, transform))
 
     # First print stats
-    get_dataset_stats(f'Saved {name}, {"train" if train else "test"}', saved)
-    get_dataset_stats(f'Loaded {name}, {"train" if train else "test"}', loaded)
+    get_dataset_stats(f'Saved {name}, {which}', saved)
+    get_dataset_stats(f'Loaded {name}, {which}', loaded)
     saved_loader = DataLoader(saved)
     loaded_loader = DataLoader(loaded)
     for i, ((saved_img, saved_tg), (loaded_img, loaded_tgt)) in enumerate(zip(saved_loader, loaded_loader)):

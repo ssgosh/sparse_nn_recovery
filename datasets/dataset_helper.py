@@ -13,7 +13,15 @@ class DatasetHelper(ABC):
         self.name = name
         self.subset = subset
 
-    def get_dataset(self, train=True, transform=None) -> Dataset:
+    def get_dataset(self, which='train', transform=None) -> Dataset:
+        """
+        Return torch.utils.data.Dataset object for train/test/valid split with the given transform
+
+        :param which:
+        :param transform:
+        :return:
+        """
+        train = which == 'train'
         if transform == 'train' : transform = self.get_train_transform()
         elif transform == 'test' : transform = self.get_test_transform()
         path = './data'
