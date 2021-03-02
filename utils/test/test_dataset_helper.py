@@ -1,6 +1,7 @@
 import unittest
 
 from datasets.dataset_helper_factory import DatasetHelperFactory
+from datasets.mnist_dataset_helper import MNISTdatasetHelper
 
 if __name__ == '__main__':
     import sys
