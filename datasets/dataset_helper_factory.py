@@ -1,4 +1,4 @@
-from datasets.dataset_helper import CIFARDatasetHelper
+from datasets.cifar_dataset_helper import CIFARDatasetHelper
 from datasets.mnist_dataset_helper import MNISTdatasetHelper
 
 

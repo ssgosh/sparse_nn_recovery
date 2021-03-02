@@ -1,5 +1,6 @@
 import unittest
 
+from datasets.cifar_dataset_helper import CIFARDatasetHelper
 from datasets.dataset_helper_factory import DatasetHelperFactory
 from datasets.mnist_dataset_helper import MNISTdatasetHelper
 
@@ -7,7 +8,6 @@ if __name__ == '__main__':
     import sys
     sys.path.append(".")
 
-from datasets.dataset_helper import *
 
 class DatasetHelperTest(unittest.TestCase):
     def test_dataset_helper_mnist(self):
