@@ -8,7 +8,7 @@ class DatasetHelperFactory:
     @classmethod
     def get(classobj, dataset_name : str = None):
         """
-        Singleton method
+        Singleton method. Maintains application-wide train/test dataset
 
         :param dataset_name:
         :return:
@@ -23,7 +23,10 @@ class DatasetHelperFactory:
     @classmethod
     def get_new(classobj, cased_dataset_name):
         """
-        Factory method to get new datasets
+        Factory method to get new datasets.
+
+        Various train/test datasets compatible to each other (such as MNIST, MNIST_A, MNIST_B etc) may be managed by
+        creating new instances.
 
         :param dataset_name:
         :return:
