@@ -11,7 +11,7 @@ import argparse
 
 from torch.utils.data import DataLoader, Dataset, Subset
 
-from datasets.dataset_helper import DatasetHelperFactory
+from datasets.dataset_helper_factory import DatasetHelperFactory
 
 parser = argparse.ArgumentParser(
     description='Splits train dataset into multiple train and validation',

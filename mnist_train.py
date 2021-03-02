@@ -12,7 +12,7 @@ import pathlib
 from core.adversarial_training import AdversarialTrainer
 from core.sparse_input_dataset_recoverer import SparseInputDatasetRecoverer
 from core.sparse_input_recoverer import SparseInputRecoverer
-from datasets.dataset_helper import DatasetHelperFactory
+from datasets.dataset_helper_factory import DatasetHelperFactory
 from utils.batched_tensor_view_data_loader import BatchedTensorViewDataLoader
 import utils.mnist_helper as mh
 from utils import runs_helper as rh

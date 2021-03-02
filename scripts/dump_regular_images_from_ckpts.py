@@ -5,7 +5,7 @@ import torch
 import torchvision
 
 from utils.ckpt_saver import CkptSaver
-from datasets.dataset_helper import DatasetHelperFactory
+from datasets.dataset_helper_factory import DatasetHelperFactory
 from utils.tensorboard_helper import TensorBoardHelper
 
 

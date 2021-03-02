@@ -1,5 +1,7 @@
 import unittest
 
+from datasets.dataset_helper_factory import DatasetHelperFactory
+
 if __name__ == '__main__':
     import sys
     sys.path.append(".")

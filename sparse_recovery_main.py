@@ -9,7 +9,7 @@ import torch
 
 from utils import plotter
 from utils import runs_helper as rh
-from datasets.dataset_helper import DatasetHelperFactory
+from datasets.dataset_helper_factory import DatasetHelperFactory
 from utils.tensorboard_helper import TensorBoardHelper
 
 from core.sparse_input_recoverer import SparseInputRecoverer

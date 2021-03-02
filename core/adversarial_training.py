@@ -9,7 +9,7 @@ from core.adversarial_dataset_manager import AdversarialDatasetManager
 from core.mlabels import MLabels
 from core.sparse_input_dataset_recoverer import SparseInputDatasetRecoverer
 from core.tblabels import TBLabels
-from datasets.dataset_helper import DatasetHelperFactory
+from datasets.dataset_helper_factory import DatasetHelperFactory
 
 import sys
 

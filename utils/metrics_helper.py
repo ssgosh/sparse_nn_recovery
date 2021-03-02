@@ -8,7 +8,7 @@ import torch.nn.functional as F
 import torch
 
 from core.mlabels import MLabels
-from datasets.dataset_helper import DatasetHelperFactory
+from datasets.dataset_helper_factory import DatasetHelperFactory
 from utils.tensorboard_helper import TensorBoardHelper
 
 
