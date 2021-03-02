@@ -25,10 +25,10 @@ class DatasetHelper(ABC):
         if transform == 'train' : transform = self.get_train_transform()
         elif transform == 'test' : transform = self.get_test_transform()
         path = './data'
-        if not self.subset : return self.get_dataset_(path, train, transform)
+        if not self.subset : return self.get_dataset_(path, which, transform)
 
         # train/test splits were created from original train. Hence train=True in the following call.
-        full_train_data = self.get_dataset_(path, train=True, transform=transform)
+        full_train_data = self.get_dataset_(path, which='train', transform=transform)
         fname = 'train' if train else 'test'
         path = f'./data/{self.name}/idx/{fname}.p'
         with open(path, 'rb') as f:
@@ -36,7 +36,7 @@ class DatasetHelper(ABC):
         return Subset(full_train_data, idx)
 
     @abstractmethod
-    def get_dataset_(self, path, train, transform):
+    def get_dataset_(self, path, which, transform):
         pass
 
     #@abstractmethod

@@ -9,8 +9,8 @@ class MNISTdatasetHelper(DatasetHelper):
     def __init__(self, name, subset):
         super().__init__(name, subset)
 
-    def get_dataset_(self, path, train, transform):
-        return datasets.MNIST(path, train=train, transform=transform)
+    def get_dataset_(self, path, which, transform):
+        return datasets.MNIST(path, train=(which == 'train'), transform=transform)
 
     def get_transformed_zero_one(self):
         return mnist_helper.compute_mnist_transform_low_high()
