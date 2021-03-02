@@ -1,5 +1,6 @@
 from datasets.cifar_dataset_helper import CIFARDatasetHelper
 from datasets.mnist_dataset_helper import MNISTdatasetHelper
+from datasets.mnist_tensor_dataset_helper import MNISTTensorDatasetHelper
 
 
 class DatasetHelperFactory:
@@ -28,7 +29,7 @@ class DatasetHelperFactory:
         Various train/test datasets compatible to each other (such as MNIST, MNIST_A, MNIST_B etc) may be managed by
         creating new instances.
 
-        :param dataset_name:
+        :param cased_dataset_name:
         :return:
         """
         assert cased_dataset_name
@@ -38,5 +39,7 @@ class DatasetHelperFactory:
             return MNISTdatasetHelper(name=cased_dataset_name, subset=subset)
         elif 'cifar' in dataset_name:
             return CIFARDatasetHelper(name=cased_dataset_name, subset=subset)
+        elif dataset_name == 'external_B':
+            return MNISTTensorDatasetHelper(name=cased_dataset_name)
         else:
             raise ValueError("Invalid dataset name: %s" % dataset_name)

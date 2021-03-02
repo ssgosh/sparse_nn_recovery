@@ -20,7 +20,7 @@ class PickledTensorDatasetHelperMixin:
         Expected members: self.name,
         :return: A tensor dataset loaded from disk
         """
-        fname = pathlib.Path(path) / self.name / f"{which}.p"
+        fname = pathlib.Path(path) / self.name / f"{which}.pt"
         d = torch.load(fname)
         images = d['images']
         targets = d['targets']
