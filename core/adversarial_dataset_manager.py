@@ -15,7 +15,8 @@ class AdversarialDatasetManager:
                  train_batch_size : int,
                  test_batch_size : int
                  ):
-        self.dataset_epoch = 0
+        self._dataset_epoch = 0
+        self.dataset_count = 0
         self.sidr = sparse_input_dataset_recoverer
         # List of train, test and validation dataset loaders
         # XXX: Train dataset is not kept in a list so as to be gc'd by python
@@ -27,8 +28,22 @@ class AdversarialDatasetManager:
         # Also keep around just a sample from the training dataset
         self.train_sample = []
 
+        # List of epoch numbers in which the corresponding dataset was generated
+        self.dataset_generation_epochs = []
+
         self.train_batch_size = train_batch_size
         self.test_batch_size = test_batch_size
+
+
+    # Make sure that our code is only ever increasing the dataset epoch
+    @property
+    def dataset_epoch(self):
+        return self._dataset_epoch
+
+    @dataset_epoch.setter
+    def dataset_epoch(self, val):
+        assert val >= self._dataset_epoch
+        self._dataset_epoch = val
 
     # Generates m images and returns a train loader from it
     # Returned train loader is infinite and does not pass on gradients to the images
@@ -77,9 +92,10 @@ class AdversarialDatasetManager:
 
     def get_new_train_loader(self, m):
         self.generate_train_test_validation_dataset(m)
-        self.dataset_epoch += 1
-        assert len(self.train_sample) == self.dataset_epoch
-        assert len(self.valid) == self.dataset_epoch
-        assert len(self.test) == self.dataset_epoch
+        self.dataset_generation_epochs.append(self.dataset_epoch)
+        self.dataset_count += 1
+        assert len(self.train_sample) == self.dataset_count
+        assert len(self.valid) == self.dataset_count
+        assert len(self.test) == self.dataset_count
         return self.train
 

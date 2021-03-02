@@ -330,11 +330,12 @@ class AdversarialTrainer:
                                            tb_per_class_label_i):
         overall_metrics = []
         for i, loader in enumerate(datasets):
+            dataset_epoch = self.dataset_mgr.dataset_generation_epochs[i]
             self.test_and_return_metrics(loader, data_type='adv', acc=overall_metrics).log(
-                f"{prefix}_{i}",
+                f"{prefix}_{dataset_epoch}",
                 self.tbh,
-                tb_agg_label=tb_agg_label_i(i),
-                tb_per_class_label=tb_per_class_label_i(i),
+                tb_agg_label=tb_agg_label_i(dataset_epoch),
+                tb_per_class_label=tb_per_class_label_i(dataset_epoch),
                 global_step=self.epoch
             )
         MetricsHelper.reduce(overall_metrics).log(
@@ -395,12 +396,14 @@ class AdversarialTrainer:
                 self.train_one_epoch_real()
                 # train(args, model, device, train_loader, optimizer, epoch)
             else:
+                print(f'Adversarial Training epoch #{epoch}')
                 if train_mode == 'adversarial-batches':
                     epoch_over = False
                     while not epoch_over:
                         epoch_over = self.generate_m_images_train_k_batches_adversarial(
                             m=config.num_adversarial_images_batch_mode, k=config.num_adversarial_train_batches)
                 elif train_mode == 'adversarial-epoch':
+                    self.dataset_mgr.dataset_epoch = epoch
                     self.generate_m_images_train_one_epoch_adversarial(
                         m=config.num_adversarial_images_epoch_mode)
             self.validate()
