@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+from torch.utils.data import Dataset
 from torchvision import datasets
 
 from models.mnist_model import ExampleCNNNet
@@ -29,23 +30,23 @@ class DatasetHelper(ABC):
             assert dataset_name is None
             return classobj.dataset
 
-    def get_dataset(self, train=True, transform=None):
+    def get_dataset(self, train=True, transform=None) -> Dataset:
         if transform == 'train' : transform = self.get_train_transform()
         elif transform == 'test' : transform = self.get_test_transform()
         path = './data'
         return self.get_dataset_(path, train, transform)
 
     @abstractmethod
-    def get_dataset_(self, train, transform):
+    def get_dataset_(self, path, train, transform):
         pass
 
-    @abstractmethod
+    #@abstractmethod
     def get_train_transform(self):
-        pass
+        raise NotImplementedError("Not yet implemented")
 
-    @abstractmethod
+    #@abstractmethod
     def get_test_transform(self):
-        pass
+        raise NotImplementedError("Not yet implemented")
 
     def __init__(self):
         pass
