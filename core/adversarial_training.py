@@ -386,11 +386,12 @@ class AdversarialTrainer:
 
         return metrics
 
-    def train_loop(self, num_epochs, train_mode, pretrain, config):
+    def train_loop(self, num_epochs, train_mode, pretrain, num_pretrain_epochs, config):
         assert train_mode in [ 'adversarial-epoch', 'adversarial-batches' ]
+        if pretrain : print(f'Pretraining for {num_pretrain_epochs} epochs')
         for epoch in range(0, num_epochs):
-            if pretrain and epoch == 0:
-                print('Pre-training for 1 epoch')
+            if pretrain and epoch < num_pretrain_epochs :
+                print(f'Pre-training epoch #{epoch}')
                 self.train_one_epoch_real()
                 # train(args, model, device, train_loader, optimizer, epoch)
             else:
