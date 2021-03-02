@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+from torchvision import datasets
+
 from models.mnist_model import ExampleCNNNet
 from utils import mnist_helper
 
@@ -26,6 +28,24 @@ class DatasetHelper(ABC):
         else:
             assert dataset_name is None
             return classobj.dataset
+
+    def get_dataset(self, train=True, transform=None):
+        if transform == 'train' : transform = self.get_train_transform()
+        elif transform == 'test' : transform = self.get_test_transform()
+        path = './data'
+        return self.get_dataset_(path, train, transform)
+
+    @abstractmethod
+    def get_dataset_(self, train, transform):
+        pass
+
+    @abstractmethod
+    def get_train_transform(self):
+        pass
+
+    @abstractmethod
+    def get_test_transform(self):
+        pass
 
     def __init__(self):
         pass
@@ -66,6 +86,9 @@ class DatasetHelper(ABC):
 class MNISTdatasetHelper(DatasetHelper):
     def __init__(self):
         super().__init__()
+
+    def get_dataset_(self, path, train, transform):
+        return datasets.MNIST(path, train=train, transform=transform)
 
     def get_transformed_zero_one(self):
         return mnist_helper.compute_mnist_transform_low_high()

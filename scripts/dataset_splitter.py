@@ -11,4 +11,3 @@ parser.add_argument('--dataset', type=str, default='normal',
                     metavar='D',
                     help='Which dataset to split (e.g. MNIST)')
 config = parser.parse_args()
-dh = DatasetHelper.get(config.dataset)
