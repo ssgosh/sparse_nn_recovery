@@ -39,7 +39,7 @@ class DatasetHelperFactory:
             return MNISTdatasetHelper(name=cased_dataset_name, subset=subset)
         elif 'cifar' in dataset_name:
             return CIFARDatasetHelper(name=cased_dataset_name, subset=subset)
-        elif dataset_name == 'external_B':
+        elif dataset_name == 'external_b':
             return MNISTTensorDatasetHelper(name=cased_dataset_name)
         else:
             raise ValueError("Invalid dataset name: %s" % dataset_name)
