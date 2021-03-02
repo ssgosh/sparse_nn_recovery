@@ -10,7 +10,7 @@ sys.path.append(".")
 
 import argparse
 
-from torch.utils.data import random_split, DataLoader, Dataset
+from torch.utils.data import random_split, DataLoader, Dataset, Subset
 
 from utils.dataset_helper import DatasetHelper
 
@@ -23,8 +23,9 @@ parser.add_argument('--dataset', type=str, default='mnist',
                     metavar='D',
                     help='Which dataset to split (e.g. MNIST)')
 config = parser.parse_args()
-#dataset = DatasetHelper.get(config.dataset).get_dataset(train=True, transform=transforms.ToTensor())
-ds = DatasetHelper.get(config.dataset).get_dataset(train=True, transform=None)
+transform = transforms.ToTensor()
+ds = DatasetHelper.get(config.dataset).get_dataset(train=True, transform=transform)
+#ds = DatasetHelper.get(config.dataset).get_dataset(train=True, transform=None)
 
 
 def save(filename, dataset):
@@ -32,10 +33,10 @@ def save(filename, dataset):
     with open(filename, 'wb') as f:
         pickle.dump(dataset, f)
 
-def split(dataset):
+def split(N):
     m = 25_000
     n = 5_000
-    N = len(dataset)
+    #N = len(dataset)
     idx = torch.randperm(N)
     #train_A, train_B, valid_A, valid_B = random_split(dataset, (m, m, n, n))
     # Only save indices of the splits. Subsets of MNIST will be created while loading, on the fly
@@ -51,21 +52,37 @@ def split(dataset):
     save('./data/MNIST_B/idx/train.p', train_B)
     save('./data/MNIST_B/idx/test.p', valid_B)
 
-def get_dataset_stats(name, dataset : Dataset):
-    #transform = transforms.ToTensor()
-    #dataset.transform = transform
-    #dataset.target_transform = transform
+    return train_A, train_B, valid_A, valid_B
 
-    #dataset = Dataset(dataset, transform= )
+def get_dataset_stats(name, dataset : Dataset):
+    print("Dataset :", name)
     loader = DataLoader(dataset, batch_size=len(dataset))
     img, tgt = next(iter(loader))
     print(img.shape, tgt.shape)
     stats = torch.bincount(tgt)
     print("\n".join([f"{i} : {n}" for i, n in enumerate(stats)]))
 
-split(ds)
-#get_dataset_stats('MNIST', dataset)
-#get_dataset_stats('train_A', train_A)
-#get_dataset_stats('valid_A', valid_A)
-#get_dataset_stats('train_B', train_B)
-#get_dataset_stats('valid_B', valid_B)
+def compare_with_loaded(idx, name, train):
+    global transform, ds
+    saved = (Subset(ds, idx))
+    loaded = (DatasetHelper.get_new(name).get_dataset(train, transform))
+
+    # First print stats
+    get_dataset_stats(f'Saved {name}, {"train" if train else "test"}', saved)
+    get_dataset_stats(f'Loaded {name}, {"train" if train else "test"}', loaded)
+    saved_loader = DataLoader(saved)
+    loaded_loader = DataLoader(loaded)
+    for i, ((saved_img, saved_tg), (loaded_img, loaded_tgt)) in enumerate(zip(saved_loader, loaded_loader)):
+        assert torch.all(saved_img == loaded_img).item(), f"Did not match {name}, {i}"
+    print("All Good!!!")
+
+
+# Split and return indices
+train_A, train_B, valid_A, valid_B = split(len(ds))
+
+get_dataset_stats('Full MNIST', ds)
+
+compare_with_loaded(train_A, 'MNIST_A', train=True)
+compare_with_loaded(train_B, 'MNIST_B', train=True)
+compare_with_loaded(valid_A, 'MNIST_A', train=False)
+compare_with_loaded(valid_B, 'MNIST_B', train=False)

@@ -16,21 +16,36 @@ class DatasetHelper(ABC):
 
     @classmethod
     def get(classobj, dataset_name : str = None):
+        """
+        Singleton method
+
+        :param dataset_name:
+        :return:
+        """
         if classobj.dataset is None:
-            assert dataset_name is not None
-            dataset_name = dataset_name.lower()
-            subset = dataset_name not in ['mnist', 'cifar']
-            if 'mnist' in dataset_name:
-                classobj.dataset = MNISTdatasetHelper(name=dataset_name, subset=subset)
-                return classobj.dataset
-            elif 'cifar' in dataset_name :
-                classobj.dataset = CIFARDatasetHelper(name=dataset_name, subset=subset)
-                return classobj.dataset
-            else:
-                raise ValueError("Invalid dataset name: %s" % dataset_name)
+            classobj.dataset = classobj.get_new(dataset_name)
+            return classobj.dataset
         else:
             assert dataset_name is None
             return classobj.dataset
+
+    @classmethod
+    def get_new(classobj, cased_dataset_name):
+        """
+        Factory method to get new datasets
+
+        :param dataset_name:
+        :return:
+        """
+        assert cased_dataset_name
+        dataset_name = cased_dataset_name.lower()
+        subset = dataset_name not in ['mnist', 'cifar']
+        if 'mnist' in dataset_name:
+            return MNISTdatasetHelper(name=cased_dataset_name, subset=subset)
+        elif 'cifar' in dataset_name:
+            return CIFARDatasetHelper(name=cased_dataset_name, subset=subset)
+        else:
+            raise ValueError("Invalid dataset name: %s" % dataset_name)
 
     def __init__(self, name, subset):
         self.name = name
@@ -40,15 +55,15 @@ class DatasetHelper(ABC):
         if transform == 'train' : transform = self.get_train_transform()
         elif transform == 'test' : transform = self.get_test_transform()
         path = './data'
-        ds = self.get_dataset_(path, train, transform)
-        if self.subset:
-            fname = 'train' if 'train' else 'test'
-            path = f'./data/{self.name}/idx/{fname}.p'
-            with open(path, 'rb') as f:
-                idx = pickle.load(f)
-            ds = Subset(ds, idx)
+        if not self.subset : return self.get_dataset_(path, train, transform)
 
-        return ds
+        # train/test splits were created from original train. Hence train=True in the following call.
+        full_train_data = self.get_dataset_(path, train=True, transform=transform)
+        fname = 'train' if train else 'test'
+        path = f'./data/{self.name}/idx/{fname}.p'
+        with open(path, 'rb') as f:
+            idx = pickle.load(f)
+        return Subset(full_train_data, idx)
 
     @abstractmethod
     def get_dataset_(self, path, train, transform):
