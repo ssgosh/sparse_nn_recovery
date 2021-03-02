@@ -6,6 +6,7 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 
 from core.adversarial_dataset_manager import AdversarialDatasetManager
+from core.external_dataset_manager import ExternalDatasetManager
 from core.mlabels import MLabels
 from core.sparse_input_dataset_recoverer import SparseInputDatasetRecoverer
 from core.tblabels import TBLabels
@@ -102,6 +103,7 @@ class AdversarialTrainer:
         self.dataset_mgr = AdversarialDatasetManager(sparse_input_dataset_recoverer,
                                                      train_batch_size=adv_training_batch_size,
                                                      test_batch_size=test_loader.batch_size)
+        self.external_dataset_mgr = ExternalDatasetManager(test_loader.batch_size)
 
     # Train model on the given batch. Used for real data or adversarial data training
     def train_one_batch(self, batch_inputs, batch_targets):
@@ -322,6 +324,17 @@ class AdversarialTrainer:
                                                 TBLabels.PER_EPOCH_ADV_AGGREGATE_VALIDATION,
                                                 TBLabels.PER_EPOCH_ADV_PER_CLASS_VALIDATION_OVERALL,
                                                 TBLabels.PER_EPOCH_ADV_PER_CLASS_VALIDATION)
+
+        # Test on external validation dataset
+        for name, loader in zip(self.external_dataset_mgr.valid_names, self.external_dataset_mgr.valid_loaders):
+            self.test_and_return_metrics(loader, data_type='adv', acc=None).log(
+                name,
+                self.tbh,
+                tb_agg_label=TBLabels.PER_EPOCH_ADV_AGGREGATE_EXTERNAL_VALIDATION(name),
+                tb_per_class_label=TBLabels.PER_EPOCH_ADV_PER_CLASS_EXTERNAL_VALIDATION(name),
+                global_step=self.epoch
+            )
+
         print()
 
     def test_and_log_intermittent_datasets(self, prefix, datasets, tb_agg_label, tb_agg_label_i, tb_per_class_label,
