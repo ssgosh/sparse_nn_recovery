@@ -12,7 +12,7 @@ import pathlib
 from core.adversarial_training import AdversarialTrainer
 from core.sparse_input_dataset_recoverer import SparseInputDatasetRecoverer
 from core.sparse_input_recoverer import SparseInputRecoverer
-from datasets.dataset_helper import DatasetHelper
+from datasets.dataset_helper import DatasetHelperFactory
 from utils.batched_tensor_view_data_loader import BatchedTensorViewDataLoader
 import utils.mnist_helper as mh
 from utils import runs_helper as rh
@@ -262,7 +262,7 @@ def main():
     SparseInputRecoverer.setup_default_config(config)
     # dataset name is 'MNIST'
     #config.dataset_name = 'mnist'
-    dataset_helper: DatasetHelper = DatasetHelper.get(config.dataset)
+    dataset_helper: DatasetHelperFactory = DatasetHelperFactory.get(config.dataset)
     dataset_helper.setup_config(config)
 
     # Setup runs directory, tensorboard helper and sparse input recoverer

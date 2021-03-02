@@ -11,7 +11,7 @@ from utils import mnist_helper
 # Abstraction for Dataset-specific functionality, such as transformations,
 # values of transformed zero and one pixel values. Also provides a singleton for the datasethelper
 # Used in the main scripts.
-class DatasetHelper(ABC):
+class DatasetHelperFactory(ABC):
     dataset = None
 
     @classmethod
@@ -110,7 +110,7 @@ class DatasetHelper(ABC):
         pass
 
 
-class MNISTdatasetHelper(DatasetHelper):
+class MNISTdatasetHelper(DatasetHelperFactory):
     def __init__(self, name, subset):
         super().__init__(name, subset)
 
@@ -142,7 +142,7 @@ class MNISTdatasetHelper(DatasetHelper):
 #    def __init__(self, ):
 #        super(MNISTSubsetDatasetHelper, self).__init__()
 
-class CIFARDatasetHelper(DatasetHelper):
+class CIFARDatasetHelper(DatasetHelperFactory):
     def __init__(self, name, subset):
         super().__init__(name, subset)
 

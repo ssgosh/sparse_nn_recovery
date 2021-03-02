@@ -11,7 +11,7 @@ import argparse
 
 from torch.utils.data import DataLoader, Dataset, Subset
 
-from datasets.dataset_helper import DatasetHelper
+from datasets.dataset_helper import DatasetHelperFactory
 
 parser = argparse.ArgumentParser(
     description='Splits train dataset into multiple train and validation',
@@ -23,8 +23,8 @@ parser.add_argument('--dataset', type=str, default='mnist',
                     help='Which dataset to split (e.g. MNIST)')
 config = parser.parse_args()
 transform = transforms.ToTensor()
-ds = DatasetHelper.get(config.dataset).get_dataset(train=True, transform=transform)
-#ds = DatasetHelper.get(config.dataset).get_dataset(train=True, transform=None)
+ds = DatasetHelperFactory.get(config.dataset).get_dataset(train=True, transform=transform)
+#ds = DatasetHelperFactory.get(config.dataset).get_dataset(train=True, transform=None)
 
 
 def save(filename, dataset):
@@ -64,7 +64,7 @@ def get_dataset_stats(name, dataset : Dataset):
 def compare_with_loaded(idx, name, train):
     global transform, ds
     saved = (Subset(ds, idx))
-    loaded = (DatasetHelper.get_new(name).get_dataset(train, transform))
+    loaded = (DatasetHelperFactory.get_new(name).get_dataset(train, transform))
 
     # First print stats
     get_dataset_stats(f'Saved {name}, {"train" if train else "test"}', saved)
