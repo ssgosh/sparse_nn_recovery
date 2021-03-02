@@ -3,16 +3,15 @@ import pickle
 import sys
 
 import torch
-import numpy as np
 from torchvision.transforms import transforms
 
 sys.path.append(".")
 
 import argparse
 
-from torch.utils.data import random_split, DataLoader, Dataset, Subset
+from torch.utils.data import DataLoader, Dataset, Subset
 
-from utils.dataset_helper import DatasetHelper
+from datasets.dataset_helper import DatasetHelper
 
 parser = argparse.ArgumentParser(
     description='Splits train dataset into multiple train and validation',

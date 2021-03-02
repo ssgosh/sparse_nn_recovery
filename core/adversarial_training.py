@@ -9,9 +9,7 @@ from core.adversarial_dataset_manager import AdversarialDatasetManager
 from core.mlabels import MLabels
 from core.sparse_input_dataset_recoverer import SparseInputDatasetRecoverer
 from core.tblabels import TBLabels
-from utils.batched_tensor_view_data_loader import BatchedTensorViewDataLoader
-from utils.dataset_helper import DatasetHelper
-from utils.infinite_dataloader import InfiniteDataLoader
+from datasets.dataset_helper import DatasetHelper
 
 import sys
 

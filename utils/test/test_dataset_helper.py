@@ -4,7 +4,7 @@ if __name__ == '__main__':
     import sys
     sys.path.append(".")
 
-from utils.dataset_helper import *
+from datasets.dataset_helper import *
 
 class DatasetHelperTest(unittest.TestCase):
     def test_dataset_helper_mnist(self):

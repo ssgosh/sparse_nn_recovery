@@ -7,10 +7,9 @@ import sys
 import numpy as np
 import torch
 
-from utils import mnist_helper as mh
 from utils import plotter
 from utils import runs_helper as rh
-from utils.dataset_helper import DatasetHelper
+from datasets.dataset_helper import DatasetHelper
 from utils.tensorboard_helper import TensorBoardHelper
 
 from core.sparse_input_recoverer import SparseInputRecoverer

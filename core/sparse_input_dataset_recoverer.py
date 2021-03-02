@@ -8,7 +8,6 @@ import torch
 
 from core.sparse_input_recoverer import SparseInputRecoverer
 from core.tblabels import TBLabels
-from utils.dataset_helper import DatasetHelper
 
 
 # Creates an entire dataset of images, targets by doing sparse recovery from the model.
