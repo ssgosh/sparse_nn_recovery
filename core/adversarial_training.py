@@ -6,12 +6,11 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 
 from core.adversarial_dataset_manager import AdversarialDatasetManager
+from core.external_dataset_manager import ExternalDatasetManager
 from core.mlabels import MLabels
 from core.sparse_input_dataset_recoverer import SparseInputDatasetRecoverer
 from core.tblabels import TBLabels
-from utils.batched_tensor_view_data_loader import BatchedTensorViewDataLoader
-from utils.dataset_helper import DatasetHelper
-from utils.infinite_dataloader import InfiniteDataLoader
+from datasets.dataset_helper_factory import DatasetHelperFactory
 
 import sys
 
@@ -25,14 +24,14 @@ class TrainLogger:
     def __init__(self, trainer, log_interval, dry_run):
         self.trainer = trainer
         self.log_interval = log_interval
-        self.train_dataset_len = len(trainer.real_data_train_loader)
+        self.train_dataset_len = len(trainer.real_data_train_loader.dataset)
         self.dry_run = dry_run
 
     def log_batch(self, lossval):
         if self.trainer.next_real_batch % self.log_interval == 0:
             sys.stdout.write('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 self.trainer.epoch, self.trainer.next_real_batch * self.trainer.adv_training_batch_size,
-                self.train_dataset_len * self.trainer.adv_training_batch_size,
+                self.train_dataset_len,
                 100. * self.trainer.next_real_batch / self.train_dataset_len, lossval)
             )
             sys.stdout.write('\r')
@@ -43,7 +42,7 @@ class TrainLogger:
 
 
 def get_soft_labels(batch_inputs):
-    n = DatasetHelper.get_dataset().get_num_classes()
+    n = DatasetHelperFactory.get().get_num_classes()
     N = batch_inputs.shape[0]
     adv_soft_labels = torch.empty(N, n, device=batch_inputs.device).fill_(1 / n)
     return adv_soft_labels
@@ -104,6 +103,7 @@ class AdversarialTrainer:
         self.dataset_mgr = AdversarialDatasetManager(sparse_input_dataset_recoverer,
                                                      train_batch_size=adv_training_batch_size,
                                                      test_batch_size=test_loader.batch_size)
+        self.external_dataset_mgr = ExternalDatasetManager(test_loader.batch_size)
 
     # Train model on the given batch. Used for real data or adversarial data training
     def train_one_batch(self, batch_inputs, batch_targets):
@@ -324,17 +324,29 @@ class AdversarialTrainer:
                                                 TBLabels.PER_EPOCH_ADV_AGGREGATE_VALIDATION,
                                                 TBLabels.PER_EPOCH_ADV_PER_CLASS_VALIDATION_OVERALL,
                                                 TBLabels.PER_EPOCH_ADV_PER_CLASS_VALIDATION)
+
+        # Test on external validation dataset
+        for name, loader in zip(self.external_dataset_mgr.valid_names, self.external_dataset_mgr.valid_loaders):
+            self.test_and_return_metrics(loader, data_type='adv_external', acc=None).log(
+                name,
+                self.tbh,
+                tb_agg_label=TBLabels.PER_EPOCH_ADV_AGGREGATE_EXTERNAL_VALIDATION(name),
+                tb_per_class_label=TBLabels.PER_EPOCH_ADV_PER_CLASS_EXTERNAL_VALIDATION(name),
+                global_step=self.epoch
+            )
+
         print()
 
     def test_and_log_intermittent_datasets(self, prefix, datasets, tb_agg_label, tb_agg_label_i, tb_per_class_label,
                                            tb_per_class_label_i):
         overall_metrics = []
         for i, loader in enumerate(datasets):
+            dataset_epoch = self.dataset_mgr.dataset_generation_epochs[i]
             self.test_and_return_metrics(loader, data_type='adv', acc=overall_metrics).log(
-                f"{prefix}_{i}",
+                f"{prefix}_{dataset_epoch}",
                 self.tbh,
-                tb_agg_label=tb_agg_label_i(i),
-                tb_per_class_label=tb_per_class_label_i(i),
+                tb_agg_label=tb_agg_label_i(dataset_epoch),
+                tb_per_class_label=tb_per_class_label_i(dataset_epoch),
                 global_step=self.epoch
             )
         MetricsHelper.reduce(overall_metrics).log(
@@ -364,7 +376,7 @@ class AdversarialTrainer:
         with torch.no_grad():
             for count, tup in enumerate(loader):
 
-                if data_type == 'real': data, target = tup
+                if data_type in ['real', 'adv_external'] : data, target = tup
                 elif data_type == 'adv': data, _, target = tup # target is fake class here. _ is real class
                 else: assert False, f"Invalid data_type {data_type}"
 
@@ -386,20 +398,23 @@ class AdversarialTrainer:
 
         return metrics
 
-    def train_loop(self, num_epochs, train_mode, pretrain, config):
+    def train_loop(self, num_epochs, train_mode, pretrain, num_pretrain_epochs, config):
         assert train_mode in [ 'adversarial-epoch', 'adversarial-batches' ]
+        if pretrain : print(f'Pretraining for {num_pretrain_epochs} epochs')
         for epoch in range(0, num_epochs):
-            if pretrain and epoch == 0:
-                print('Pre-training for 1 epoch')
+            if pretrain and epoch < num_pretrain_epochs :
+                print(f'Pre-training epoch #{epoch}')
                 self.train_one_epoch_real()
                 # train(args, model, device, train_loader, optimizer, epoch)
             else:
+                print(f'Adversarial Training epoch #{epoch}')
                 if train_mode == 'adversarial-batches':
                     epoch_over = False
                     while not epoch_over:
                         epoch_over = self.generate_m_images_train_k_batches_adversarial(
                             m=config.num_adversarial_images_batch_mode, k=config.num_adversarial_train_batches)
                 elif train_mode == 'adversarial-epoch':
+                    self.dataset_mgr.dataset_epoch = epoch
                     self.generate_m_images_train_one_epoch_adversarial(
                         m=config.num_adversarial_images_epoch_mode)
             self.validate()

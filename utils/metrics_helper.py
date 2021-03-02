@@ -4,12 +4,11 @@ from typing import List
 import utils.image_processor as imp
 
 import math
-import json
 import torch.nn.functional as F
 import torch
 
 from core.mlabels import MLabels
-from utils.dataset_helper import DatasetHelper
+from datasets.dataset_helper_factory import DatasetHelperFactory
 from utils.tensorboard_helper import TensorBoardHelper
 
 
@@ -32,9 +31,9 @@ def _safe_divide(y, x):
 class MetricsHelper:
     @classmethod
     def get(cls, mlabels : MLabels = None, adversarial_classification_mode='max-entropy') -> 'MetricsHelper':
-        zero, one = DatasetHelper.get_dataset().get_transformed_zero_one()
+        zero, one = DatasetHelperFactory.get().get_transformed_zero_one()
         # XXX: Change this to get_num_classes. This is not valid in case of soft adversarial labels
-        num_real_fake_classes = DatasetHelper.get_dataset().get_num_real_fake_classes()
+        num_real_fake_classes = DatasetHelperFactory.get().get_num_real_fake_classes()
         return cls(zero, one, mlabels, num_real_fake_classes, adversarial_classification_mode)
 
     @classmethod
