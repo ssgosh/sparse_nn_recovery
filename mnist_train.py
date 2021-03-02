@@ -194,6 +194,8 @@ def main():
                         metavar='MODE',
                         choices=available_train_modes,
                         help='Training mode. One of: ' + ', '.join(available_train_modes))
+    parser.add_argument('--dataset', type=str, default='MNIST',
+                        metavar='MODE')
     parser.add_argument('--pretrain', action='store_true', default=True,
                         dest='pretrain',
                         help='Pretrain before adversarial training')
@@ -265,8 +267,8 @@ def main():
     config = args
     SparseInputRecoverer.setup_default_config(config)
     # dataset name is 'MNIST'
-    config.dataset_name = 'mnist'
-    dataset_helper: DatasetHelper = DatasetHelper.get(config.dataset_name)
+    #config.dataset_name = 'mnist'
+    dataset_helper: DatasetHelper = DatasetHelper.get(config.dataset)
     dataset_helper.setup_config(config)
 
     # Setup runs directory, tensorboard helper and sparse input recoverer
@@ -305,27 +307,27 @@ def main():
         train_kwargs.update(cuda_kwargs)
         test_kwargs.update(cuda_kwargs)
 
-    test_transform=transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,))
-        ])
+    # test_transform=transforms.Compose([
+    #     transforms.ToTensor(),
+    #     transforms.Normalize((0.1307,), (0.3081,))
+    #     ])
     # From this tutorial:
     # https://pytorch.org/tutorials/beginner/data_loading_tutorial.html#iterating-through-the-dataset
     # , transforms are applied on each batch dynamically. Hence data gets
     # augmented due to random transforms.
-    train_transform = transforms.Compose([
-        transforms.RandomAffine(degrees=5, translate=(0.1, 0.1), scale=(0.9,
-            1.1), shear=None),
-        transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,))
-        ])
+    # train_transform = transforms.Compose([
+    #     transforms.RandomAffine(degrees=5, translate=(0.1, 0.1), scale=(0.9,
+    #         1.1), shear=None),
+    #     transforms.ToTensor(),
+    #     transforms.Normalize((0.1307,), (0.3081,))
+    #     ])
     #dataset1 = datasets.MNIST('./data', train=True, download=True)
     #pilimage, label = dataset1[0]
     #print(label)
     #pilimage.show()
-    dataset1 = datasets.MNIST('./data', train=True, download=True,
-                       transform=train_transform)
-
+    # dataset1 = datasets.MNIST('./data', train=True, download=True,
+    #                    transform=train_transform)
+    #
     # Print out the l0 norm of the images
     #dataset1 = datasets.MNIST('./data', train=True, download=True,
     #                   transform=transforms.Compose([transforms.ToTensor()]))
@@ -357,8 +359,28 @@ def main():
     # Show one image
     #sys.exit(1)
 
-    dataset2 = datasets.MNIST('./data', train=False,
-                       transform=test_transform)
+    test_transform=transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.1307,), (0.3081,))
+    ])
+    # From this tutorial:
+    # https://pytorch.org/tutorials/beginner/data_loading_tutorial.html#iterating-through-the-dataset
+    # , transforms are applied on each batch dynamically. Hence data gets
+    # augmented due to random transforms.
+    train_transform = transforms.Compose([
+        transforms.RandomAffine(degrees=5, translate=(0.1, 0.1), scale=(0.9,
+                                                                        1.1), shear=None),
+        transforms.ToTensor(),
+        transforms.Normalize((0.1307,), (0.3081,))
+    ])
+    # dataset1 = datasets.MNIST('./data', train=True, download=True,
+    #                           transform=train_transform)
+    #
+    # dataset2 = datasets.MNIST('./data', train=False,
+    #                    transform=test_transform)
+    dataset1 = dataset_helper.get_dataset(train=True, transform=train_transform)
+    dataset2 = dataset_helper.get_dataset(train=False, transform=test_transform)
+    print(f"Dataset name : {config.dataset}, train_len = {len(dataset1)}, test_len = {len(dataset2)}")
     train_loader = torch.utils.data.DataLoader(dataset1,**train_kwargs)
     test_loader = torch.utils.data.DataLoader(dataset2, **test_kwargs)
     full_train_data = datasets.MNIST('./data', train=True, download=True,
