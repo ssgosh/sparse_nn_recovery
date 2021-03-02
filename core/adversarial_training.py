@@ -25,14 +25,14 @@ class TrainLogger:
     def __init__(self, trainer, log_interval, dry_run):
         self.trainer = trainer
         self.log_interval = log_interval
-        self.train_dataset_len = len(trainer.real_data_train_loader)
+        self.train_dataset_len = len(trainer.real_data_train_loader.dataset)
         self.dry_run = dry_run
 
     def log_batch(self, lossval):
         if self.trainer.next_real_batch % self.log_interval == 0:
             sys.stdout.write('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 self.trainer.epoch, self.trainer.next_real_batch * self.trainer.adv_training_batch_size,
-                self.train_dataset_len * self.trainer.adv_training_batch_size,
+                self.train_dataset_len,
                 100. * self.trainer.next_real_batch / self.train_dataset_len, lossval)
             )
             sys.stdout.write('\r')
