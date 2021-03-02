@@ -16,7 +16,7 @@ class ImageDumper:
             sys.exit(1)
         self.logdir = pathlib.Path(sys.argv[1])
         self.ckpt_saver = CkptSaver(self.logdir)
-        self.dataset_helper = DatasetHelper.get_dataset('mnist')
+        self.dataset_helper = DatasetHelper.get('mnist')
         self.num_classes = self.dataset_helper.get_num_classes()
         self.tbh = TensorBoardHelper(self.logdir)
         self.device = torch.device('cpu')

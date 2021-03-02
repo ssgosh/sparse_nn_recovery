@@ -67,7 +67,7 @@ def add_main_script_arguments():
 
 def setup_config(config):
     # This will change when we support multiple datasets
-    DatasetHelper.get_dataset('mnist').setup_config(config)
+    DatasetHelper.get('mnist').setup_config(config)
     SparseInputRecoverer.setup_default_config(config)
     # initial_image = torch.normal(mnist_zero, 0.01, (1, 1, 28, 28))
     if config.dump_config:

@@ -266,7 +266,7 @@ def main():
     SparseInputRecoverer.setup_default_config(config)
     # dataset name is 'MNIST'
     config.dataset_name = 'mnist'
-    dataset_helper: DatasetHelper = DatasetHelper.get_dataset(config.dataset_name)
+    dataset_helper: DatasetHelper = DatasetHelper.get(config.dataset_name)
     dataset_helper.setup_config(config)
 
     # Setup runs directory, tensorboard helper and sparse input recoverer

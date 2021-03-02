@@ -11,9 +11,10 @@ class DatasetHelper(ABC):
     dataset = None
 
     @classmethod
-    def get_dataset(classobj, dataset_name : str = None):
+    def get(classobj, dataset_name : str = None):
         if classobj.dataset is None:
             assert dataset_name is not None
+            dataset_name = dataset_name.lower()
             if dataset_name == 'mnist':
                 classobj.dataset = MNISTdatasetHelper()
                 return classobj.dataset

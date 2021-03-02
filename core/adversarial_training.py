@@ -43,7 +43,7 @@ class TrainLogger:
 
 
 def get_soft_labels(batch_inputs):
-    n = DatasetHelper.get_dataset().get_num_classes()
+    n = DatasetHelper.get().get_num_classes()
     N = batch_inputs.shape[0]
     adv_soft_labels = torch.empty(N, n, device=batch_inputs.device).fill_(1 / n)
     return adv_soft_labels
