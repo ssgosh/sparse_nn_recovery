@@ -327,7 +327,7 @@ class AdversarialTrainer:
 
         # Test on external validation dataset
         for name, loader in zip(self.external_dataset_mgr.valid_names, self.external_dataset_mgr.valid_loaders):
-            self.test_and_return_metrics(loader, data_type='adv', acc=None).log(
+            self.test_and_return_metrics(loader, data_type='adv_external', acc=None).log(
                 name,
                 self.tbh,
                 tb_agg_label=TBLabels.PER_EPOCH_ADV_AGGREGATE_EXTERNAL_VALIDATION(name),
@@ -376,7 +376,7 @@ class AdversarialTrainer:
         with torch.no_grad():
             for count, tup in enumerate(loader):
 
-                if data_type == 'real': data, target = tup
+                if data_type in ['real', 'adv_external'] : data, target = tup
                 elif data_type == 'adv': data, _, target = tup # target is fake class here. _ is real class
                 else: assert False, f"Invalid data_type {data_type}"
 

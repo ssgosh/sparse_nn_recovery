@@ -26,10 +26,13 @@ class ExternalDatasetManager:
         elif which == 'valid':
             loaders = self.valid_loaders
             names = self.valid_names
+        else:
+            assert False, f"Invalid value for param which : {which}"
 
         loaders.append(
             DataLoader(
-                DatasetHelperFactory.get(dataset_name).get_dataset(which)
+                DatasetHelperFactory.get_new(dataset_name).get_dataset(which),
+                **{'batch_size' : self.test_batch_size}
             )
         )
         names.append(dataset_name)
