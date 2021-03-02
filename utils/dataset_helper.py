@@ -1,6 +1,7 @@
+import pickle
 from abc import ABC, abstractmethod
 
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, Subset
 from torchvision import datasets
 
 from models.mnist_model import ExampleCNNNet
@@ -18,11 +19,12 @@ class DatasetHelper(ABC):
         if classobj.dataset is None:
             assert dataset_name is not None
             dataset_name = dataset_name.lower()
-            if dataset_name == 'mnist':
-                classobj.dataset = MNISTdatasetHelper()
+            subset = dataset_name not in ['mnist', 'cifar']
+            if 'mnist' in dataset_name:
+                classobj.dataset = MNISTdatasetHelper(name=dataset_name, subset=subset)
                 return classobj.dataset
-            elif dataset_name == 'cifar':
-                classobj.dataset = CIFARDatasetHelper()
+            elif 'cifar' in dataset_name :
+                classobj.dataset = CIFARDatasetHelper(name=dataset_name, subset=subset)
                 return classobj.dataset
             else:
                 raise ValueError("Invalid dataset name: %s" % dataset_name)
@@ -30,11 +32,23 @@ class DatasetHelper(ABC):
             assert dataset_name is None
             return classobj.dataset
 
+    def __init__(self, name, subset):
+        self.name = name
+        self.subset = subset
+
     def get_dataset(self, train=True, transform=None) -> Dataset:
         if transform == 'train' : transform = self.get_train_transform()
         elif transform == 'test' : transform = self.get_test_transform()
         path = './data'
-        return self.get_dataset_(path, train, transform)
+        ds = self.get_dataset_(path, train, transform)
+        if self.subset:
+            fname = 'train' if 'train' else 'test'
+            path = f'./data/{self.name}/idx/{fname}.p'
+            with open(path, 'rb') as f:
+                idx = pickle.load(f)
+            ds = Subset(ds, idx)
+
+        return ds
 
     @abstractmethod
     def get_dataset_(self, path, train, transform):
@@ -47,9 +61,6 @@ class DatasetHelper(ABC):
     #@abstractmethod
     def get_test_transform(self):
         raise NotImplementedError("Not yet implemented")
-
-    def __init__(self):
-        pass
 
     @abstractmethod
     def get_transformed_zero_one(self):
@@ -85,8 +96,8 @@ class DatasetHelper(ABC):
 
 
 class MNISTdatasetHelper(DatasetHelper):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, name, subset):
+        super().__init__(name, subset)
 
     def get_dataset_(self, path, train, transform):
         return datasets.MNIST(path, train=train, transform=transform)
@@ -112,10 +123,13 @@ class MNISTdatasetHelper(DatasetHelper):
     def update_config(self, config):
         config.model_classname = 'ExampleCNNNet'
 
+#class MNISTSubsetDatasetHelper(MNISTdatasetHelper):
+#    def __init__(self, ):
+#        super(MNISTSubsetDatasetHelper, self).__init__()
 
 class CIFARDatasetHelper(DatasetHelper):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, name, subset):
+        super().__init__(name, subset)
 
     def get_transformed_zero_one(self):
         raise NotImplementedError()
