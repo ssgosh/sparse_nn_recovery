@@ -19,20 +19,22 @@ def _combine(prev : DataLoader, new : DataLoader, beta : float) -> DataLoader:
     """
     N = len(prev.dataset)
     train_batch_size = prev.batch_size
-    kwargs = {'batch_size' : N }    # Get all data at once
-    prev_img, prev_tgt = next(iter(DataLoader(prev.dataset, **kwargs)))
-    kwargs = {'batch_size' : len(new.dataset)}
-    new_img, new_tgt = next(iter(DataLoader(new.dataset, **kwargs)))
+    prev_items = next(iter(DataLoader(prev.dataset, batch_size=N)))
+    new_items = next(iter(   DataLoader(  new.dataset, batch_size=len(new.dataset)  )   ))
+    assert(len(prev_items) == len(new_items))
 
     cutoff = int(beta * N)
     idx = torch.randperm(N)[0:cutoff]
-    prev_img = prev_img[idx]
-    prev_tgt = prev_tgt[idx]
 
-    img = torch.cat([prev_img, new_img])
-    tgt = torch.cat([prev_tgt, new_tgt])
+    prev_items_sampled = []
+    for item in prev_items:
+        prev_items_sampled.append(item[idx])
 
-    return DataLoader(TensorDataset(img, tgt), batch_size=train_batch_size)
+    out_items = []
+    for a, b in zip(prev_items_sampled, new_items):
+        out_items.append(torch.cat([a, b]))
+
+    return DataLoader(TensorDataset(*out_items), batch_size=train_batch_size)
 
 
 class DatasetMerger:
@@ -43,10 +45,10 @@ class DatasetMerger:
         self.last_generated_train = None
 
     def combine_with_previous_train(self, new_train):
-        if not self.combine:
+        if not self.combine or self.last_combined_train is None:
             self.last_combined_train = self.last_generated_train = new_train
             return new_train
-        self.last_combined_train = _combine(new_train, self.last_combined_train, self.beta)
+        self.last_combined_train = _combine(self.last_combined_train, new_train, self.beta)
         self.last_generated_train = new_train
         return self.last_combined_train
 
@@ -126,6 +128,7 @@ class AdversarialDatasetManager:
 
         # Merge new_train with previous train if enabled
         self.train = self.dmerger.combine_with_previous_train(new_train)
+        print("Generated train :", len(new_train.dataset), "Combined train :", len(self.train.dataset))
 
     def get_sample(self, images, targets, fake_class_targets, sample_size, batch_size):
         batch_size = sample_size if sample_size < batch_size else batch_size
