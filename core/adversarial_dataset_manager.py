@@ -9,6 +9,40 @@ def safe_clone(x):
     return torch.clone(x.detach())
 
 
+def _combine(prev : DataLoader, new : DataLoader, beta : float) -> DataLoader:
+    """
+    Combines two datasets. Keeps only beta fraction of previous dataset.
+
+    NOTE: As of now we do the combination in a single shot and not in batched mode
+    :param prev: previous dataset. A dataloader.
+    :param new: new dataset. A dataloader.
+    """
+    N = len(prev.dataset)
+    train_batch_size = prev.batch_size
+    kwargs = {'batch_size' : N }    # Get all data at once
+    prev_img, prev_tgt = next(iter(DataLoader(prev.dataset, **kwargs)))
+    kwargs = {'batch_size' : len(new.dataset)}
+    new_img, new_tgt = next(iter(DataLoader(new.dataset, **kwargs)))
+
+    cutoff = int(beta * N)
+    idx = torch.randperm(N)[0:cutoff]
+    prev_img = prev_img[idx]
+    prev_tgt = prev_tgt[idx]
+
+    img = torch.cat([prev_img, new_img])
+    tgt = torch.cat([prev_tgt, new_tgt])
+
+    return DataLoader(TensorDataset(img, tgt), batch_size=train_batch_size)
+
+
+class DatasetMerger:
+    def __init__(self, beta):
+        self.beta = beta
+        self.last_generated_train = None
+
+    def combine_with_previous_train(self, train):
+        return _combine(train, self.last_generated_train, beta)
+
 class AdversarialDatasetManager:
     def __init__(self,
                  sparse_input_dataset_recoverer : SparseInputDatasetRecoverer,
@@ -21,12 +55,15 @@ class AdversarialDatasetManager:
         # List of train, test and validation dataset loaders
         # XXX: Train dataset is not kept in a list so as to be gc'd by python
         #      Only current train dataset is kept.
+        # Depending on the mode, current train data may be a geometric combination of previous train datasets
         self.train = None
         self.valid = []
         self.test = []
 
         # Also keep around just a sample from the training dataset
         self.train_sample = []
+
+        self.beta = 0.7 # Keep only beta fraction of last combined train set
 
         # List of epoch numbers in which the corresponding dataset was generated
         self.dataset_generation_epochs = []
