@@ -372,7 +372,7 @@ class AdversarialTrainer:
         correct = 0
         mlabels = MLabels(data_type)
         metrics = MetricsHelper.get(mlabels, self.adversarial_classification_mode)
-        adv_data = data_type == 'adv'
+        adv_data = 'adv' in data_type
         with torch.no_grad():
             for count, tup in enumerate(loader):
 
