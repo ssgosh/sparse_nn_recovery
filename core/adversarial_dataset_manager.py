@@ -36,12 +36,19 @@ def _combine(prev : DataLoader, new : DataLoader, beta : float) -> DataLoader:
 
 
 class DatasetMerger:
-    def __init__(self, beta):
+    def __init__(self, beta, combine):
         self.beta = beta
+        self.combine = combine
+        self.last_combined_train = None
         self.last_generated_train = None
 
-    def combine_with_previous_train(self, train):
-        return _combine(train, self.last_generated_train, beta)
+    def combine_with_previous_train(self, new_train):
+        if not self.combine:
+            self.last_combined_train = self.last_generated_train = new_train
+            return new_train
+        self.last_combined_train = _combine(new_train, self.last_combined_train, self.beta)
+        self.last_generated_train = new_train
+        return self.last_combined_train
 
 class AdversarialDatasetManager:
     def __init__(self,
@@ -63,10 +70,11 @@ class AdversarialDatasetManager:
         # Also keep around just a sample from the training dataset
         self.train_sample = []
 
-        self.beta = 0.7 # Keep only beta fraction of last combined train set
-
         # List of epoch numbers in which the corresponding dataset was generated
         self.dataset_generation_epochs = []
+
+        # Merges new train data with previous
+        self.dmerger = DatasetMerger(beta=0.7, combine=True)
 
         self.train_batch_size = train_batch_size
         self.test_batch_size = test_batch_size
@@ -111,10 +119,13 @@ class AdversarialDatasetManager:
         t = t if t is not None else self.sidr.batch_size
         v = v if v is not None else self.sidr.batch_size
 
-        self.train, sample = self.generate_m_images(m, 'train')
+        new_train, sample = self.generate_m_images(m, 'train')
         self.train_sample.append(sample)
         self.valid.append(self.generate_m_images(v, 'valid'))
         self.test.append(self.generate_m_images(t, 'test'))
+
+        # Merge new_train with previous train if enabled
+        self.train = self.dmerger.combine_with_previous_train(new_train)
 
     def get_sample(self, images, targets, fake_class_targets, sample_size, batch_size):
         batch_size = sample_size if sample_size < batch_size else batch_size
