@@ -185,7 +185,8 @@ class AdversarialTrainer:
     def generate_m_images_train_one_epoch_adversarial(self, m):
         adversarial_train_loader = self.dataset_mgr.get_new_train_loader(m)
         self.test_and_return_metrics(
-            DataLoader(adversarial_train_loader.dataset, batch_size=self.test_loader.batch_size), data_type='adv', acc=None
+            DataLoader(adversarial_train_loader.dataset, batch_size=self.test_loader.batch_size),
+            data_type='adv', acc=None, per_class=True, use_real_classes=True
         ).log(
             f'full_adversarial_train_data #{self.epoch}, before training',
             self.tbh,
@@ -366,7 +367,7 @@ class AdversarialTrainer:
             global_step=self.epoch
         )
 
-    def test_and_return_metrics(self, loader, data_type, acc) -> MetricsHelper:
+    def test_and_return_metrics(self, loader, data_type, acc, per_class=False, use_real_classes=None) -> MetricsHelper:
         """
 
         :param loader: DataLoader
@@ -382,17 +383,21 @@ class AdversarialTrainer:
         mlabels = MLabels(data_type)
         metrics = MetricsHelper.get(mlabels, self.adversarial_classification_mode)
         adv_data = 'adv' in data_type
+        if use_real_classes is None:
+            use_real_classes = data_type == 'real' or self.adversarial_classification_mode == 'max-entropy'
         with torch.no_grad():
             for count, tup in enumerate(loader):
 
-                if data_type in ['real', 'adv_external'] : data, target = tup
-                elif data_type == 'adv': data, _, target = tup # target is fake class here. _ is real class
+                if data_type in ['real', 'adv_external'] : data, real_classes = tup
+                elif data_type == 'adv': data, real_classes, fake_classes = tup # target is fake class here. _ is real class
                 else: assert False, f"Invalid data_type {data_type}"
+                target = real_classes if use_real_classes else fake_classes
 
                 data, target = data.to(self.device), target.to(self.device)
                 output = self.model(data)
                 adv_soft_labels = get_soft_labels(data) if adv_data else None
-                metrics.accumulate_batch_stats(output, target, adv_data=adv_data, adv_soft_labels=adv_soft_labels)
+                metrics.accumulate_batch_stats(data, self.model, output, target, adv_data=adv_data,
+                                               adv_soft_labels=adv_soft_labels, per_class=per_class)
                 #loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
                 #pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
                 #correct += pred.eq(target.view_as(pred)).sum().item()

@@ -161,7 +161,7 @@ class MetricsHelper:
 
         # print(json.dumps(probs, indent=2))
 
-    def accumulate_batch_stats(self, output, target, adv_data=False, adv_soft_labels=None):
+    def accumulate_batch_stats(self, images, model, output, target, adv_data=False, adv_soft_labels=None, per_class=False):
         assert not self.finalized
         self.initialized = True
         self.numel += target.shape[0]
@@ -183,6 +183,11 @@ class MetricsHelper:
         _accumulate_val_in_dict(self.agg, self.mlabels.avg_loss, loss)
         _accumulate_val_in_dict(self.agg, self.mlabels.avg_accuracy, correct)
         _accumulate_val_in_dict(self.agg, self.mlabels.avg_prob, sum_probs)
+
+        if per_class:
+            # Also compute per-class
+            self.compute_probs(output, self.per_class, target)
+            self.compute_sparsities(images, model, target, self.per_class)
 
     def log(self, name, tbh : TensorBoardHelper, tb_agg_label, tb_per_class_label, global_step):
         if not self.initialized : return
