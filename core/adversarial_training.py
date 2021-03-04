@@ -399,7 +399,7 @@ class AdversarialTrainer:
                 data, target = data.to(self.device), target.to(self.device)
                 output = self.model(data)
                 adv_soft_labels = get_soft_labels(data) if adv_data else None
-                metrics.accumulate_batch_stats(data, self.model, output, target, adv_data=(adv_data or pretend_real),
+                metrics.accumulate_batch_stats(data, self.model, output, target, adv_data=(adv_data and not pretend_real),
                                                adv_soft_labels=adv_soft_labels, per_class=per_class)
                 #loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
                 #pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
