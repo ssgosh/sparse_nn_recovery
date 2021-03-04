@@ -191,8 +191,8 @@ class MetricsHelper:
 
         if per_class:
             # Also compute per-class
-            self.compute_probs(output, self.per_class, target, per_class_only=True)
-            self.compute_sparsities(images, model, target, self.per_class, per_class_only=True)
+            self.compute_probs_per_class(output, target)
+            self.compute_sparsities_per_class(images, model, target)
 
     def log(self, name, tbh : TensorBoardHelper, tb_agg_label, tb_per_class_label, global_step):
         if not self.initialized : return
