@@ -68,6 +68,7 @@ class MetricsHelper:
         self.numel = 0
         self.per_class_numel_probs = {} # torch.zeros(size=(num_total_classes,))
         self.per_class_numel_sparsity = {}
+        self.num_model_layers = False
 
         self.initialized = False    # Someone has to add some metrics using accumulate_batch_stats() for this to happen.
         self.finalized = False
@@ -210,13 +211,26 @@ class MetricsHelper:
         for key in self.agg:
             self.agg[key] /= self.numel
 
-
+        self.finalize_per_class_probabilities()
+        self.finalize_per_class_sparsities()
         self.finalized = True
 
     def finalize_per_class_probabilities(self):
+        assert not self.finalized
         for tgt in self.per_class_numel_probs:
             key = f"class_{tgt}/prob"
             self.per_class[key] /= self.per_class_numel_probs[tgt]
+
+    def finalize_per_class_sparsities(self):
+        assert not self.finalized
+        for tgt in self.per_class_numel_sparsity:
+            key = f"class_{tgt}/sparsity/image"
+            self.per_class[key] /= self.per_class_numel_sparsity[tgt]
+
+        for j in range(self.num_model_layers):
+            for tgt in self.per_class_numel_sparsity:
+                key = f"class_{tgt}/sparsity/layer_{j + 1}"
+                self.per_class[key] /= self.per_class_numel_sparsity[tgt]
 
     # Compute and store average probability of each class in the batch
     # XXX: This is not an efficient implementation
@@ -264,11 +278,6 @@ class MetricsHelper:
             # for tgt in count:
             #     key = f"class_{tgt}/sparsity/layer_{j + 1}"
             #     sparsity[key] /= count[tgt]
+        self.num_model_layers = len(model.get_layers())
         #print(json.dumps(sparsity, indent=2))
         #print(json.dumps(count, indent=2))
-
-    def finalize_per_class_sparsities(self):
-        for tgt in count:
-            key = f"class_{tgt}/sparsity/image"
-            self.per_class[key] /= self.per_class_numel_sparsity[tgt]
-
