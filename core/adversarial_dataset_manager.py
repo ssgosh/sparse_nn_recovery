@@ -42,7 +42,7 @@ class DatasetMerger:
         self.beta = beta
         self.combine = combine
         self.last_combined_train = None
-        self.last_generated_train = None
+        self.last_generated_train : DataLoader = None
 
     def combine_with_previous_train(self, new_train):
         if not self.combine or self.last_combined_train is None:
