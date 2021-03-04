@@ -184,6 +184,15 @@ class AdversarialTrainer:
 
     def generate_m_images_train_one_epoch_adversarial(self, m):
         adversarial_train_loader = self.dataset_mgr.get_new_train_loader(m)
+        self.test_and_return_metrics(
+            DataLoader(adversarial_train_loader.dataset, batch_size=self.test_loader.batch_size), data_type='adv', acc=None
+        ).log(
+            f'full_adversarial_train_data #{self.epoch}, before training',
+            self.tbh,
+            tb_agg_label = TBLabels.RECOVERY_EPOCH,
+            tb_per_class_label = TBLabels.RECOVERY_EPOCH,
+            global_step=self.epoch,
+        )
         # Now train
         self.model.train()
         # Note that we're using the loader here directly and not the cached iterator.
