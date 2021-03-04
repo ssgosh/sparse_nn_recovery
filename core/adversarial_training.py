@@ -153,7 +153,7 @@ class AdversarialTrainer:
         adv_output = self.model(adv_data)
 
         real_loss = F.nll_loss(real_output, real_targets)
-        adv_loss = F.kl_div(adv_output, adv_soft_labels) if self.adv_use_soft_labels else F.nll_loss(adv_output, adv_targets)
+        adv_loss = F.kl_div(adv_output, adv_soft_labels, reduction='batchmean') if self.adv_use_soft_labels else F.nll_loss(adv_output, adv_targets)
         loss = real_loss + adv_loss + self.model.get_weight_decay()
 
         loss.backward()
