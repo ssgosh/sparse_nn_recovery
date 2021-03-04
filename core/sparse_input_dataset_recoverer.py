@@ -112,10 +112,10 @@ class SparseInputDatasetRecoverer:
         # XXX: Skip this - we're going to do this on the full train data in
         #      AdversarialTrainer::generate_m_images_train_one_epoch_adversarial
         #
-        loss, losses, output, probs, sparsity = self.sparse_input_recoverer.forward(
-            model, images, targets, include_layer_map[sparsity_mode], include_likelihood=True)
-        self.tbh.log_dict(f"{label}", probs, global_step=dataset_epoch)
-        self.tbh.log_dict(f"{label}", sparsity, global_step=dataset_epoch)
+        # loss, losses, output, probs, sparsity = self.sparse_input_recoverer.forward(
+        #     model, images, targets, include_layer_map[sparsity_mode], include_likelihood=True)
+        # self.tbh.log_dict(f"{label}", probs, global_step=dataset_epoch)
+        # self.tbh.log_dict(f"{label}", sparsity, global_step=dataset_epoch)
         self.tbh.flush()
 
     # Get a batch of 100 images with 10 images per class
