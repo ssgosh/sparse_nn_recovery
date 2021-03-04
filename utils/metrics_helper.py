@@ -33,8 +33,8 @@ class MetricsHelper:
     def get(cls, mlabels : MLabels = None, adversarial_classification_mode='max-entropy') -> 'MetricsHelper':
         zero, one = DatasetHelperFactory.get().get_transformed_zero_one()
         # XXX: Change this to get_num_classes. This is not valid in case of soft adversarial labels
-        num_real_fake_classes = DatasetHelperFactory.get().get_num_real_fake_classes()
-        return cls(zero, one, mlabels, num_real_fake_classes, adversarial_classification_mode)
+        num_total_classes = DatasetHelperFactory.get().get_num_total_classes()
+        return cls(zero, one, mlabels, num_total_classes, adversarial_classification_mode)
 
     @classmethod
     def reduce(cls, metrics_list: List['MetricsHelper']):
@@ -52,7 +52,7 @@ class MetricsHelper:
         overall_metrics.finalized = True
         return overall_metrics
 
-    def __init__(self, image_zero, image_one, mlabels : MLabels = None, num_real_fake_classes=None,
+    def __init__(self, image_zero, image_one, mlabels : MLabels = None, num_total_classes=None,
                  adversarial_classification_mode='max-entropy'):
         self.image_zero = image_zero
         self.image_one = image_one
@@ -66,7 +66,9 @@ class MetricsHelper:
         # Updated on each call to accumulate_batch_stats
         self.num_batches = 0
         self.numel = 0
-        self.per_class_numel = torch.zeros(size=(num_real_fake_classes,))
+        self.per_class_numel_probs = {} # torch.zeros(size=(num_total_classes,))
+        self.per_class_numel_sparsity = {}
+        self.num_model_layers = False
 
         self.initialized = False    # Someone has to add some metrics using accumulate_batch_stats() for this to happen.
         self.finalized = False
@@ -121,17 +123,20 @@ class MetricsHelper:
 
 
     # Compute and store average probability of each class in the batch
-    def compute_probs(self, output, probs, targets):
+    def compute_probs(self, output, probs, targets, per_class_only=False):
         count = {}
         for idx, tgt in enumerate(targets):
             _accumulate_val_in_dict(count, tgt.item(), 1)
             prob = pow(math.e, output[idx][tgt.item()].item())
             key = f"class_{tgt}/prob"
             _accumulate_val_in_dict(probs, key, prob)
-            key = "avg_prob"
-            _accumulate_val_in_dict(probs, key, prob)
+            if not per_class_only:
+                key = "avg_prob"
+                _accumulate_val_in_dict(probs, key, prob)
 
-        probs["avg_prob"] /= idx # Find the average prob over entire batch
+        if not per_class_only:
+            probs["avg_prob"] /= idx+1 # Find the average prob over entire batch
+
         #print(json.dumps(probs, indent=2))
         #print(json.dumps(count, indent=2))
         for tgt in count:
@@ -161,7 +166,7 @@ class MetricsHelper:
 
         # print(json.dumps(probs, indent=2))
 
-    def accumulate_batch_stats(self, output, target, adv_data=False, adv_soft_labels=None):
+    def accumulate_batch_stats(self, images, model, output, target, adv_data=False, adv_soft_labels=None, per_class=False):
         assert not self.finalized
         self.initialized = True
         self.numel += target.shape[0]
@@ -184,6 +189,11 @@ class MetricsHelper:
         _accumulate_val_in_dict(self.agg, self.mlabels.avg_accuracy, correct)
         _accumulate_val_in_dict(self.agg, self.mlabels.avg_prob, sum_probs)
 
+        if per_class:
+            # Also compute per-class
+            self.compute_probs_per_class(output, target)
+            self.compute_sparsities_per_class(images, model, target)
+
     def log(self, name, tbh : TensorBoardHelper, tb_agg_label, tb_per_class_label, global_step):
         if not self.initialized : return
         assert self.finalized
@@ -200,5 +210,74 @@ class MetricsHelper:
     def finalize_stats(self):
         for key in self.agg:
             self.agg[key] /= self.numel
+
+        self.finalize_per_class_probabilities()
+        self.finalize_per_class_sparsities()
         self.finalized = True
 
+    def finalize_per_class_probabilities(self):
+        assert not self.finalized
+        for tgt in self.per_class_numel_probs:
+            key = f"class_{tgt}/prob"
+            self.per_class[key] /= self.per_class_numel_probs[tgt]
+
+    def finalize_per_class_sparsities(self):
+        assert not self.finalized
+        for tgt in self.per_class_numel_sparsity:
+            key = f"class_{tgt}/sparsity/image"
+            self.per_class[key] /= self.per_class_numel_sparsity[tgt]
+
+        for j in range(self.num_model_layers):
+            for tgt in self.per_class_numel_sparsity:
+                key = f"class_{tgt}/sparsity/layer_{j + 1}"
+                self.per_class[key] /= self.per_class_numel_sparsity[tgt]
+
+    # Compute and store average probability of each class in the batch
+    # XXX: This is not an efficient implementation
+    def compute_probs_per_class(self, output, targets):
+        for idx, tgt in enumerate(targets):
+            _accumulate_val_in_dict(self.per_class_numel_probs, tgt.item(), 1)
+            prob = pow(math.e, output[idx][tgt.item()].item())
+            key = f"class_{tgt}/prob"
+            _accumulate_val_in_dict(self.per_class, key, prob)
+
+        # print(json.dumps(probs, indent=2))
+        # print(json.dumps(count, indent=2))
+        # Don't do this here - do this in finalize
+        # for tgt in self.per_class_numel_probs:
+        #     key = f"class_{tgt}/prob"
+        #     probs[key] /= count[tgt]
+
+        # print(json.dumps(probs, indent=2))
+
+    # XXX: Inefficient Implmentation
+    def compute_sparsities_per_class(self, images, model, targets):
+        n = targets.shape[0]
+        batch_sparsity = imp.get_sparsity_batch(images, zero=self.image_zero)
+        for i in range(n):
+            _accumulate_val_in_dict(self.per_class_numel_sparsity, targets[i].item(), 1)
+            key = f"class_{targets[i]}/sparsity/image"
+            val = batch_sparsity[i].item()
+            _accumulate_val_in_dict(self.per_class, key, val)
+
+        #print(json.dumps(sparsity, indent=2))
+        # for tgt in count:
+        #     key = f"class_{tgt}/sparsity/image"
+        #     sparsity[key] /= count[tgt]
+
+        #print(json.dumps(sparsity, indent=2))
+        #print(json.dumps(count, indent=2))
+        for j, layer in enumerate(model.get_layers()):
+            batch_sparsity = imp.get_sparsity_batch(layer, zero=0.)
+            for i in range(n):
+                #_accumulate_val_in_dict(count, targets[i].item(), 1)
+                key = f"class_{targets[i]}/sparsity/layer_{j + 1}"
+                val = batch_sparsity[i].item()
+                _accumulate_val_in_dict(self.per_class, key, val)
+
+            # for tgt in count:
+            #     key = f"class_{tgt}/sparsity/layer_{j + 1}"
+            #     sparsity[key] /= count[tgt]
+        self.num_model_layers = len(model.get_layers())
+        #print(json.dumps(sparsity, indent=2))
+        #print(json.dumps(count, indent=2))

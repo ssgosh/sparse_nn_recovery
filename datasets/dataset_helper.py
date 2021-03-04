@@ -67,6 +67,10 @@ class DatasetHelper(ABC):
         # XXX: Change this to get_num_real_classes()
         return 2 * self.get_num_classes()
 
+    # XXX: This should use adversarial_classification_mode and either return only real or real + fake classesj
+    def get_num_total_classes(self):
+        return self.get_num_classes()
+
     @abstractmethod
     def get_each_entry_shape(self):
         pass

@@ -153,7 +153,7 @@ class AdversarialTrainer:
         adv_output = self.model(adv_data)
 
         real_loss = F.nll_loss(real_output, real_targets)
-        adv_loss = F.kl_div(adv_output, adv_soft_labels) if self.adv_use_soft_labels else F.nll_loss(adv_output, adv_targets)
+        adv_loss = F.kl_div(adv_output, adv_soft_labels, reduction='batchmean') if self.adv_use_soft_labels else F.nll_loss(adv_output, adv_targets)
         loss = real_loss + adv_loss + self.model.get_weight_decay()
 
         loss.backward()
@@ -184,6 +184,16 @@ class AdversarialTrainer:
 
     def generate_m_images_train_one_epoch_adversarial(self, m):
         adversarial_train_loader = self.dataset_mgr.get_new_train_loader(m)
+        self.test_and_return_metrics(
+            DataLoader(self.dataset_mgr.dmerger.last_generated_train.dataset, batch_size=self.test_loader.batch_size),
+            data_type='adv', acc=None, per_class=True, use_real_classes=True
+        ).log(
+            f'full_adversarial_train_data #{self.epoch}, before training',
+            self.tbh,
+            tb_agg_label = TBLabels.RECOVERY_EPOCH,
+            tb_per_class_label = TBLabels.RECOVERY_EPOCH,
+            global_step=self.epoch,
+        )
         # Now train
         self.model.train()
         # Note that we're using the loader here directly and not the cached iterator.
@@ -357,7 +367,7 @@ class AdversarialTrainer:
             global_step=self.epoch
         )
 
-    def test_and_return_metrics(self, loader, data_type, acc) -> MetricsHelper:
+    def test_and_return_metrics(self, loader, data_type, acc, per_class=False, use_real_classes=None) -> MetricsHelper:
         """
 
         :param loader: DataLoader
@@ -373,17 +383,24 @@ class AdversarialTrainer:
         mlabels = MLabels(data_type)
         metrics = MetricsHelper.get(mlabels, self.adversarial_classification_mode)
         adv_data = 'adv' in data_type
+        pretend_real = False
+        if use_real_classes is None:
+            use_real_classes = data_type == 'real' or self.adversarial_classification_mode == 'max-entropy'
+        elif use_real_classes:
+            pretend_real = True
         with torch.no_grad():
             for count, tup in enumerate(loader):
 
-                if data_type in ['real', 'adv_external'] : data, target = tup
-                elif data_type == 'adv': data, _, target = tup # target is fake class here. _ is real class
+                if data_type in ['real', 'adv_external'] : data, real_classes = tup
+                elif data_type == 'adv': data, real_classes, fake_classes = tup # target is fake class here. _ is real class
                 else: assert False, f"Invalid data_type {data_type}"
+                target = real_classes if use_real_classes else fake_classes
 
                 data, target = data.to(self.device), target.to(self.device)
                 output = self.model(data)
                 adv_soft_labels = get_soft_labels(data) if adv_data else None
-                metrics.accumulate_batch_stats(output, target, adv_data=adv_data, adv_soft_labels=adv_soft_labels)
+                metrics.accumulate_batch_stats(data, self.model, output, target, adv_data=(adv_data and not pretend_real),
+                                               adv_soft_labels=adv_soft_labels, per_class=per_class)
                 #loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
                 #pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
                 #correct += pred.eq(target.view_as(pred)).sum().item()

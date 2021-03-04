@@ -71,8 +71,9 @@ class SparseInputDatasetRecoverer:
             images_tensor = torch.cat(images)
             targets_tensor = torch.cat(targets)
 
-            #self.log_first_100_images_stats(model, images_tensor, targets_tensor, include_layer_map, sparsity_mode)
-            self.log_regular_batch_stats(model, images_tensor, targets_tensor, include_layer_map, sparsity_mode, dataset_epoch)
+            if mode == 'train': # Perform logging only for the train dataset
+                #self.log_first_100_images_stats(model, images_tensor, targets_tensor, include_layer_map, sparsity_mode)
+                self.log_regular_batch_stats(model, images_tensor, targets_tensor, include_layer_map, sparsity_mode, dataset_epoch)
 
             # Save to ckpt dir
             self.ckpt_saver.save_images(mode, images_tensor, targets_tensor, dataset_epoch)
@@ -108,10 +109,13 @@ class SparseInputDatasetRecoverer:
         self.tbh.add_list(targets_list, f"{label}/dataset_targets", num_per_row=10,
                           global_step=dataset_epoch)
         # Run forward on this batch and get losses, probabilities and sparsity for logging
-        loss, losses, output, probs, sparsity = self.sparse_input_recoverer.forward(
-            model, images, targets, include_layer_map[sparsity_mode], include_likelihood=True)
-        self.tbh.log_dict(f"{label}", probs, global_step=dataset_epoch)
-        self.tbh.log_dict(f"{label}", sparsity, global_step=dataset_epoch)
+        # XXX: Skip this - we're going to do this on the full train data in
+        #      AdversarialTrainer::generate_m_images_train_one_epoch_adversarial
+        #
+        # loss, losses, output, probs, sparsity = self.sparse_input_recoverer.forward(
+        #     model, images, targets, include_layer_map[sparsity_mode], include_likelihood=True)
+        # self.tbh.log_dict(f"{label}", probs, global_step=dataset_epoch)
+        # self.tbh.log_dict(f"{label}", sparsity, global_step=dataset_epoch)
         self.tbh.flush()
 
     # Get a batch of 100 images with 10 images per class
