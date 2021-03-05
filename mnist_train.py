@@ -403,7 +403,6 @@ def main():
                                                  config.num_batches_early_epoch, test_loader, scheduler,
                                                  config.adversarial_classification_mode)
 
-
     if args.train_mode not in ['adversarial-batches', 'adversarial-epoch']:
         for epoch in range(0, args.epochs):
             # Perform pre-training for 1 epoch in adversarial mode
@@ -427,8 +426,6 @@ def main():
         save_path.parent.mkdir(exist_ok=True, parents=True)
         print("Saving model to : ", save_path)
         torch.save(model.state_dict(), save_path)
-        #torch.save(model.state_dict(), "mnist_max_norm_mlp.pt")
-        #torch.save(model.state_dict(), "mnist_cnn_adv_normal_init.pt")
 
     tbh.close()
 

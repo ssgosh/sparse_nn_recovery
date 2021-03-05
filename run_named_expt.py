@@ -1,7 +1,7 @@
 import argparse
 import os
-import random
 import sys
+from subprocess import Popen, PIPE, STDOUT
 
 from utils.seed_mgr import SeedManager
 
@@ -34,7 +34,7 @@ class NamedExpt:
         dataset = args.dataset
         if name in ['quick', 'quick-debug',]:
             cmd = 'python3 mnist_train.py ' \
-                  f'--name {name}' \
+                  f'--name {name} ' \
                   f'--seed {seed} ' \
                   f'--dataset {dataset} ' \
                   f'--early-epoch ' \
@@ -45,14 +45,41 @@ class NamedExpt:
                   f'--num-adversarial-images-epoch-mode 128 ' \
                   f'--recovery-batch-size 128 ' \
                   f'--num-batches-early-epoch 10 '
-            cmd = cmd + " ".join(extra_args)
-            print(cmd)
-            #os.system(cmd)
         elif args.expt == 'quick-opt':
-            pass
+            cmd = 'python3 mnist_train.py ' \
+                  f'--name {name}' \
+                  f'--seed {seed} ' \
+                  f'--dataset {dataset} ' \
+                  f'--early-epoch ' \
+                  f'--train-mode adversarial-epoch ' \
+                  f'--adversarial-classification-mode max-entropy ' \
+                  f'--epochs 6 ' \
+                  f'--recovery-num-steps 100 ' \
+                  f'--num-adversarial-images-epoch-mode 128 ' \
+                  f'--recovery-batch-size 128 ' \
+                  f'--num-batches-early-epoch 100 '
         elif args.expt == 'full':
-            pass
+            cmd = 'python3 mnist_train.py ' \
+                  f'--name {name}' \
+                  f'--seed {seed} ' \
+                  f'--dataset {dataset} '
+        else:
+            cmd =''
 
+        cmd_lst = cmd.split() + extra_args
+
+        # Overrides anything specified in this script via the command-line
+        cmd = cmd + " ".join(extra_args)
+        print(cmd)
+        #os.system(cmd)
+        #cmd_lst = ['python3', 'sandbox/test_hello.py']
+        os.environ["PYTHONUNBUFFERED"] = "1"
+        cmd_lst = ['stdbuf', '-o0'] + cmd_lst
+        with Popen(cmd_lst, stdout=PIPE, stderr=STDOUT, bufsize=1, text=True) as p, \
+                open('logfile.txt', 'a') as file:
+            for line in p.stdout:  # b'\n'-separated lines
+                sys.stdout.write(line)  # pass bytes as is
+                file.write(line)
 
 if __name__ == '__main__':
     expt = NamedExpt()
