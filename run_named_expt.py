@@ -4,6 +4,7 @@ import sys
 from subprocess import Popen, PIPE, STDOUT
 
 from utils.seed_mgr import SeedManager
+from utils import runs_helper as rh
 
 
 class NamedExpt:
@@ -25,17 +26,25 @@ class NamedExpt:
     def main(self):
         #args = self.parser.parse_args()
         args, extra_args = self.parser.parse_known_args()
-        print(args)
-        print(extra_args)
+
+        #print(args)
+        #print(extra_args)
 
         #seed_id = self.seed_mgr.get_random_seed_hashid()
         seed, seed_hash = self.seed_mgr.get_random_seed_hashid()
         name = args.expt
         dataset = args.dataset
+
+        # Create runs dir here, so that we can write to <run-dir>/logfile.txt
+        args.run_dir = None
+        args.run_suffix = f"_{args.expt}"
+        rh.setup_run_dir(args, 'train_runs')
+
+        #f'--run-suffix _{seed_hash} '
         cmd = 'python3 mnist_train.py ' \
               f'--name {name} ' \
               f'--seed {seed} ' \
-              f'--run-suffix _{seed_hash} ' \
+              f'--run-dir {args.run_dir} ' \
               f'--dataset {dataset} '
         if name in ['quick', 'quick-debug',]:
             cmd = cmd + \
@@ -44,9 +53,9 @@ class NamedExpt:
                   f'--adversarial-classification-mode max-entropy ' \
                   f'--epochs 4 ' \
                   f'--recovery-num-steps 1 ' \
-                  f'--num-adversarial-images-epoch-mode 128 ' \
-                  f'--recovery-batch-size 128 ' \
-                  f'--num-batches-early-epoch 10 '
+                  f'--num-adversarial-images-epoch-mode 32 ' \
+                  f'--recovery-batch-size 32 ' \
+                  f'--num-batches-early-epoch 1 '
         elif args.expt == 'quick-opt':
             cmd = cmd + \
                   f'--early-epoch ' \
@@ -68,7 +77,7 @@ class NamedExpt:
         # Remove stupid python buffering
         os.environ["PYTHONUNBUFFERED"] = "1"
         with Popen(cmd_lst, stdout=PIPE, stderr=STDOUT, bufsize=1, text=True) as p, \
-                open(f'logs/logfile_{seed_hash}.txt', 'a') as file:
+                open(f'{args.run_dir}/logfile.txt', 'a') as file:
             for line in p.stdout:
                 sys.stdout.write(line)
                 file.write(line)
