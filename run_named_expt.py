@@ -96,6 +96,7 @@ class NamedExpt:
                     f.write(l)
                     f.flush()
         except KeyboardInterrupt:
+            # Following should work to record the traceback in the logfile but doesn't :-(
             self.p.send_signal(signal.SIGINT)
             for l, rc in foo:
                 print(l, end="", flush=True)
