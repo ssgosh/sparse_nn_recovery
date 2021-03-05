@@ -153,11 +153,14 @@ class SparseInputDatasetRecoverer:
                     tgt_entries.append(targets[i])
                     count += 1
                 i += 1
-            # Append all-zero images if not enough entries for this class
+            # Append cross X images if not enough entries for this class
+            # All-zero images can be produced easily by our optimization algo,
+            # But cross image is hard to be produced by accident
             for j in range(count, num_per_class):
                 d1 = torch.diagflat(torch.ones(28))
                 d2 = torch.flip(d1, dims=[1, ])
-                cross = ((d1 + d2) > 0.).float()
+                cross = ((d1 + d2) > 0.).float().unsqueeze(dim=0)
+
                 entries.append(cross * self.image_one + self.image_zero)
                 tgt_entries.append(torch.tensor(cls, device=targets.device))
 
