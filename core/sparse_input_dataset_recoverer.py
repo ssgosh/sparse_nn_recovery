@@ -40,7 +40,7 @@ class SparseInputDatasetRecoverer:
         self.image_one = self.sparse_input_recoverer.image_one
 
     def recover_image_dataset_internal(self, model, output_shape, num_real_classes, batch_size, num_steps,
-                              include_layer_map, sparsity_mode, device, mode, dataset_epoch):
+                                       include_layer_map, sparsity_mode, device, mode, dataset_epoch):
         assert output_shape[0] % batch_size == 0,\
             f"Number of images to generate not divisible by image recovery " \
             f"batch size: output_shape[0] = {output_shape[0]}, batch_size = {batch_size} "
