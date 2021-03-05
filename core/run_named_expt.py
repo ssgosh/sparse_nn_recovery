@@ -8,7 +8,7 @@ from utils.seed_mgr import SeedManager
 class NamedExpt:
     def __init__(self):
         self.names = [
-            'quick-debug', # Only for checking if the pipeline works without any python errors. Doesn't care about algo output
+            'quick', 'quick-debug', # Only for checking if the pipeline works without any python errors. Doesn't care about algo output
             'quick-opt', # For quickly testing if the optimization is somewhat working, with minimal number of epochs, batches etc
             'full',  # For full expt
         ]
@@ -21,9 +21,20 @@ class NamedExpt:
     def main(self):
         args = self.parser.parse_args()
 
-        seed_id = self.seed_mgr.get_random_seed_hashid()
-        if args.expt == 'quick-debug':
-            pass
+        #seed_id = self.seed_mgr.get_random_seed_hashid()
+        seed = self.seed_mgr.get_random_seed()
+        if args.expt == 'quick-debug' or args.expt == 'quick':
+            cmd = 'python3 mnist_train.py ' \
+                  f'--seed {seed} ' \
+                  '--dataset MNIST_A ' \
+                  '--early-epoch ' \
+                  '--train-mode adversarial-epoch ' \
+                  '--adversarial-classification-mode max-entropy ' \
+                  '--epochs 4 ' \
+                  '--recovery-num-steps 1 ' \
+                  '--num-adversarial-images-epoch-mode 128 ' \
+                  '--recovery-batch-size 128 ' \
+                  '--num-batches-early-epoch 10'
         elif args.expt == 'quick-opt':
             pass
         elif args.expt == 'full':
