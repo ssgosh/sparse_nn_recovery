@@ -37,6 +37,7 @@ class SparseInputDatasetRecoverer:
         self.tbh = self.sparse_input_recoverer.tbh
         #self.dataset_epoch = 0
         self.image_zero = self.sparse_input_recoverer.image_zero
+        self.image_one = self.sparse_input_recoverer.image_one
 
     def recover_image_dataset_internal(self, model, output_shape, num_real_classes, batch_size, num_steps,
                               include_layer_map, sparsity_mode, device, mode, dataset_epoch):
@@ -72,8 +73,26 @@ class SparseInputDatasetRecoverer:
             targets_tensor = torch.cat(targets)
 
             if mode == 'train': # Perform logging only for the train dataset
+                def log_bin(suffix, bin):
+                    self.log_regular_batch_stats(suffix, model, images_tensor[bin], targets_tensor[bin], include_layer_map,
+                                                 sparsity_mode, dataset_epoch)
+
                 #self.log_first_100_images_stats(model, images_tensor, targets_tensor, include_layer_map, sparsity_mode)
-                self.log_regular_batch_stats(model, images_tensor, targets_tensor, include_layer_map, sparsity_mode, dataset_epoch)
+                self.log_regular_batch_stats('', model, images_tensor, targets_tensor, include_layer_map, sparsity_mode,
+                                             dataset_epoch)
+                # Bin images by probability and log
+                bin_0_9 = (targets_tensor >= 0.9)
+                bin_0_7_0_8 = (targets_tensor >= 0.7) & (targets_tensor < 0.9)
+                bin_0_5_0_6 = (targets_tensor >= 0.5) & (targets_tensor < 0.7)
+                bin_0_3_0_4 = (targets_tensor >= 0.3) & (targets_tensor < 0.5)
+                bin_0_3 = (targets_tensor < 0.3)
+                log_bin('prob_greater_than_eq_0.9', bin_0_9)
+                log_bin('prob_between_0.7_0.9', bin_0_7_0_8)
+                log_bin('prob_between_0.5_0.7', bin_0_5_0_6)
+                log_bin('prob_between_0.3_0.5', bin_0_3_0_4)
+                log_bin('prob_less_than_0.3', bin_0_3)
+
+                # Log unconfident images
 
             # Save to ckpt dir
             self.ckpt_saver.save_images(mode, images_tensor, targets_tensor, dataset_epoch)
@@ -100,13 +119,16 @@ class SparseInputDatasetRecoverer:
         self.tbh.log_dict(f"{sparsity_mode}", sparsity, global_step=dataset_epoch)
         self.tbh.flush()
 
-    def log_regular_batch_stats(self, model, images_tensor, targets_tensor, include_layer_map, sparsity_mode, dataset_epoch):
-        label = TBLabels.RECOVERY_EPOCH #"recovery_epoch"
+    def log_regular_batch_stats(self, suffix, model, images_tensor, targets_tensor, include_layer_map, sparsity_mode, dataset_epoch):
+        prefix = TBLabels.RECOVERY_EPOCH #"recovery_epoch"
+        img_label = f"{prefix}/dataset_images_{suffix}" if suffix else f"{prefix}/dataset_images"
+        tgt_label = f"{prefix}/dataset_targets_{suffix}" if suffix else f"{prefix}/dataset_targets"
+
         images, targets = self.get_regular_batch(images_tensor, targets_tensor, self.num_real_classes, 10)
         targets_list = [foo.item() for foo in targets]
-        self.tbh.add_image_grid(images, f"{label}/dataset_images", filtered=True, num_per_row=10,
+        self.tbh.add_image_grid(images, img_label, filtered=True, num_per_row=10,
                                 global_step=dataset_epoch)
-        self.tbh.add_list(targets_list, f"{label}/dataset_targets", num_per_row=10,
+        self.tbh.add_list(targets_list, tgt_label, num_per_row=10,
                           global_step=dataset_epoch)
         # Run forward on this batch and get losses, probabilities and sparsity for logging
         # XXX: Skip this - we're going to do this on the full train data in
@@ -114,8 +136,8 @@ class SparseInputDatasetRecoverer:
         #
         # loss, losses, output, probs, sparsity = self.sparse_input_recoverer.forward(
         #     model, images, targets, include_layer_map[sparsity_mode], include_likelihood=True)
-        # self.tbh.log_dict(f"{label}", probs, global_step=dataset_epoch)
-        # self.tbh.log_dict(f"{label}", sparsity, global_step=dataset_epoch)
+        # self.tbh.log_dict(f"{prefix}", probs, global_step=dataset_epoch)
+        # self.tbh.log_dict(f"{prefix}", sparsity, global_step=dataset_epoch)
         self.tbh.flush()
 
     # Get a batch of 100 images with 10 images per class
@@ -131,9 +153,15 @@ class SparseInputDatasetRecoverer:
                     tgt_entries.append(targets[i])
                     count += 1
                 i += 1
-            # Append all-zero images if not enough entries for this class
+            # Append cross X images if not enough entries for this class
+            # All-zero images can be produced easily by our optimization algo,
+            # But cross image is hard to be produced by accident
             for j in range(count, num_per_class):
-                entries.append(torch.zeros_like(images[0]) + self.image_zero)
+                d1 = torch.diagflat(torch.ones(28))
+                d2 = torch.flip(d1, dims=[1, ])
+                cross = ((d1 + d2) > 0.).float().unsqueeze(dim=0)
+
+                entries.append(cross * self.image_one + self.image_zero)
                 tgt_entries.append(torch.tensor(cls, device=targets.device))
 
         return torch.stack(entries), torch.stack(tgt_entries)
@@ -143,3 +171,4 @@ class SparseInputDatasetRecoverer:
         return self.recover_image_dataset_internal(self.model, output_shape, self.num_real_classes, self.batch_size,
                                                    self.num_recovery_steps, self.include_layer_map, self.sparsity_mode,
                                                    self.device, mode, dataset_epoch)
+
