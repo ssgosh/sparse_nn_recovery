@@ -34,6 +34,7 @@ class NamedExpt:
         dataset = args.dataset
         if name in ['quick', 'quick-debug',]:
             cmd = 'python3 mnist_train.py ' \
+                  f'--name {name}' \
                   f'--seed {seed} ' \
                   f'--dataset {dataset} ' \
                   f'--early-epoch ' \
