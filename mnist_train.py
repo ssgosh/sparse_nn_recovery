@@ -172,20 +172,11 @@ def main():
         "all but input" : [ False, True, True, True],
         }
     generator_modes = list(include_layer.keys())
-    # Training settings
-    parser = argparse.ArgumentParser(description='Modified PyTorch MNIST Example',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    # Training mode
-    #
-    # 'adversarial' does adversarial training, with a single loop for
-    # adversarial examples
-    #
-    # 'normal' just does supervised training
+    parser = argparse.ArgumentParser(description='Modified PyTorch MNIST Example', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
     available_train_modes = ['normal', 'adversarial-continuous', 'adversarial-epoch', 'adversarial-batches']
-    parser.add_argument('--train-mode', type=str, default='normal',
-                        metavar='MODE',
-                        choices=available_train_modes,
+    parser.add_argument('--train-mode', type=str, default='normal', metavar='MODE', choices=available_train_modes,
                         help='Training mode. One of: ' + ', '.join(available_train_modes))
     parser.add_argument('--name', type=str, default='')
     parser.add_argument('--dataset', type=str, default='MNIST', metavar='MODE')
