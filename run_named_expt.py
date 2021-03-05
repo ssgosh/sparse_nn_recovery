@@ -1,5 +1,6 @@
 import argparse
 import os
+import signal
 import sys
 from subprocess import Popen, PIPE, STDOUT
 
@@ -86,22 +87,38 @@ class NamedExpt:
         #         sys.stdout.write(line)
         #         file.write(line)
 
-        # Plays nicely with '\r' and doesn't have any buffering issues.
-        # Thanks to https://koldfront.dk/making_subprocesspopen_in_python_3_play_nice_with_elaborate_output_1594
-        def run_command(cmd_lst):
-            p = Popen(cmd_lst,
-                      stdout=PIPE,
-                      stderr=STDOUT,
-                      universal_newlines=False)  # \r goes through
+        try:
+            with open(f'{args.run_dir}/logfile.txt', 'a') as f:
+                foo = self.run_command(cmd_lst)
+                print(foo)
+                for l, rc in foo:
+                    print(l, end="", flush=True)
+                    f.write(l)
+                    f.flush()
+        except KeyboardInterrupt:
+            self.p.send_signal(signal.SIGINT)
+            for l, rc in foo:
+                print(l, end="", flush=True)
+                f.write(l)
+                f.flush()
+            self.p.wait()
+            raise
 
-            nice_stdout = open(os.dup(p.stdout.fileno()), newline='')  # re-open to get \r recognized as new line
-            for line in nice_stdout:
-                yield line, p.poll()
 
-            yield "", p.wait()
+    # Plays nicely with '\r' and doesn't have any buffering issues.
+    # Thanks to https://koldfront.dk/making_subprocesspopen_in_python_3_play_nice_with_elaborate_output_1594
+    def run_command(self, cmd_lst):
+        self.p = Popen(cmd_lst,
+                  stdout=PIPE,
+                  stderr=STDOUT,
+                  universal_newlines=False)  # \r goes through
 
-        for l, rc in run_command(cmd_lst):
-            print(l, end="", flush=True)
+        nice_stdout = open(os.dup(self.p.stdout.fileno()), newline='')  # re-open to get \r recognized as new line
+        for line in nice_stdout:
+            yield line, self.p.poll()
+
+        yield "", self.p.wait()
+
 
 
 if __name__ == '__main__':
