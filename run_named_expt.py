@@ -1,11 +1,33 @@
 import argparse
 import os
 import signal
+import subprocess
 import sys
 from subprocess import Popen, PIPE, STDOUT
 
-from utils.seed_mgr import SeedManager
 from utils import runs_helper as rh
+from utils.seed_mgr import SeedManager
+
+
+def log_cmd(cmd, f):
+    out = subprocess.run(['-c', cmd], shell=True, capture_output=True)
+    f.write(out.stdout)
+
+
+def save_git_info(diff_file):
+    with open(diff_file, 'wb') as f:
+        f.write(bytes("\n**************   Git Branch Information   **********:\n", 'utf-8'))
+        cmd = 'git branch -vv'
+        log_cmd(cmd, f)
+
+        f.write(bytes("\n**************   Git Log Information   **********:\n", 'utf-8'))
+        # cmd = 'git log --oneline --graph'.split()
+        cmd = 'git log --oneline --graph | head -20'
+        log_cmd(cmd, f)
+
+        f.write(bytes("\n**************   Git Diff with HEAD   **********:\n", 'utf-8'))
+        cmd = 'git diff HEAD'
+        log_cmd(cmd, f)
 
 
 class NamedExpt:
@@ -40,6 +62,9 @@ class NamedExpt:
         args.run_dir = None
         args.run_suffix = f"_{args.expt}"
         rh.setup_run_dir(args, 'train_runs')
+
+        # Save git information in the run directory before proceeding
+        save_git_info(f'{args.run_dir}/gitinfo.diff')
 
         #f'--run-suffix _{seed_hash} '
         cmd = 'python3 mnist_train.py ' \
@@ -105,7 +130,6 @@ class NamedExpt:
             self.p.wait()
             raise
 
-
     # Plays nicely with '\r' and doesn't have any buffering issues.
     # Thanks to https://koldfront.dk/making_subprocesspopen_in_python_3_play_nice_with_elaborate_output_1594
     def run_command(self, cmd_lst):
@@ -119,7 +143,6 @@ class NamedExpt:
             yield line, self.p.poll()
 
         yield "", self.p.wait()
-
 
 
 if __name__ == '__main__':
