@@ -69,6 +69,6 @@ def test_scalars():
 test_scalars()
 
 #foobar()
-#writer = tensorboard_setup()
-#main()
+writer = tensorboard_setup()
+main()
 
