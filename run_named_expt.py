@@ -36,6 +36,7 @@ class NamedExpt:
             cmd = 'python3 mnist_train.py ' \
                   f'--name {name} ' \
                   f'--seed {seed} ' \
+                  f'--run-suffix {seed} ' \
                   f'--dataset {dataset} ' \
                   f'--early-epoch ' \
                   f'--train-mode adversarial-epoch ' \
@@ -66,17 +67,19 @@ class NamedExpt:
         else:
             cmd =''
 
+        # Overrides anything specified in this script via the command-line
         cmd_lst = cmd.split() + extra_args
 
-        # Overrides anything specified in this script via the command-line
-        cmd = cmd + " ".join(extra_args)
-        print(cmd)
+        #cmd = cmd + " ".join(extra_args)
+        #print(cmd)
         #os.system(cmd)
         #cmd_lst = ['python3', 'sandbox/test_hello.py']
+        #cmd_lst = ['stdbuf', '-o0'] + cmd_lst
+
+        # Remove stupid python buffering
         os.environ["PYTHONUNBUFFERED"] = "1"
-        cmd_lst = ['stdbuf', '-o0'] + cmd_lst
         with Popen(cmd_lst, stdout=PIPE, stderr=STDOUT, bufsize=1, text=True) as p, \
-                open('logfile.txt', 'a') as file:
+                open(f'logs/logfile_{seed}.txt', 'a') as file:
             for line in p.stdout:  # b'\n'-separated lines
                 sys.stdout.write(line)  # pass bytes as is
                 file.write(line)
