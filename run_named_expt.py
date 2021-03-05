@@ -75,12 +75,34 @@ class NamedExpt:
         print(" ".join(cmd_lst))
 
         # Remove stupid python buffering
-        os.environ["PYTHONUNBUFFERED"] = "1"
-        with Popen(cmd_lst, stdout=PIPE, stderr=STDOUT, bufsize=1, text=True) as p, \
-                open(f'{args.run_dir}/logfile.txt', 'a') as file:
-            for line in p.stdout:
-                sys.stdout.write(line)
-                file.write(line)
+        # From https://stackoverflow.com/a/52851238/2109112
+        os.environ["PYTHONUNBUFFERED"] = "1" #text=True
+
+        # From https://stackoverflow.com/a/34604684/2109112
+        # Still has the '\r' problem
+        # with Popen(cmd_lst, stdout=PIPE, stderr=STDOUT, bufsize=1, text=True) as p, \
+        #         open(f'{args.run_dir}/logfile.txt', 'ab') as file:
+        #     for line in p.stdout:
+        #         sys.stdout.write(line)
+        #         file.write(line)
+
+        # Plays nicely with '\r' and doesn't have any buffering issues.
+        # Thanks to https://koldfront.dk/making_subprocesspopen_in_python_3_play_nice_with_elaborate_output_1594
+        def run_command(cmd_lst):
+            p = Popen(cmd_lst,
+                      stdout=PIPE,
+                      stderr=STDOUT,
+                      universal_newlines=False)  # \r goes through
+
+            nice_stdout = open(os.dup(p.stdout.fileno()), newline='')  # re-open to get \r recognized as new line
+            for line in nice_stdout:
+                yield line, p.poll()
+
+            yield "", p.wait()
+
+        for l, rc in run_command(cmd_lst):
+            print(l, end="", flush=True)
+
 
 if __name__ == '__main__':
     expt = NamedExpt()
