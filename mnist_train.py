@@ -172,65 +172,32 @@ def main():
         "all but input" : [ False, True, True, True],
         }
     generator_modes = list(include_layer.keys())
-    # Training settings
-    parser = argparse.ArgumentParser(description='Modified PyTorch MNIST Example',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    # Training mode
-    #
-    # 'adversarial' does adversarial training, with a single loop for
-    # adversarial examples
-    #
-    # 'normal' just does supervised training
+    parser = argparse.ArgumentParser(description='Modified PyTorch MNIST Example', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
     available_train_modes = ['normal', 'adversarial-continuous', 'adversarial-epoch', 'adversarial-batches']
-    parser.add_argument('--train-mode', type=str, default='normal',
-                        metavar='MODE',
-                        choices=available_train_modes,
+    parser.add_argument('--train-mode', type=str, default='normal', metavar='MODE', choices=available_train_modes,
                         help='Training mode. One of: ' + ', '.join(available_train_modes))
-    parser.add_argument('--dataset', type=str, default='MNIST',
-                        metavar='MODE')
-    parser.add_argument('--pretrain', action='store_true', default=True,
-                        dest='pretrain',
-                        help='Pretrain before adversarial training')
-    parser.add_argument('--no-pretrain', action='store_false', default=True,
-                        dest='pretrain',
-                        help='Do not pretrain')
-    parser.add_argument('--batch-size', type=int, default=32, metavar='N',
-                        help='input batch size for training')
-    parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
-                        help='input batch size for testing ')
-    parser.add_argument('--epochs', type=int, default=14, metavar='N',
-                        help='number of epochs to train')
-    parser.add_argument('--num-pretrain-epochs', type=int, default=1, metavar='N',
-                        help='number of epochs to pre-train before starting adversarial training')
-    parser.add_argument('--lr', type=float, default=1.0, metavar='LR',
-                        help='learning rate')
-    parser.add_argument('--gamma', type=float, default=0.7, metavar='M',
-                        help='Learning rate step gamma')
-    parser.add_argument('--no-cuda', action='store_true', default=False,
-                        help='disables CUDA training')
-    parser.add_argument('--dry-run', action='store_true', default=False,
-                        help='quickly check a single pass')
-    parser.add_argument('--seed', type=int, default=1, metavar='S',
-                        help='random seed')
-    parser.add_argument('--log-interval', type=int, default=10, metavar='N',
-                        help='how many batches to wait before logging training status')
-    parser.add_argument('--save-model', action='store_true', default=True,
-                        dest='save_model',
-                        help='For Saving the current Model')
-    parser.add_argument('--no-save-model', action='store_false', default=True,
-                        dest='save_model',
-                        help='Do not save the current Model')
-    parser.add_argument('--run-dir', type=str, default=None,
-            metavar='DIR',
-            help='Directory under which model and outputs are saved')
-    parser.add_argument('--run-suffix', type=str, default='', required=False, metavar='S',
-                        help='Will be appended to the run directory provided')
-    parser.add_argument('--early-epoch', action='store_true', default=False,
-                        dest='early_epoch',
-                        help='Finish epoch early (for debugging)')
-    parser.add_argument('--num-batches-early-epoch', type=int, default=10, metavar='N',
-                        help='Number of batches before epoch finishes')
+    parser.add_argument('--name', type=str, default='')
+    parser.add_argument('--dataset', type=str, default='MNIST', metavar='MODE')
+    parser.add_argument('--pretrain', action='store_true', default=True, dest='pretrain', help='Pretrain before adversarial training')
+    parser.add_argument('--no-pretrain', action='store_false', default=True, dest='pretrain', help='Do not pretrain')
+    parser.add_argument('--batch-size', type=int, default=32, metavar='N', help='input batch size for training')
+    parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N', help='input batch size for testing ')
+    parser.add_argument('--epochs', type=int, default=14, metavar='N', help='number of epochs to train')
+    parser.add_argument('--num-pretrain-epochs', type=int, default=1, metavar='N', help='number of epochs to pre-train before starting adversarial training')
+    parser.add_argument('--lr', type=float, default=1.0, metavar='LR', help='learning rate')
+    parser.add_argument('--gamma', type=float, default=0.7, metavar='M', help='Learning rate step gamma')
+    parser.add_argument('--no-cuda', action='store_true', default=False, help='disables CUDA training')
+    parser.add_argument('--dry-run', action='store_true', default=False, help='quickly check a single pass')
+    parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed')
+    parser.add_argument('--log-interval', type=int, default=10, metavar='N', help='how many batches to wait before logging training status')
+    parser.add_argument('--save-model', action='store_true', default=True, dest='save_model', help='For Saving the current Model')
+    parser.add_argument('--no-save-model', action='store_false', default=True, dest='save_model', help='Do not save the current Model')
+    parser.add_argument('--run-dir', type=str, default=None, metavar='DIR', help='Directory under which model and outputs are saved')
+    parser.add_argument('--run-suffix', type=str, default='', required=False, metavar='S', help='Will be appended to the run directory provided')
+    parser.add_argument('--early-epoch', action='store_true', default=False, dest='early_epoch', help='Finish epoch early (for debugging)')
+    parser.add_argument('--num-batches-early-epoch', type=int, default=10, metavar='N', help='Number of batches before epoch finishes')
 
     # Arguments specific to adversarial training
     parser.add_argument('--generator-lr', type=float, default=0.05,
@@ -436,7 +403,6 @@ def main():
                                                  config.num_batches_early_epoch, test_loader, scheduler,
                                                  config.adversarial_classification_mode)
 
-
     if args.train_mode not in ['adversarial-batches', 'adversarial-epoch']:
         for epoch in range(0, args.epochs):
             # Perform pre-training for 1 epoch in adversarial mode
@@ -460,8 +426,6 @@ def main():
         save_path.parent.mkdir(exist_ok=True, parents=True)
         print("Saving model to : ", save_path)
         torch.save(model.state_dict(), save_path)
-        #torch.save(model.state_dict(), "mnist_max_norm_mlp.pt")
-        #torch.save(model.state_dict(), "mnist_cnn_adv_normal_init.pt")
 
     tbh.close()
 
