@@ -175,9 +175,9 @@ class MetricsHelper:
             loss = F.kl_div(output, adv_soft_labels, reduction='sum').item()
             probs = F.softmax(output, dim=1)
             max_probs = probs.max(dim=1)[0]
-            # pred is True if adversarial data. If max prob amongst all classes is less than 0.5,
+            # pred is True if adversarial data. If max prob amongst all classes is less than 0.3,
             # we consider the model sufficiently confused on adversarial data
-            pred = max_probs < 0.5
+            pred = max_probs < 0.3
             correct = pred.sum().item()
         else:
             loss = F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
