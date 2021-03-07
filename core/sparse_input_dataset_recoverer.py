@@ -141,8 +141,6 @@ class SparseInputDatasetRecoverer:
                     images1_tensor = torch.stack(images1, dim=0)
                     targets1_tensor = torch.tensor([cls for cls in range(self.num_real_classes)],
                                                    device=targets_tensor.device)
-                    print(images1_tensor.shape)
-                    print(targets1_tensor.shape)
                     self.log_regular_batch_stats('sorted', model, images1_tensor, targets1_tensor, include_layer_map,
                                                  sparsity_mode, dataset_epoch, precomputed=True)
                 # Log unconfident images
