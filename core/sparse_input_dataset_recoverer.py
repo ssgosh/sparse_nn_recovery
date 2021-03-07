@@ -5,6 +5,7 @@ import argparse
 #from unittest import TestCase
 
 import torch
+from icontract import ensure
 
 from core.sparse_input_recoverer import SparseInputRecoverer
 from core.tblabels import TBLabels
@@ -100,6 +101,8 @@ class SparseInputDatasetRecoverer:
                 # Grab 2 images per class per bin
                 def log_images_sorted(img_per_bin=2):
                     num_per_class1 = 5 * img_per_bin # 5 bins
+
+                    @ensure(lambda result : len(result) == img_per_bin)
                     def get_cross_if_empty(imgs1, bin1, tgts1, cls1):
                         x = imgs1[bin1 & (tgts1 == cls1)]
                         ret = []
@@ -107,8 +110,11 @@ class SparseInputDatasetRecoverer:
                         for img in x:
                             ret.append(img)
                             i += 1
+                            if i >= img_per_bin:
+                                break
                         while i < img_per_bin:
                             ret.append(get_cross(28, imgs1))
+                            i += 1
                         return ret
 
                     per_class_bin = {
@@ -132,9 +138,11 @@ class SparseInputDatasetRecoverer:
                         images1.extend(get_cross_if_empty(images_tensor, bin_0_7_0_8, targets_tensor, cls))
                         images1.extend(get_cross_if_empty(images_tensor, bin_0_9, targets_tensor, cls))
 
-                    images1_tensor = torch.cat(images1, dim=0)
-                    targets1_tensor = torch.tensor([[cls] * num_per_class1 for cls in range(self.num_real_classes)],
+                    images1_tensor = torch.stack(images1, dim=0)
+                    targets1_tensor = torch.tensor([cls for cls in range(self.num_real_classes)],
                                                    device=targets_tensor.device)
+                    print(images1_tensor.shape)
+                    print(targets1_tensor.shape)
                     self.log_regular_batch_stats('sorted', model, images1_tensor, targets1_tensor, include_layer_map,
                                                  sparsity_mode, dataset_epoch, precomputed=True)
                 # Log unconfident images
