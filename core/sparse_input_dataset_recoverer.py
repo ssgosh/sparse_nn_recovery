@@ -119,7 +119,7 @@ class SparseInputDatasetRecoverer:
                         "bin_0_3" : [],
                     }
                     images1 = []
-                    for cls in self.num_real_classes:
+                    for cls in range(self.num_real_classes):
                         # per_class_bin["bin_0_9"].append(   images_tensor[   bin_0_9 & (targets_tensor == cls)   ] )
                         # per_class_bin["bin_0_7_0_8"].append(   images_tensor[   bin_0_7_0_8 & (targets_tensor == cls)   ] )
                         # per_class_bin["bin_0_5_0_6"].append(   images_tensor[   bin_0_5_0_6 & (targets_tensor == cls)   ] )
@@ -135,10 +135,10 @@ class SparseInputDatasetRecoverer:
                     images1_tensor = torch.cat(images1, dim=0)
                     targets1_tensor = torch.tensor([[cls] * num_per_class1 for cls in range(self.num_real_classes)],
                                                    device=targets_tensor.device)
-                    self.log_regular_batch_stats('', model, images1_tensor, targets1_tensor, include_layer_map,
-                                                 sparsity_mode,
-                                                 dataset_epoch)
+                    self.log_regular_batch_stats('sorted', model, images1_tensor, targets1_tensor, include_layer_map,
+                                                 sparsity_mode, dataset_epoch, precomputed=True)
                 # Log unconfident images
+                log_images_sorted()
 
             # Save to ckpt dir
             self.ckpt_saver.save_images(mode, images_tensor, targets_tensor, dataset_epoch)
