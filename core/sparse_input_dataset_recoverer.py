@@ -98,7 +98,19 @@ class SparseInputDatasetRecoverer:
                 log_bin('prob_less_than_0.3', bin_0_3)
 
                 # Grab 2 images per class per bin
-                def log_sorted(img_per_bin=2):
+                def log_images_sorted(img_per_bin=2):
+                    num_per_class1 = 5 * img_per_bin # 5 bins
+                    def get_cross_if_empty(imgs1, bin1, tgts1, cls1):
+                        x = imgs1[bin1 & (tgts1 == cls1)]
+                        ret = []
+                        i = 0
+                        for img in x:
+                            ret.append(img)
+                            i += 1
+                        while i < img_per_bin:
+                            ret.append(get_cross(28, imgs1))
+                        return ret
+
                     per_class_bin = {
                         "bin_0_9" : [],
                         "bin_0_7_0_8" : [],
@@ -114,11 +126,18 @@ class SparseInputDatasetRecoverer:
                         # per_class_bin["bin_0_3_0_4"].append(   images_tensor[   bin_0_3_0_4 & (targets_tensor == cls)   ] )
                         # per_class_bin["bin_0_3"].append(   images_tensor[   bin_0_3 & (targets_tensor == cls)   ] )
 
-                        img_0_9 = images_tensor[   bin_0_9 & (targets_tensor == cls)   ]
-                        images_tensor[   bin_0_7_0_8 & (targets_tensor == cls)   ]
-                        images_tensor[   bin_0_5_0_6 & (targets_tensor == cls)   ]
-                        images_tensor[   bin_0_3_0_4 & (targets_tensor == cls)   ]
-                        images_tensor[   bin_0_3 & (targets_tensor == cls)   ]
+                        images1.extend(get_cross_if_empty(images_tensor, bin_0_3, targets_tensor, cls))
+                        images1.extend(get_cross_if_empty(images_tensor, bin_0_3_0_4, targets_tensor, cls))
+                        images1.extend(get_cross_if_empty(images_tensor, bin_0_5_0_6, targets_tensor, cls))
+                        images1.extend(get_cross_if_empty(images_tensor, bin_0_7_0_8, targets_tensor, cls))
+                        images1.extend(get_cross_if_empty(images_tensor, bin_0_9, targets_tensor, cls))
+
+                    images1_tensor = torch.cat(images1, dim=0)
+                    targets1_tensor = torch.tensor([[cls] * num_per_class1 for cls in range(self.num_real_classes)],
+                                                   device=targets_tensor.device)
+                    self.log_regular_batch_stats('', model, images1_tensor, targets1_tensor, include_layer_map,
+                                                 sparsity_mode,
+                                                 dataset_epoch)
                 # Log unconfident images
 
             # Save to ckpt dir
@@ -146,12 +165,15 @@ class SparseInputDatasetRecoverer:
         self.tbh.log_dict(f"{sparsity_mode}", sparsity, global_step=dataset_epoch)
         self.tbh.flush()
 
-    def log_regular_batch_stats(self, suffix, model, images_tensor, targets_tensor, include_layer_map, sparsity_mode, dataset_epoch):
+    def log_regular_batch_stats(self, suffix, model, images_tensor, targets_tensor, include_layer_map, sparsity_mode, dataset_epoch, precomputed=False):
         prefix = TBLabels.RECOVERY_EPOCH #"recovery_epoch"
         img_label = f"{prefix}/dataset_images_{suffix}" if suffix else f"{prefix}/dataset_images"
         tgt_label = f"{prefix}/dataset_targets_{suffix}" if suffix else f"{prefix}/dataset_targets"
 
-        images, targets = self.get_regular_batch(images_tensor, targets_tensor, self.num_real_classes, 10)
+        if precomputed:
+            images, targets = images_tensor, targets_tensor
+        else:
+            images, targets = self.get_regular_batch(images_tensor, targets_tensor, self.num_real_classes, 10)
         targets_list = [foo.item() for foo in targets]
         self.tbh.add_image_grid(images, img_label, filtered=True, num_per_row=10,
                                 global_step=dataset_epoch)
