@@ -87,7 +87,7 @@ class SparseInputRecoverer:
     def recover_image_batch(self, model, images, targets, num_steps, include_layer, penalty_mode,
                             include_likelihood=True, batch_idx=0):
         with model_eval_no_grad(model), images_require_grad(images):
-            self.recover_image_batch_internal(model, images, targets, num_steps, include_layer, penalty_mode,
+            return self.recover_image_batch_internal(model, images, targets, num_steps, include_layer, penalty_mode,
                                               include_likelihood, batch_idx)
 
     def recover_image_batch_internal(self, model, images, targets, num_steps, include_layer, penalty_mode,
@@ -124,7 +124,7 @@ class SparseInputRecoverer:
         # Probabilities tensor computation after optimization is done
         # 1-d vector of length batch size, containing the probability of the target class
         with torch.no_grad():
-            return compute_probs_tensor(output, targets)
+            return compute_probs_tensor(output, targets)[1]
 
 
     def forward(self, model, images, targets, include_layer, include_likelihood):

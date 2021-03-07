@@ -46,6 +46,7 @@ class SparseInputDatasetRecoverer:
             f"batch size: output_shape[0] = {output_shape[0]}, batch_size = {batch_size} "
         images = []
         targets = []
+        probs = []
         batch_shape = list(output_shape)
         batch_shape[0] = batch_size
         num_batches = output_shape[0] // batch_size
@@ -61,16 +62,18 @@ class SparseInputDatasetRecoverer:
             targets.append(targets_batch)
             self.sparse_input_recoverer.tensorboard_label = \
                 f"{TBLabels.RECOVERY_INTERNAL}/epoch_{dataset_epoch}/batch_{batch_idx}"
-            self.sparse_input_recoverer.recover_image_batch(model, image_batch, targets_batch, num_steps,
+            probs_batch = self.sparse_input_recoverer.recover_image_batch(model, image_batch, targets_batch, num_steps,
                                                             include_layer_map[sparsity_mode],
                                                             sparsity_mode,
                                                             include_likelihood=True,
                                                             batch_idx=batch_idx)
+            probs.append(probs_batch)
 
         # Need toconcat the tensors and return
         with torch.no_grad():
             images_tensor = torch.cat(images)
             targets_tensor = torch.cat(targets)
+            probs_tensor = torch.cat(probs)
 
             if mode == 'train': # Perform logging only for the train dataset
                 def log_bin(suffix, bin):
@@ -81,11 +84,11 @@ class SparseInputDatasetRecoverer:
                 self.log_regular_batch_stats('', model, images_tensor, targets_tensor, include_layer_map, sparsity_mode,
                                              dataset_epoch)
                 # Bin images by probability and log
-                bin_0_9 = (targets_tensor >= 0.9)
-                bin_0_7_0_8 = (targets_tensor >= 0.7) & (targets_tensor < 0.9)
-                bin_0_5_0_6 = (targets_tensor >= 0.5) & (targets_tensor < 0.7)
-                bin_0_3_0_4 = (targets_tensor >= 0.3) & (targets_tensor < 0.5)
-                bin_0_3 = (targets_tensor < 0.3)
+                bin_0_9 = (probs_tensor >= 0.9)
+                bin_0_7_0_8 = (probs_tensor >= 0.7) & (probs_tensor < 0.9)
+                bin_0_5_0_6 = (probs_tensor >= 0.5) & (probs_tensor < 0.7)
+                bin_0_3_0_4 = (probs_tensor >= 0.3) & (probs_tensor < 0.5)
+                bin_0_3 = (probs_tensor < 0.3)
                 log_bin('prob_greater_than_eq_0.9', bin_0_9)
                 log_bin('prob_between_0.7_0.9', bin_0_7_0_8)
                 log_bin('prob_between_0.5_0.7', bin_0_5_0_6)
