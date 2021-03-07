@@ -1,0 +1,8 @@
+icontract
+pytest
+torch
+matplotlib
+hashids
+torchvision
+pandas
+numpy

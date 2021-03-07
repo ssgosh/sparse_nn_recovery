@@ -67,6 +67,7 @@ class SparseInputDatasetRecoverer:
                                                             sparsity_mode,
                                                             include_likelihood=True,
                                                             batch_idx=batch_idx)
+            #print("probs_batch :", probs_batch)
             probs.append(probs_batch)
 
         # Need toconcat the tensors and return
