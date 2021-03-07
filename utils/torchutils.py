@@ -8,11 +8,11 @@ def compute_probs_tensor(output, targets):
     #chunked = two_d_indices.chunk(chunks=3, dim=0)
     #print(chunked)
     softmax = F.softmax(output, dim=1)
-    print(targets.shape)
-    print(output.shape)
-    print(softmax.shape)
+    #print(targets.shape)
+    #print(output.shape)
+    #print(softmax.shape)
     # For gather(), index must have the same number of dimensions as the input.
     # We'll just repeat target num_classes times along dimension 1
     targets = torch.cat([targets.unsqueeze(1)]*output.shape[1], dim=1)
-    print(targets)
-    return output.gather(1, targets)
+    #print(targets)
+    return output.gather(1, targets)[:, 0], softmax.gather(1, targets)[:, 0]

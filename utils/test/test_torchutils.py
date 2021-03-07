@@ -18,7 +18,7 @@ class TorchUtilsTest(unittest.TestCase):
             [9, 10, 11]
         ])
         targets = torch.tensor([1, 0, 2, 0])
-        print(compute_probs_tensor(outputs, targets).detach().numpy())
+        print((a := compute_probs_tensor(outputs, targets))[0].detach().numpy(), a[1].detach().numpy())
 
 
 if __name__ == '__main__':
