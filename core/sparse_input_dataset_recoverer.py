@@ -161,7 +161,7 @@ class SparseInputDatasetRecoverer:
             # All-zero images can be produced easily by our optimization algo,
             # But cross image is hard to be produced by accident
             for j in range(count, num_per_class):
-                d1 = torch.diagflat(torch.ones(28))
+                d1 = torch.diagflat(torch.ones(28, device=targets.device))
                 d2 = torch.flip(d1, dims=[1, ])
                 cross = ((d1 + d2) > 0.).float().unsqueeze(dim=0)
 

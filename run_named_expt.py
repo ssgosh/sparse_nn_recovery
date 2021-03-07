@@ -72,11 +72,11 @@ class NamedExpt:
               f'--name {name} ' \
               f'--seed {seed} ' \
               f'--run-dir {args.run_dir} ' \
+              f'--train-mode adversarial-epoch ' \
               f'--dataset {dataset} '
         if name in ['quick', 'quick-debug',]:
             cmd = cmd + \
                   f'--early-epoch ' \
-                  f'--train-mode adversarial-epoch ' \
                   f'--adversarial-classification-mode max-entropy ' \
                   f'--epochs 4 ' \
                   f'--recovery-num-steps 1 ' \
