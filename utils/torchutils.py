@@ -17,3 +17,11 @@ def compute_probs_tensor(output, targets):
     # We'll just repeat target num_classes times along dimension 1
     targets = torch.cat([targets.unsqueeze(1)] * output.shape[1], dim=1)
     return output.gather(1, targets)[:, 0], softmax.gather(1, targets)[:, 0]
+
+
+def get_cross(n, like):
+    """Returns an n x n cross X image, on the same device as 'like'"""
+    d1 = torch.diagflat(torch.ones(n, device=like.device))
+    d2 = torch.flip(d1, dims=[1, ])
+    cross = ((d1 + d2) > 0.).float().unsqueeze(dim=0)
+    return cross

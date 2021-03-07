@@ -9,6 +9,7 @@ import torch
 from core.sparse_input_recoverer import SparseInputRecoverer
 from core.tblabels import TBLabels
 
+from utils.torchutils import get_cross
 
 # Creates an entire dataset of images, targets by doing sparse recovery from the model.
 # Note that targets has the actual class for which the images were trained. In order to
@@ -96,6 +97,28 @@ class SparseInputDatasetRecoverer:
                 log_bin('prob_between_0.3_0.5', bin_0_3_0_4)
                 log_bin('prob_less_than_0.3', bin_0_3)
 
+                # Grab 2 images per class per bin
+                def log_sorted(img_per_bin=2):
+                    per_class_bin = {
+                        "bin_0_9" : [],
+                        "bin_0_7_0_8" : [],
+                        "bin_0_5_0_6" : [],
+                        "bin_0_3_0_4" : [],
+                        "bin_0_3" : [],
+                    }
+                    images1 = []
+                    for cls in self.num_real_classes:
+                        # per_class_bin["bin_0_9"].append(   images_tensor[   bin_0_9 & (targets_tensor == cls)   ] )
+                        # per_class_bin["bin_0_7_0_8"].append(   images_tensor[   bin_0_7_0_8 & (targets_tensor == cls)   ] )
+                        # per_class_bin["bin_0_5_0_6"].append(   images_tensor[   bin_0_5_0_6 & (targets_tensor == cls)   ] )
+                        # per_class_bin["bin_0_3_0_4"].append(   images_tensor[   bin_0_3_0_4 & (targets_tensor == cls)   ] )
+                        # per_class_bin["bin_0_3"].append(   images_tensor[   bin_0_3 & (targets_tensor == cls)   ] )
+
+                        img_0_9 = images_tensor[   bin_0_9 & (targets_tensor == cls)   ]
+                        images_tensor[   bin_0_7_0_8 & (targets_tensor == cls)   ]
+                        images_tensor[   bin_0_5_0_6 & (targets_tensor == cls)   ]
+                        images_tensor[   bin_0_3_0_4 & (targets_tensor == cls)   ]
+                        images_tensor[   bin_0_3 & (targets_tensor == cls)   ]
                 # Log unconfident images
 
             # Save to ckpt dir
@@ -161,9 +184,7 @@ class SparseInputDatasetRecoverer:
             # All-zero images can be produced easily by our optimization algo,
             # But cross image is hard to be produced by accident
             for j in range(count, num_per_class):
-                d1 = torch.diagflat(torch.ones(28, device=targets.device))
-                d2 = torch.flip(d1, dims=[1, ])
-                cross = ((d1 + d2) > 0.).float().unsqueeze(dim=0)
+                cross = get_cross(28, targets)
 
                 entries.append(cross * self.image_one + self.image_zero)
                 tgt_entries.append(torch.tensor(cls, device=targets.device))
