@@ -5,10 +5,12 @@ import argparse
 #from unittest import TestCase
 
 import torch
+from icontract import ensure
 
 from core.sparse_input_recoverer import SparseInputRecoverer
 from core.tblabels import TBLabels
 
+from utils.torchutils import get_cross
 
 # Creates an entire dataset of images, targets by doing sparse recovery from the model.
 # Note that targets has the actual class for which the images were trained. In order to
@@ -46,6 +48,7 @@ class SparseInputDatasetRecoverer:
             f"batch size: output_shape[0] = {output_shape[0]}, batch_size = {batch_size} "
         images = []
         targets = []
+        probs = []
         batch_shape = list(output_shape)
         batch_shape[0] = batch_size
         num_batches = output_shape[0] // batch_size
@@ -61,16 +64,19 @@ class SparseInputDatasetRecoverer:
             targets.append(targets_batch)
             self.sparse_input_recoverer.tensorboard_label = \
                 f"{TBLabels.RECOVERY_INTERNAL}/epoch_{dataset_epoch}/batch_{batch_idx}"
-            self.sparse_input_recoverer.recover_image_batch(model, image_batch, targets_batch, num_steps,
+            probs_batch = self.sparse_input_recoverer.recover_image_batch(model, image_batch, targets_batch, num_steps,
                                                             include_layer_map[sparsity_mode],
                                                             sparsity_mode,
                                                             include_likelihood=True,
                                                             batch_idx=batch_idx)
+            #print("probs_batch :", probs_batch)
+            probs.append(probs_batch)
 
         # Need toconcat the tensors and return
         with torch.no_grad():
             images_tensor = torch.cat(images)
             targets_tensor = torch.cat(targets)
+            probs_tensor = torch.cat(probs)
 
             if mode == 'train': # Perform logging only for the train dataset
                 def log_bin(suffix, bin):
@@ -81,18 +87,64 @@ class SparseInputDatasetRecoverer:
                 self.log_regular_batch_stats('', model, images_tensor, targets_tensor, include_layer_map, sparsity_mode,
                                              dataset_epoch)
                 # Bin images by probability and log
-                bin_0_9 = (targets_tensor >= 0.9)
-                bin_0_7_0_8 = (targets_tensor >= 0.7) & (targets_tensor < 0.9)
-                bin_0_5_0_6 = (targets_tensor >= 0.5) & (targets_tensor < 0.7)
-                bin_0_3_0_4 = (targets_tensor >= 0.3) & (targets_tensor < 0.5)
-                bin_0_3 = (targets_tensor < 0.3)
+                bin_0_9 = (probs_tensor >= 0.9)
+                bin_0_7_0_8 = (probs_tensor >= 0.7) & (probs_tensor < 0.9)
+                bin_0_5_0_6 = (probs_tensor >= 0.5) & (probs_tensor < 0.7)
+                bin_0_3_0_4 = (probs_tensor >= 0.3) & (probs_tensor < 0.5)
+                bin_0_3 = (probs_tensor < 0.3)
                 log_bin('prob_greater_than_eq_0.9', bin_0_9)
                 log_bin('prob_between_0.7_0.9', bin_0_7_0_8)
                 log_bin('prob_between_0.5_0.7', bin_0_5_0_6)
                 log_bin('prob_between_0.3_0.5', bin_0_3_0_4)
                 log_bin('prob_less_than_0.3', bin_0_3)
 
+                # Grab 2 images per class per bin
+                def log_images_sorted(img_per_bin=2):
+                    num_per_class1 = 5 * img_per_bin # 5 bins
+
+                    @ensure(lambda result : len(result) == img_per_bin)
+                    def get_cross_if_empty(imgs1, bin1, tgts1, cls1):
+                        x = imgs1[bin1 & (tgts1 == cls1)]
+                        ret = []
+                        i = 0
+                        for img in x:
+                            ret.append(img)
+                            i += 1
+                            if i >= img_per_bin:
+                                break
+                        while i < img_per_bin:
+                            ret.append(get_cross(28, imgs1))
+                            i += 1
+                        return ret
+
+                    per_class_bin = {
+                        "bin_0_9" : [],
+                        "bin_0_7_0_8" : [],
+                        "bin_0_5_0_6" : [],
+                        "bin_0_3_0_4" : [],
+                        "bin_0_3" : [],
+                    }
+                    images1 = []
+                    for cls in range(self.num_real_classes):
+                        # per_class_bin["bin_0_9"].append(   images_tensor[   bin_0_9 & (targets_tensor == cls)   ] )
+                        # per_class_bin["bin_0_7_0_8"].append(   images_tensor[   bin_0_7_0_8 & (targets_tensor == cls)   ] )
+                        # per_class_bin["bin_0_5_0_6"].append(   images_tensor[   bin_0_5_0_6 & (targets_tensor == cls)   ] )
+                        # per_class_bin["bin_0_3_0_4"].append(   images_tensor[   bin_0_3_0_4 & (targets_tensor == cls)   ] )
+                        # per_class_bin["bin_0_3"].append(   images_tensor[   bin_0_3 & (targets_tensor == cls)   ] )
+
+                        images1.extend(get_cross_if_empty(images_tensor, bin_0_3, targets_tensor, cls))
+                        images1.extend(get_cross_if_empty(images_tensor, bin_0_3_0_4, targets_tensor, cls))
+                        images1.extend(get_cross_if_empty(images_tensor, bin_0_5_0_6, targets_tensor, cls))
+                        images1.extend(get_cross_if_empty(images_tensor, bin_0_7_0_8, targets_tensor, cls))
+                        images1.extend(get_cross_if_empty(images_tensor, bin_0_9, targets_tensor, cls))
+
+                    images1_tensor = torch.stack(images1, dim=0)
+                    targets1_tensor = torch.tensor([cls for cls in range(self.num_real_classes)],
+                                                   device=targets_tensor.device)
+                    self.log_regular_batch_stats('sorted', model, images1_tensor, targets1_tensor, include_layer_map,
+                                                 sparsity_mode, dataset_epoch, precomputed=True)
                 # Log unconfident images
+                log_images_sorted()
 
             # Save to ckpt dir
             self.ckpt_saver.save_images(mode, images_tensor, targets_tensor, dataset_epoch)
@@ -119,12 +171,15 @@ class SparseInputDatasetRecoverer:
         self.tbh.log_dict(f"{sparsity_mode}", sparsity, global_step=dataset_epoch)
         self.tbh.flush()
 
-    def log_regular_batch_stats(self, suffix, model, images_tensor, targets_tensor, include_layer_map, sparsity_mode, dataset_epoch):
+    def log_regular_batch_stats(self, suffix, model, images_tensor, targets_tensor, include_layer_map, sparsity_mode, dataset_epoch, precomputed=False):
         prefix = TBLabels.RECOVERY_EPOCH #"recovery_epoch"
         img_label = f"{prefix}/dataset_images_{suffix}" if suffix else f"{prefix}/dataset_images"
         tgt_label = f"{prefix}/dataset_targets_{suffix}" if suffix else f"{prefix}/dataset_targets"
 
-        images, targets = self.get_regular_batch(images_tensor, targets_tensor, self.num_real_classes, 10)
+        if precomputed:
+            images, targets = images_tensor, targets_tensor
+        else:
+            images, targets = self.get_regular_batch(images_tensor, targets_tensor, self.num_real_classes, 10)
         targets_list = [foo.item() for foo in targets]
         self.tbh.add_image_grid(images, img_label, filtered=True, num_per_row=10,
                                 global_step=dataset_epoch)
@@ -157,9 +212,7 @@ class SparseInputDatasetRecoverer:
             # All-zero images can be produced easily by our optimization algo,
             # But cross image is hard to be produced by accident
             for j in range(count, num_per_class):
-                d1 = torch.diagflat(torch.ones(28, device=targets.device))
-                d2 = torch.flip(d1, dims=[1, ])
-                cross = ((d1 + d2) > 0.).float().unsqueeze(dim=0)
+                cross = get_cross(28, targets)
 
                 entries.append(cross * self.image_one + self.image_zero)
                 tgt_entries.append(torch.tensor(cls, device=targets.device))

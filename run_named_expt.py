@@ -66,8 +66,9 @@ class NamedExpt:
         # Save git information in the run directory before proceeding
         save_git_info(f'{args.run_dir}/gitinfo.diff')
 
+        python3 = os.environ['PYTHON3']
         #f'--run-suffix _{seed_hash} '
-        cmd = 'python3.6 mnist_train.py ' \
+        cmd = f'{python3} mnist_train.py ' \
               f'--name {name} ' \
               f'--seed {seed} ' \
               f'--run-dir {args.run_dir} ' \

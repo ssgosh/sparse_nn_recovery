@@ -11,6 +11,7 @@ from utils import image_processor as imp
 from utils import plotter
 from utils.metrics_helper import MetricsHelper
 from utils.model_context_manager import model_eval_no_grad, images_require_grad
+from utils.torchutils import compute_probs_tensor
 
 
 class SparseInputRecoverer:
@@ -86,7 +87,7 @@ class SparseInputRecoverer:
     def recover_image_batch(self, model, images, targets, num_steps, include_layer, penalty_mode,
                             include_likelihood=True, batch_idx=0):
         with model_eval_no_grad(model), images_require_grad(images):
-            self.recover_image_batch_internal(model, images, targets, num_steps, include_layer, penalty_mode,
+            return self.recover_image_batch_internal(model, images, targets, num_steps, include_layer, penalty_mode,
                                               include_likelihood, batch_idx)
 
     def recover_image_batch_internal(self, model, images, targets, num_steps, include_layer, penalty_mode,
@@ -119,6 +120,12 @@ class SparseInputRecoverer:
                 # Do tensorboard things
                 self.tbh.add_tensorboard_stuff(tb_label, images, losses, probs,
                                                sparsity, i, add_images=tb_add_images)
+
+        # Probabilities tensor computation after optimization is done
+        # 1-d vector of length batch size, containing the probability of the target class
+        with torch.no_grad():
+            return compute_probs_tensor(output, targets)[1]
+
 
     def forward(self, model, images, targets, include_layer, include_likelihood):
         # lambda for input
@@ -156,6 +163,7 @@ class SparseInputRecoverer:
         losses[f"total_loss"] = loss.item()
         self.metrics_helper.compute_probs(output, probs, targets)
         self.metrics_helper.compute_sparsities(images, model, targets, sparsity)
+
         return loss, losses, output, probs, sparsity
 
     # Single digit, single label

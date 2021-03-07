@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="Test Files" pattern="file[sparse_nn_recovery]:utils/test/*||file[sparse_nn_recovery]:core/test/*" />
+</component>
