@@ -25,6 +25,7 @@ class DatasetHelper(ABC):
         train = (which == 'train')
         if transform == 'train' : transform = self.get_train_transform()
         elif transform == 'test' : transform = self.get_test_transform()
+        elif transform == 'without_transform' : transform = self.get_without_transform()
         path = './data'
         if not self.subset : return self.get_dataset_(path, which, transform)
 
@@ -83,5 +84,8 @@ class DatasetHelper(ABC):
     @abstractmethod
     def update_config(self, config):
         pass
+
+    def get_without_transform(self):
+        raise NotImplementedError("Not implemented")
 
 

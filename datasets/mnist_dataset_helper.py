@@ -53,3 +53,9 @@ class MNISTdatasetHelper(DatasetHelper):
             t.append(ClippedConstantTransform(0.3))
         t.append(transforms.Normalize((0.1307,), (0.3081,)))
         return transforms.Compose(t)
+
+    def get_without_transform(self):
+        if self.non_sparse:
+            return ClippedConstantTransform(0.3)
+        else:
+            return None
