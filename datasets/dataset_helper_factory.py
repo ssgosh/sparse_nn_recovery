@@ -12,6 +12,7 @@ class DatasetHelperFactory:
         Singleton method. Maintains application-wide train/test dataset
 
         :param dataset_name:
+        :param non_sparse:
         :return:
         """
         if classobj.dataset is None:
