@@ -90,6 +90,12 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
         return self.get_without_transform_()
 
     def compute_transform_low_high(self):
+        """
+        Computes the transformed zero and one pixel values.
+
+        Should typically not be used. Use get_transformed_zero_one() instead, which uses hard-coded values.
+        Those hard-coded values are computed using this function in the script scripts/compute_dataset_stats.py
+        """
         mean, std = self.get_mean_std()
         transform = transforms.Normalize(mean, std)
         low = torch.zeros(1, 1, 1)

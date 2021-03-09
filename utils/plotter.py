@@ -1,4 +1,7 @@
 import matplotlib
+
+from datasets.dataset_helper_factory import DatasetHelperFactory
+
 matplotlib.use('Agg') # For non-gui flow. Gets rid of DISPLAY bug in TkInter
 import matplotlib.pyplot as plot
 from matplotlib.pyplot import imshow
@@ -10,7 +13,11 @@ import utils.mnist_helper as mh
 
 # Useful globals
 run_dir = '.'
-mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
+
+def set_image_zero_one():
+    global mnist_zero, mnist_one
+    #mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
+    mnist_zero, mnist_one = DatasetHelperFactory.get().get_transformed_zero_one()
 
 def set_run_dir(some_dir):
     global run_dir
