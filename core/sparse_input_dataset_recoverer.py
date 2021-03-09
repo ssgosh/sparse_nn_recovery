@@ -23,7 +23,7 @@ class SparseInputDatasetRecoverer:
     def add_command_line_arguments(parser: argparse.ArgumentParser):
         parser.add_argument('--recovery-batch-size', type=int, default=1024, required=False, metavar='N',
                             help='Batch size for image generation')
-        parser.add_argument('--recovery-prune-low-prob', action='store_true', dest='recovery_prune', default=False,
+        parser.add_argument('--recovery-prune-low-prob', action='store_true', dest='recovery_prune_low_prob', default=False,
                             required=False, help='Prune Low Probability Images from adversarial dataset')
         parser.add_argument('--recovery-low-prob-threshold', type=float, default=0.7, required=False,
                             help='Generated adversarial images with probability less than this will be pruned')
