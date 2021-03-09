@@ -14,21 +14,35 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
-parser.add_argument('--dataset', type=str, default='mnist',
+parser.add_argument('--dataset', type=str, default='MNIST',
                     metavar='D',
-                    help='Which dataset to split (e.g. MNIST)')
+                    help='Dataset to give stats on (e.g. MNIST)')
+parser.add_argument('--which', type=str, default='train',
+                    help='Which data type to use (train/test/all)')
 parser.add_argument('--non-sparse', action='store_true', dest='non_sparse', default=False,
                     help='Whether to use non-sparse version')
+transformations = ['without_transform', 'train', 'test']
+parser.add_argument('--transform', type=str, default='without_transform',
+                    choices = transformations,
+                    help='Which transformation to apply')
 config = parser.parse_args()
 dh = DatasetHelperFactory.get(config.dataset, non_sparse=config.non_sparse)
 
 train = dh.get_dataset(which='train', transform='without_transform')
 test = dh.get_dataset(which='test', transform='without_transform')
 
+# Switch/case in Python
+choices = {
+    'train': [train],
+    'test': [test],
+    'all' : [train, test]
+}
+datasets = choices[config.which]
+
 total = 0.
 total_sq = 0.
 num = 0
-for ds in [train]:
+for ds in datasets:
     dl = DataLoader(ds, batch_size=1000)
     for images, targets in dl:
         total += torch.sum(images).item()
