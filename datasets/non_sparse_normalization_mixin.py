@@ -27,3 +27,16 @@ class NonSparseNormalizationMixin:
             return transforms.Compose([transforms.ToTensor(), ClippedConstantTransform(self.constant_pixel_val)])
         else:
             return transforms.ToTensor()
+
+    def get_transformed_zero_one_mixin(self):
+        if self.non_sparse:
+            return self.non_sparse_zero, self.non_sparse_one
+        else:
+            return self.zero, self.one
+
+    def get_mean_std_mixin(self):
+        if self.non_sparse:
+            return self.non_sparse_mean, self.non_sparse_std
+        else:
+            return self.usual_mean, self.usual_std
+

@@ -1,7 +1,10 @@
 import pickle
 from abc import ABC, abstractmethod
 
+import torch
 from torch.utils.data import Dataset, Subset
+from torchvision.transforms import transforms
+
 from datasets.non_sparse_normalization_mixin import NonSparseNormalizationMixin
 
 
@@ -44,7 +47,7 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
 
     @abstractmethod
     def get_transformed_zero_one(self):
-        pass
+        self.get_transformed_zero_one_mixin()
 
     def setup_config(self, config):
         zero, one = self.get_transformed_zero_one()
@@ -87,3 +90,16 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
     def get_without_transform(self):
         return self.get_without_transform_()
 
+    def compute_transform_low_high(self):
+        mean, std = self.get_mean_std()
+        transform = transforms.Normalize(mean, std)
+        low = torch.zeros(1, 1, 1)
+        high = low + 1
+        print(torch.sum(low).item(), torch.sum(high).item())
+        transformed_low = transform(low).item()
+        transformed_high = transform(high).item()
+        print(transformed_low, transformed_high)
+        return transformed_low, transformed_high
+
+    def get_mean_std(self):
+        return self.get_mean_std_mixin()

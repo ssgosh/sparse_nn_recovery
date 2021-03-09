@@ -23,8 +23,8 @@ class MNISTdatasetHelper(DatasetHelper, ):
     def get_dataset_(self, path, which, transform):
         return datasets.MNIST(path, train=(which == 'train'), transform=transform)
 
-    def get_transformed_zero_one(self):
-        return mnist_helper.compute_mnist_transform_low_high()
+    # def get_transformed_zero_one(self):
+    #     return mnist_helper.compute_mnist_transform_low_high()
 
     def get_num_classes(self):
         return 10
