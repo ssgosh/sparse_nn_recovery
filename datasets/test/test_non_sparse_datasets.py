@@ -21,8 +21,8 @@ def show(msg, d1, d2):
 
 matplotlib.use('TkAgg')
 
-dh1 = DatasetHelperFactory.get_new('mnist', non_sparse=True)
-dh2 = DatasetHelperFactory.get_new('mnist_non_sparse', non_sparse=False)
+dh1 = DatasetHelperFactory.get_new('MNIST_A', non_sparse=False)
+dh2 = DatasetHelperFactory.get_new('MNIST_B', non_sparse=True)
 
 print(dh1.non_sparse)
 print(dh2.non_sparse)
