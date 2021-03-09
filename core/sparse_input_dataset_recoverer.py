@@ -155,10 +155,11 @@ class SparseInputDatasetRecoverer:
                 log_images_sorted()
 
             # Save to ckpt dir
-            self.ckpt_saver.save_images(mode, images_tensor, targets_tensor, probs_tensor, dataset_epoch)
+            self.ckpt_saver.save_images(mode, '', images_tensor, targets_tensor, probs_tensor, dataset_epoch)
 
-            if prune:
-                prune()
+            if self.prune:
+                images_tensor, targets_tensor, probs_tensor = self.prune_images(images_tensor, targets_tensor, probs_tensor)
+                self.ckpt_saver.save_images(mode, 'pruned', images_tensor, targets_tensor, probs_tensor, dataset_epoch)
             #self.dataset_epoch += 1
 
         return images_tensor, targets_tensor

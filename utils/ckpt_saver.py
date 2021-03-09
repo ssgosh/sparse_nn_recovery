@@ -6,12 +6,13 @@ class CkptSaver:
     def __init__(self, ckpt_dir):
         self.ckpt_dir = pathlib.Path(ckpt_dir)
 
-    def get_image_ckpt_path(self, mode, dataset_epoch):
+    def get_image_ckpt_path(self, mode, suffix, dataset_epoch):
         assert mode in ['train', 'test', 'valid']
-        return self.ckpt_dir / 'images' / mode / f'images_{dataset_epoch:0>4d}.pt'
+        suffix = '' if not suffix else f'{suffix}_'
+        return self.ckpt_dir / 'images' / mode / f'images_{suffix}{dataset_epoch:0>4d}.pt'
 
-    def save_images(self, mode, images, targets, probs, dataset_epoch):
-        path = self.get_image_ckpt_path(mode, dataset_epoch)
+    def save_images(self, mode, suffix, images, targets, probs, dataset_epoch):
+        path = self.get_image_ckpt_path(mode, suffix, dataset_epoch)
         print("Writing images to : ", path)
         assert not path.exists()
         path.parent.mkdir(parents=True, exist_ok=True)
