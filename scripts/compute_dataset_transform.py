@@ -1,5 +1,6 @@
 """Computes the mean and std of an entire dataset"""
 import argparse
+import math
 
 import torch
 from torch.utils.data import DataLoader
@@ -23,11 +24,23 @@ train = dh.get_dataset(which='train', transform='without_transform')
 test = dh.get_dataset(which='test', transform='without_transform')
 
 total = 0.
+total_sq = 0.
 num = 0
-for ds in [train, test]:
+for ds in [test]:
     dl = DataLoader(ds, batch_size=1000)
     for images, targets in dl:
-        total += torch.sum(images)
+        total += torch.sum(images).item()
+        total_sq += torch.sum(images * images).item()
         num += torch.flatten(images).shape[0]
 
+
 mean = total / num
+mean_sq = total_sq / num
+std = math.sqrt(mean_sq - mean**2)
+
+print(f'mean = {mean}, std = {std}')
+# for ds in [train, test]:
+#     dl = DataLoader(ds, batch_size=1000)
+#     for images, targets in dl:
+#         total += torch.sum(images).item()
+#         num += torch.flatten(images).shape[0]
