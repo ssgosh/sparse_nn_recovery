@@ -2,12 +2,13 @@ import pickle
 from abc import ABC, abstractmethod
 
 from torch.utils.data import Dataset, Subset
+from datasets.non_sparse_normalization_mixin import NonSparseNormalizationMixin
 
 
 # Abstraction for Dataset-specific functionality, such as transformations,
 # values of transformed zero and one pixel values. Also provides a singleton for the datasethelper
 # Used in the main scripts.
-class DatasetHelper(ABC):
+class DatasetHelper(ABC, NonSparseNormalizationMixin):
 
     def __init__(self, name, subset, non_sparse):
         self.name = name
@@ -40,14 +41,6 @@ class DatasetHelper(ABC):
     @abstractmethod
     def get_dataset_(self, path, which, transform):
         pass
-
-    #@abstractmethod
-    def get_train_transform(self):
-        raise NotImplementedError("Not yet implemented")
-
-    #@abstractmethod
-    def get_test_transform(self):
-        raise NotImplementedError("Not yet implemented")
 
     @abstractmethod
     def get_transformed_zero_one(self):
@@ -85,7 +78,12 @@ class DatasetHelper(ABC):
     def update_config(self, config):
         pass
 
-    def get_without_transform(self):
-        raise NotImplementedError("Not implemented")
+    def get_train_transform(self):
+        return self.get_train_transform_()
 
+    def get_test_transform(self):
+        return self.get_test_transform_()
+
+    def get_without_transform(self):
+        return self.get_without_transform_()
 

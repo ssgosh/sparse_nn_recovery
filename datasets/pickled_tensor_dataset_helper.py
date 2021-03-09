@@ -3,8 +3,6 @@ import pathlib
 import torch
 from torch.utils.data import TensorDataset
 
-from datasets.mnist_dataset_helper import MNISTdatasetHelper
-
 
 class PickledTensorDatasetHelperMixin:
     """
