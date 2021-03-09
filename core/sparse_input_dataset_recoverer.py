@@ -25,7 +25,7 @@ class SparseInputDatasetRecoverer:
                             help='Batch size for image generation')
         parser.add_argument('--recovery-prune-low-prob', action='store_true', dest='recovery_prune_low_prob', default=True,
                             required=False, help='Prune Low Probability Images from adversarial dataset')
-        parser.add_argument('--recovery-low-prob-threshold', type=float, default=0.7, required=False,
+        parser.add_argument('--recovery-low-prob-threshold', type=float, default=0.9, required=False,
                             help='Generated adversarial images with probability less than this will be pruned')
 
     def __init__(self, sparse_input_recoverer : SparseInputRecoverer, model, num_recovery_steps, batch_size,
@@ -65,7 +65,10 @@ class SparseInputDatasetRecoverer:
         start = 0  # self.dataset_epoch * num_batches
         end = start + num_batches
         # or 'all', which will include images, or 'none', which will not log anything
-        self.sparse_input_recoverer.tensorboard_logging = 'stats_only' if mode == 'train' else 'none'
+        # self.sparse_input_recoverer.tensorboard_logging = 'stats_only' if mode == 'train' else 'none'
+        # Disable this because tensorboard files are growing too large
+        # and we don't seem to be focusing on these internal stats anyway
+        self.sparse_input_recoverer.tensorboard_logging = 'none'
         for batch_idx in range(start, end):
             image_batch = torch.randn(batch_shape).to(device)
             targets_batch = torch.randint(low=0, high=num_real_classes, size=(batch_size,)).to(device)
