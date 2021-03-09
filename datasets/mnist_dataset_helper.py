@@ -56,6 +56,6 @@ class MNISTdatasetHelper(DatasetHelper):
 
     def get_without_transform(self):
         if self.non_sparse:
-            return ClippedConstantTransform(0.3)
+            return transforms.Compose([transforms.ToTensor(), ClippedConstantTransform(0.3)])
         else:
-            return None
+            return transforms.ToTensor()

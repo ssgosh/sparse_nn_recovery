@@ -1,4 +1,6 @@
 """Computes the mean and std of an entire dataset"""
+import sys
+sys.path.insert(0, ".")
 import argparse
 import math
 
@@ -15,7 +17,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('--dataset', type=str, default='mnist',
                     metavar='D',
                     help='Which dataset to split (e.g. MNIST)')
-parser.add_argument('--non-sparse', actions='store_true', default=False,
+parser.add_argument('--non-sparse', action='store_true', dest='non_sparse', default=False,
                     help='Whether to use non-sparse version')
 config = parser.parse_args()
 dh = DatasetHelperFactory.get(config.dataset, non_sparse=config.non_sparse)
@@ -26,7 +28,7 @@ test = dh.get_dataset(which='test', transform='without_transform')
 total = 0.
 total_sq = 0.
 num = 0
-for ds in [test]:
+for ds in [train]:
     dl = DataLoader(ds, batch_size=1000)
     for images, targets in dl:
         total += torch.sum(images).item()
