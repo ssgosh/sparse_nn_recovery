@@ -41,6 +41,7 @@ class MNISTdatasetHelper(DatasetHelper):
             transforms.ToTensor()
         ]
         if self.non_sparse:
+            #print('Inside non-sparse')
             t.append(ClippedConstantTransform(0.3))
         t.append(transforms.Normalize((0.1307,), (0.3081,)))
         return transforms.Compose(t)
@@ -48,6 +49,7 @@ class MNISTdatasetHelper(DatasetHelper):
     def get_test_transform(self):
         t = [transforms.ToTensor()]
         if self.non_sparse:
+            #print('Inside non-sparse')
             t.append(ClippedConstantTransform(0.3))
         t.append(transforms.Normalize((0.1307,), (0.3081,)))
         return transforms.Compose(t)

@@ -356,12 +356,6 @@ def main():
     full_train_data = dataset_helper.get_dataset(which='train', transform='test')
     train_samples = DataLoader(Subset(full_train_data, indices=torch.randperm(len(full_train_data))[0:10000]), **test_kwargs)
 
-    matplotlib.use('TkAgg')  # For non-gui flow. Gets rid of DISPLAY bug in TkInter
-    for i in range(10):
-        image, label = dataset1[0]
-        imshow(image[0], cmap='gray')
-        plot.show()
-
     sys.exit()(0)
     #imshow(mh.undo_transform(image)[0], cmap='gray')
     #plot.show()

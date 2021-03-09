@@ -37,4 +37,5 @@ class ClippedConstantTransform(torch.nn.Module):
         self.val = val
 
     def forward(self, x):
+        #print(x)
         return torch.clamp(x + self.val, min=0., max=1.)
