@@ -252,9 +252,6 @@ def main():
     # Log config to tensorboard
     tbh.log_config_as_text(config)
     tbh.flush()
-    #tbh.close()
-    #print("Exiting...")
-    #sys.exit(0)
 
     # Set config_dict from args
     config_dict = vars(args)
@@ -417,10 +414,16 @@ def main():
                                                  config.num_batches_early_epoch, test_loader, scheduler,
                                                  config.adversarial_classification_mode, config)
 
+    # Log config to tensorboard
+    # tbh.log_config_as_text(config)
+    # tbh.flush()
     # Dump configuration after setting everything up. For quick debugging
+    config_str = jsonpickle.encode(vars(config), indent=2)
+    with open(f"{config.run_dir}/config.json" , 'w') as f:
+        f.write(config_str)
     if config.dump_config:
         #json.dump(vars(config), sys.stdout, indent=2, sort_keys=True)
-        print(jsonpickle.encode(vars(config), indent=2))
+        print(config_str)
         sys.exit(0)
 
     if args.train_mode not in ['adversarial-batches', 'adversarial-epoch']:

@@ -1,4 +1,6 @@
 import sys
+
+import jsonpickle
 import torch
 import torchvision
 import pandas as pd
@@ -109,15 +111,21 @@ class TensorBoardHelper:
         hparams = { key:str(config_dict[key]) for key in config_dict }
         self.writer.add_hparams(hparams, {'dummy_metric' : 0.})
 
-    def log_config_as_text(self, config):
-        config_dict = vars(config)
-        #hparams = json.dumps(config_dict, indent=2)
-        #print("Logging config:")
-        #print(hparams)
-        hparams = { key:str(config_dict[key]) for key in config_dict }
-        df = pd.DataFrame.from_dict(hparams, orient='index')
+    def log_config_as_text(self, config, engine='str'):
+        """
+
+        :param config:
+        :param engine: 'str' or 'jsonpickle'
+        :return:
+        """
+        if engine == 'str':
+            config_dict = vars(config)
+            hparams = { key:str(config_dict[key]) for key in config_dict }
+            df = pd.DataFrame.from_dict(hparams, orient='index')
+        else:
+            config_str = jsonpickle.encode(vars(config), indent=2)
+            df = pd.read_json(config_str, orient='index')
         text = df.to_markdown()
-        #print(text)
         self.writer.add_text('config', text)
 
     def add_tensorboard_stuff(self, sparsity_mode, images, losses, probs,
