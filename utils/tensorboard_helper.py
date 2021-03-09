@@ -17,7 +17,7 @@ class TensorBoardHelper:
         self.writer = SummaryWriter(name)
 
         # Reset SummaryWriter after these many global_steps
-        self.reset_steps = 10
+        self.reset_steps = 5000
         self.next_reset = self.reset_steps
 
     def close(self):
