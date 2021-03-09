@@ -22,7 +22,7 @@ class CkptSaver:
         print("Loading images from : ", path)
         model_dict = torch.load(path, map_location=device)
         # print(model_dict)
-        return model_dict['images'], model_dict['targets']
+        return model_dict['images'], model_dict['targets'], model_dict['probs']
 
     # Checkpoint path for the model.
     # Expects model to be saved after each epoch
