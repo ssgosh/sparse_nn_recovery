@@ -34,7 +34,7 @@ class DatasetHelperFactory:
         """
         assert cased_dataset_name
         dataset_name = cased_dataset_name.lower()
-        subset = dataset_name not in ['mnist', 'cifar', 'mnist_copy']
+        subset = dataset_name in ['mnist_a', 'mnist_b']
         non_sparse = 'non_sparse' in dataset_name
         if 'mnist' in dataset_name:
             return MNISTdatasetHelper(name=cased_dataset_name, subset=subset, non_sparse=non_sparse)
