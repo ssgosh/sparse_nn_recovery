@@ -6,6 +6,7 @@ import torchvision
 import pandas as pd
 import json
 
+from icontract import require
 from torch.utils.tensorboard import SummaryWriter
 from torchvision.transforms import ToPILImage
 import torch.nn.functional as F
@@ -170,10 +171,11 @@ class TensorBoardHelper:
         #print(table)
         self.writer.add_text(tag, table, global_step)
 
+    @require(lambda data_type : data_type)
     def log_regular_batch_stats(self, data_type, suffix, model, images_tensor, targets_tensor, include_layer_map, sparsity_mode, dataset_epoch, precomputed=False):
         prefix = TBLabels.RECOVERY_EPOCH #"recovery_epoch"
-        img_label = f"{prefix}/{data_type}_dataset_images_{suffix}" if suffix else f"{prefix}/dataset_images"
-        tgt_label = f"{prefix}/{data_type}_dataset_targets_{suffix}" if suffix else f"{prefix}/dataset_targets"
+        img_label = f"{prefix}/{data_type}_dataset_images_{suffix}" if suffix else f"{prefix}/{data_type}_dataset_images"
+        tgt_label = f"{prefix}/{data_type}_dataset_targets_{suffix}" if suffix else f"{prefix}/{data_type}_dataset_targets"
 
         if precomputed:
             images, targets = images_tensor, targets_tensor

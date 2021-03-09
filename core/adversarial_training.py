@@ -426,6 +426,7 @@ class AdversarialTrainer:
         assert train_mode in [ 'adversarial-epoch', 'adversarial-batches' ]
         if pretrain : print(f'Pretraining for {num_pretrain_epochs} epochs')
         for epoch in range(0, num_epochs):
+            self.log_real_train_images_to_tensorboard()
             if pretrain and epoch < num_pretrain_epochs :
                 print(f'Pre-training epoch #{epoch}')
                 self.train_one_epoch_real()
@@ -447,3 +448,9 @@ class AdversarialTrainer:
 
     def log_stats(self, stats, epoch):
         self.tbh.log_dict('', stats, epoch)
+
+    def log_real_train_images_to_tensorboard(self):
+        with torch.no_grad():
+            dl = torch.utils.data.DataLoader(self.real_data_train_loader.dataset, batch_size=1000, shuffle=True)
+            img, target = next(iter(dl))
+            self.tbh.log_regular_batch_stats('real', '', None, img, target, None, '', dataset_epoch=self.epoch, precomputed=False)
