@@ -111,12 +111,14 @@ class AdversarialDatasetManager:
                 loader = InfiniteDataLoader(adversarial_dataset, **{'batch_size': self.train_batch_size, 'shuffle': True})
                 sample = self.get_sample(images, targets, fake_class_targets, self.sidr.batch_size, self.test_batch_size)
             else:
+                print(f'Got empty dataset for {mode} in epoch {self.dataset_epoch}')
                 loader, sample = None, None
             return loader, sample
         else:
             if len(adversarial_dataset) != 0:
                 loader = DataLoader(adversarial_dataset, **{'batch_size': self.test_batch_size, 'shuffle': True})
             else:
+                print(f'Got empty dataset for {mode} in epoch {self.dataset_epoch}')
                 loader = None
             return loader
 
@@ -129,8 +131,8 @@ class AdversarialDatasetManager:
         test = self.generate_m_images(t, 'test')
 
         if new_train is None or sample is None or valid is None or test is None:
-            print('Pruned all adversarial images in dataset generated in epoch', self.dataset_epoch)
-            return
+            print('*** Pruned all adversarial images in dataset generated in epoch', self.dataset_epoch, '***')
+            return False
 
         self.train_sample.append(sample)
         self.valid.append(valid)
@@ -140,6 +142,7 @@ class AdversarialDatasetManager:
         self.train = self.dmerger.combine_with_previous_train(new_train)
         print("Generated train :", len(new_train.dataset), "Combined train :", len(self.train.dataset))
         self.dataset_count += 1
+        return True
 
     def get_sample(self, images, targets, fake_class_targets, sample_size, batch_size):
         sample_size = images.shape[0] if images.shape[0] < sample_size else sample_size
@@ -154,10 +157,11 @@ class AdversarialDatasetManager:
                               **{'batch_size' : batch_size})
 
     def get_new_train_loader(self, m):
-        self.generate_train_test_validation_dataset(m)
-        self.dataset_generation_epochs.append(self.dataset_epoch)
+        generated = self.generate_train_test_validation_dataset(m)
+        if generated:
+            self.dataset_generation_epochs.append(self.dataset_epoch)
         assert len(self.train_sample) == self.dataset_count
         assert len(self.valid) == self.dataset_count
         assert len(self.test) == self.dataset_count
-        return self.train
+        return self.train, generated
 

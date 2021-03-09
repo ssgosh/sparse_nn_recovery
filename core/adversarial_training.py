@@ -183,17 +183,23 @@ class AdversarialTrainer:
     #    pass
 
     def generate_m_images_train_one_epoch_adversarial(self, m):
-        adversarial_train_loader = self.dataset_mgr.get_new_train_loader(m)
-        self.test_and_return_metrics(
-            DataLoader(self.dataset_mgr.dmerger.last_generated_train.dataset, batch_size=self.test_loader.batch_size),
-            data_type='adv', acc=None, per_class=True, use_real_classes=True
-        ).log(
-            f'full_adversarial_train_data #{self.epoch}, before training',
-            self.tbh,
-            tb_agg_label = TBLabels.RECOVERY_EPOCH,
-            tb_per_class_label = TBLabels.RECOVERY_EPOCH,
-            global_step=self.epoch,
-        )
+        adversarial_train_loader, generated = self.dataset_mgr.get_new_train_loader(m)
+        if generated:
+            self.test_and_return_metrics(
+                DataLoader(self.dataset_mgr.dmerger.last_generated_train.dataset, batch_size=self.test_loader.batch_size),
+                data_type='adv', acc=None, per_class=True, use_real_classes=True
+            ).log(
+                f'full_adversarial_train_data #{self.dataset_mgr.dataset_generation_epochs[-1]}, before training',
+                self.tbh,
+                tb_agg_label = TBLabels.RECOVERY_EPOCH,
+                tb_per_class_label = TBLabels.RECOVERY_EPOCH,
+                global_step=self.epoch,
+            )
+        if not adversarial_train_loader:
+            print('Could not generate any adversarial train data. Cannot proceed with adversarial training.')
+            print('Proceeding with real data training instead')
+            self.train_one_epoch_real()
+            return
         # Now train
         self.model.train()
         # Note that we're using the loader here directly and not the cached iterator.
