@@ -41,6 +41,7 @@ class NamedExpt:
             'quick', 'quick-debug', # Only for checking if the pipeline works without any python errors. Doesn't care about algo output
             'quick-opt', # For quickly testing if the optimization is somewhat working, with minimal number of epochs, batches etc
             'full',  # For full expt
+            'pretrain-MNIST_B', # For pretraining on dataset B
         ]
         self.parser = argparse.ArgumentParser(description='Named Experiments', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         self.parser.add_argument('--expt', type=str, metavar='MODE', choices=self.names, required=True, help='One of: ' + ', '.join(self.names))
@@ -95,6 +96,11 @@ class NamedExpt:
                   f'--num-batches-early-epoch 100 '
         elif args.expt == 'full':
             pass
+        elif args.expt == 'pretrain-MNIST_B':
+            cmd = cmd + \
+                    f'--dataset MNIST_B ' \
+                    f'--epochs 15 ' \
+                    f'--num-pretrain-epochs 14 '
 
         # Overrides anything specified in this script via the command-line
         cmd_lst = cmd.split() + extra_args

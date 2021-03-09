@@ -6,3 +6,4 @@ hashids
 torchvision
 pandas
 numpy
+jsonpickle
