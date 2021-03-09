@@ -25,14 +25,12 @@ class MNISTdatasetHelper(DatasetHelper, ):
         self.usual_zero = -0.4242129623889923
         self.usual_one = 2.821486711502075
 
-        self.non_sparse_zero = { 0.3 : -1.7120479345321655}
-        self.non_sparse_one =  { 0.3 : 2.533843517303467}
+        self.non_sparse_zero = { 0.3 : -1.7120479345321655 }
+        self.non_sparse_one =  { 0.3 : 2.533843517303467 }
 
     def get_dataset_(self, path, which, transform):
         return datasets.MNIST(path, train=(which == 'train'), transform=transform)
 
-    # def get_transformed_zero_one(self):
-    #     return mnist_helper.compute_mnist_transform_low_high()
 
     def get_num_classes(self):
         return 10

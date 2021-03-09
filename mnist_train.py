@@ -366,7 +366,6 @@ def main():
 
     if args.train_mode == 'adversarial-continuous':
         # 1000 images of size 28x28, 1 channel
-        mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
         # initialize images with a Gaussian ball close to mnist 0
         #images = torch.normal(mnist_zero + 0.1, 0.1, (1000, 1, 28, 28), requires_grad=True)
         images = torch.randn(1000, 1, 28, 28, requires_grad=True)
