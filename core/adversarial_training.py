@@ -100,7 +100,7 @@ class AdversarialTrainer:
         self.train_dataset_len = len(self.real_data_train_loader)
         self.metrics_helper : MetricsHelper = MetricsHelper.get(adversarial_classification_mode=adversarial_classification_mode)
 
-        self.dataset_mgr = AdversarialDatasetManager(sparse_input_dataset_recoverer,
+        self.dataset_mgr : AdversarialDatasetManager = AdversarialDatasetManager(sparse_input_dataset_recoverer,
                                                      train_batch_size=adv_training_batch_size,
                                                      test_batch_size=test_loader.batch_size)
         self.external_dataset_mgr = ExternalDatasetManager(test_loader.batch_size)

@@ -41,7 +41,7 @@ class DatasetMerger:
         self.last_combined_train = None
         self.last_generated_train : DataLoader = None
 
-    def combine_with_previous_train(self, new_train):
+    def combine_with_previous_train(self, new_train) -> DataLoader:
         if not self.combine or self.last_combined_train is None:
             self.last_combined_train = self.last_generated_train = new_train
             return new_train
@@ -62,7 +62,7 @@ class AdversarialDatasetManager:
         # XXX: Train dataset is not kept in a list so as to be gc'd by python
         #      Only current train dataset is kept.
         # Depending on the mode, current train data may be a geometric combination of previous train datasets
-        self.train = None
+        self.train : DataLoader = None
         self.valid = []
         self.test = []
 
@@ -107,8 +107,11 @@ class AdversarialDatasetManager:
         #                                                       images, targets, fake_class_targets)
         adversarial_dataset = torch.utils.data.TensorDataset(images, targets, fake_class_targets)
         if mode == 'train':
-            loader = InfiniteDataLoader(adversarial_dataset, **{'batch_size': self.train_batch_size, 'shuffle': True})
-            sample = self.get_sample(images, targets, fake_class_targets, self.sidr.batch_size, self.test_batch_size)
+            if len(adversarial_dataset) != 0:
+                loader = InfiniteDataLoader(adversarial_dataset, **{'batch_size': self.train_batch_size, 'shuffle': True})
+                sample = self.get_sample(images, targets, fake_class_targets, self.sidr.batch_size, self.test_batch_size)
+            else:
+                loader, sample = None, None
             return loader, sample
         else:
             loader = DataLoader(adversarial_dataset, **{'batch_size': self.test_batch_size, 'shuffle': True})
@@ -119,9 +122,16 @@ class AdversarialDatasetManager:
         v = v if v is not None else self.sidr.batch_size
 
         new_train, sample = self.generate_m_images(m, 'train')
+        valid = self.generate_m_images(v, 'valid')
+        test = self.generate_m_images(t, 'test')
+
+        if new_train is None or sample is None or valid is None or test is None:
+            print('Pruned all adversarial images in dataset generated in epoch', self.dataset_epoch)
+            return
+
         self.train_sample.append(sample)
-        self.valid.append(self.generate_m_images(v, 'valid'))
-        self.test.append(self.generate_m_images(t, 'test'))
+        self.valid.append(valid)
+        self.test.append(test)
 
         # Merge new_train with previous train if enabled
         self.train = self.dmerger.combine_with_previous_train(new_train)
