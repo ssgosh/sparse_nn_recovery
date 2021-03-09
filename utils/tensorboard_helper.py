@@ -6,12 +6,15 @@ import torchvision
 import pandas as pd
 import json
 
+from icontract import require
 from torch.utils.tensorboard import SummaryWriter
 from torchvision.transforms import ToPILImage
 import torch.nn.functional as F
 
 import utils.mnist_helper as mh
+from core.tblabels import TBLabels
 from datasets.dataset_helper_factory import DatasetHelperFactory
+from utils.torchutils import get_cross
 
 
 class TensorBoardHelper:
@@ -25,6 +28,7 @@ class TensorBoardHelper:
         self.next_reset = self.reset_steps
 
         self.image_zero, self.image_one = DatasetHelperFactory.get().get_transformed_zero_one()
+        self.num_real_classes = DatasetHelperFactory.get().get_num_classes()
 
     def close(self):
         print("Closing SummaryWriter")
@@ -167,3 +171,51 @@ class TensorBoardHelper:
         #print(table)
         self.writer.add_text(tag, table, global_step)
 
+    @require(lambda data_type : data_type)
+    def log_regular_batch_stats(self, data_type, suffix, model, images_tensor, targets_tensor, include_layer_map, sparsity_mode, dataset_epoch, precomputed=False):
+        prefix = TBLabels.RECOVERY_EPOCH #"recovery_epoch"
+        img_label = f"{prefix}/{data_type}_dataset_images_{suffix}" if suffix else f"{prefix}/{data_type}_dataset_images"
+        tgt_label = f"{prefix}/{data_type}_dataset_targets_{suffix}" if suffix else f"{prefix}/{data_type}_dataset_targets"
+
+        if precomputed:
+            images, targets = images_tensor, targets_tensor
+        else:
+            images, targets = self.get_regular_batch(images_tensor, targets_tensor, self.num_real_classes, 10)
+        targets_list = [foo.item() for foo in targets]
+        self.add_image_grid(images, img_label, filtered=True, num_per_row=10,
+                                global_step=dataset_epoch)
+        self.add_list(targets_list, tgt_label, num_per_row=10,
+                          global_step=dataset_epoch)
+        # Run forward on this batch and get losses, probabilities and sparsity for logging
+        # XXX: Skip this - we're going to do this on the full train data in
+        #      AdversarialTrainer::generate_m_images_train_one_epoch_adversarial
+        #
+        # loss, losses, output, probs, sparsity = self.sparse_input_recoverer.forward(
+        #     model, images, targets, include_layer_map[sparsity_mode], include_likelihood=True)
+        # self.tbh.log_dict(f"{prefix}", probs, global_step=dataset_epoch)
+        # self.tbh.log_dict(f"{prefix}", sparsity, global_step=dataset_epoch)
+        self.flush()
+
+    # Get a batch of 100 images with 10 images per class
+    def get_regular_batch(self, images, targets, num_classes, num_per_class):
+        entries = []
+        tgt_entries = []
+        for cls in range(num_classes):
+            count = 0
+            i = 0
+            while count < num_per_class and i < targets.shape[0]:
+                if targets[i].item() == cls:
+                    entries.append(images[i])
+                    tgt_entries.append(targets[i])
+                    count += 1
+                i += 1
+            # Append cross X images if not enough entries for this class
+            # All-zero images can be produced easily by our optimization algo,
+            # But cross image is hard to be produced by accident
+            for j in range(count, num_per_class):
+                cross = get_cross(28, targets)
+
+                entries.append(cross * self.image_one + self.image_zero)
+                tgt_entries.append(torch.tensor(cls, device=targets.device))
+
+        return torch.stack(entries), torch.stack(tgt_entries)
