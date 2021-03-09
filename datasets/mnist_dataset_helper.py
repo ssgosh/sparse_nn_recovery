@@ -1,8 +1,10 @@
 from torchvision import datasets
+from torchvision.transforms import transforms
 
 from datasets.dataset_helper import DatasetHelper
 from models.mnist_model import ExampleCNNNet
 from utils import mnist_helper
+from utils.torchutils import ClippedConstantTransform
 
 
 class MNISTdatasetHelper(DatasetHelper):
@@ -32,3 +34,20 @@ class MNISTdatasetHelper(DatasetHelper):
 
     def update_config(self, config):
         config.model_classname = 'ExampleCNNNet'
+
+    def get_train_transform(self):
+        t = [
+            transforms.RandomAffine(degrees=5, translate=(0.1, 0.1), scale=(0.9, 1.1), shear=None),
+            transforms.ToTensor()
+        ]
+        if self.non_sparse:
+            t.append(ClippedConstantTransform(0.3))
+        t.append(transforms.Normalize((0.1307,), (0.3081,)))
+        return transforms.Compose(t)
+
+    def get_test_transform(self):
+        t = [transforms.ToTensor()]
+        if self.non_sparse:
+            t.append(ClippedConstantTransform(0.3))
+        t.append(transforms.Normalize((0.1307,), (0.3081,)))
+        return transforms.Compose(t)
