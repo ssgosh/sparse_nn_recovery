@@ -153,7 +153,7 @@ class SparseInputDatasetRecoverer:
                     images1_tensor = torch.stack(images1, dim=0)
                     targets1_tensor = torch.tensor([cls for cls in range(self.num_real_classes)],
                                                    device=targets_tensor.device)
-                    self.log_regular_batch_stats('sorted', model, images1_tensor, targets1_tensor, include_layer_map,
+                    self.tbh.log_regular_batch_stats('sorted', model, images1_tensor, targets1_tensor, include_layer_map,
                                                  sparsity_mode, dataset_epoch, precomputed=True)
                 # Log unconfident images
                 log_images_sorted()
@@ -186,29 +186,6 @@ class SparseInputDatasetRecoverer:
         self.tbh.log_dict(f"{sparsity_mode}", sparsity, global_step=dataset_epoch)
         self.tbh.flush()
 
-    # Get a batch of 100 images with 10 images per class
-    def get_regular_batch(self, images, targets, num_classes, num_per_class):
-        entries = []
-        tgt_entries = []
-        for cls in range(num_classes):
-            count = 0
-            i = 0
-            while count < num_per_class and i < targets.shape[0]:
-                if targets[i].item() == cls:
-                    entries.append(images[i])
-                    tgt_entries.append(targets[i])
-                    count += 1
-                i += 1
-            # Append cross X images if not enough entries for this class
-            # All-zero images can be produced easily by our optimization algo,
-            # But cross image is hard to be produced by accident
-            for j in range(count, num_per_class):
-                cross = get_cross(28, targets)
-
-                entries.append(cross * self.image_one + self.image_zero)
-                tgt_entries.append(torch.tensor(cls, device=targets.device))
-
-        return torch.stack(entries), torch.stack(tgt_entries)
 
     def recover_image_dataset(self, mode, dataset_epoch):
         output_shape = [self.dataset_len] + list(self.each_entry_shape)

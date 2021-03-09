@@ -13,6 +13,7 @@ import torch.nn.functional as F
 import utils.mnist_helper as mh
 from core.tblabels import TBLabels
 from datasets.dataset_helper_factory import DatasetHelperFactory
+from utils.torchutils import get_cross
 
 
 class TensorBoardHelper:
@@ -26,6 +27,7 @@ class TensorBoardHelper:
         self.next_reset = self.reset_steps
 
         self.image_zero, self.image_one = DatasetHelperFactory.get().get_transformed_zero_one()
+        self.num_real_classes = DatasetHelperFactory.get().get_num_classes()
 
     def close(self):
         print("Closing SummaryWriter")
@@ -192,3 +194,26 @@ class TensorBoardHelper:
         # self.tbh.log_dict(f"{prefix}", sparsity, global_step=dataset_epoch)
         self.flush()
 
+    # Get a batch of 100 images with 10 images per class
+    def get_regular_batch(self, images, targets, num_classes, num_per_class):
+        entries = []
+        tgt_entries = []
+        for cls in range(num_classes):
+            count = 0
+            i = 0
+            while count < num_per_class and i < targets.shape[0]:
+                if targets[i].item() == cls:
+                    entries.append(images[i])
+                    tgt_entries.append(targets[i])
+                    count += 1
+                i += 1
+            # Append cross X images if not enough entries for this class
+            # All-zero images can be produced easily by our optimization algo,
+            # But cross image is hard to be produced by accident
+            for j in range(count, num_per_class):
+                cross = get_cross(28, targets)
+
+                entries.append(cross * self.image_one + self.image_zero)
+                tgt_entries.append(torch.tensor(cls, device=targets.device))
+
+        return torch.stack(entries), torch.stack(tgt_entries)
