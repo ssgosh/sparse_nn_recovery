@@ -1,9 +1,13 @@
 from __future__ import print_function
 import argparse
 import sys
+
+import matplotlib
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+import matplotlib.pyplot as plot
+from matplotlib.pyplot import imshow
 from torch.utils.data import Subset, DataLoader
 from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
@@ -67,7 +71,7 @@ def training_step_adversarial(config, model, optD, optG, data, target, adv_data,
     # Recomputation needed to separate out the two compute graphs
     adv_outputD = model(adv_data.detach())
     lossDF = F.nll_loss(adv_outputD, adv_targetD)
-    
+
     # Since we have adv_output here, better compute this as well instead of
     # doing this twice
     lossG = compute_generator_loss(config, adv_data, adv_outputG, adv_targetG, model.all_l1)
@@ -78,7 +82,7 @@ def training_step_adversarial(config, model, optD, optG, data, target, adv_data,
     # Steps for training model on real data batch
     # Zero out gradients accumulated in the model's params
     optD.zero_grad()
-    
+
     # Real data output and losses. Cross-entropy on real target
     output = model(data)
     lossDR = F.nll_loss(output, target)
@@ -314,17 +318,17 @@ def main():
     #    plot.show()
     # imshow(mh.undo_transform(image)[0], cmap='gray')
     # plot.show()
-    
+
     #np_img = mh.undo_transform(image)[0].numpy()
     #img = Image.fromarray(np.uint8(np_img * 255), 'L')
     #img.show()
     # Show one image
     #sys.exit(1)
 
-    # test_transform=transforms.Compose([
-    #     transforms.ToTensor(),
-    #     transforms.Normalize((0.1307,), (0.3081,))
-    # ])
+    test_transform=transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.1307,), (0.3081,))
+    ])
 
     # From this tutorial:
     # https://pytorch.org/tutorials/beginner/data_loading_tutorial.html#iterating-through-the-dataset
@@ -347,9 +351,20 @@ def main():
     print(f"Dataset name : {config.dataset}, train_len = {len(dataset1)}, test_len = {len(dataset2)}")
     train_loader = torch.utils.data.DataLoader(dataset1,**train_kwargs)
     test_loader = torch.utils.data.DataLoader(dataset2, **test_kwargs)
-    full_train_data = datasets.MNIST('./data', train=True, download=True,
-                              transform=test_transform)
+    # full_train_data = datasets.MNIST('./data', train=True, download=True,
+    #                           transform=test_transform)
+    full_train_data = dataset_helper.get_dataset(which='train', transform='test')
     train_samples = DataLoader(Subset(full_train_data, indices=torch.randperm(len(full_train_data))[0:10000]), **test_kwargs)
+
+    matplotlib.use('TkAgg')  # For non-gui flow. Gets rid of DISPLAY bug in TkInter
+    for i in range(10):
+        image, label = dataset1[0]
+        imshow(image[0], cmap='gray')
+        plot.show()
+
+    sys.exit()(0)
+    #imshow(mh.undo_transform(image)[0], cmap='gray')
+    #plot.show()
 
     if args.train_mode == 'adversarial-continuous':
         # 1000 images of size 28x28, 1 channel
@@ -424,7 +439,7 @@ def main():
         adversarial_trainer.train_loop(args.epochs, args.train_mode, args.pretrain, args.num_pretrain_epochs, config)
 
     if args.save_model:
-        save_path = config.ckpt_save_path 
+        save_path = config.ckpt_save_path
         save_path.parent.mkdir(exist_ok=True, parents=True)
         print("Saving model to : ", save_path)
         torch.save(model.state_dict(), save_path)
