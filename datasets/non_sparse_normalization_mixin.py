@@ -32,7 +32,7 @@ class NonSparseNormalizationMixin:
         if self.non_sparse:
             return self.non_sparse_zero, self.non_sparse_one
         else:
-            return self.zero, self.one
+            return self.usual_zero, self.usual_one
 
     def get_mean_std_mixin(self):
         if self.non_sparse:

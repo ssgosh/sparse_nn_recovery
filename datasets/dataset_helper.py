@@ -45,7 +45,6 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
     def get_dataset_(self, path, which, transform):
         pass
 
-    @abstractmethod
     def get_transformed_zero_one(self):
         self.get_transformed_zero_one_mixin()
 

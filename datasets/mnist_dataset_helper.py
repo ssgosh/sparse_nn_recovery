@@ -20,6 +20,14 @@ class MNISTdatasetHelper(DatasetHelper, ):
         self.non_sparse_std = 0.23552181428064123
         self.constant_pixel_val = 0.3
 
+        # Further needed by the non-sparse mixin
+        # These are transformed values of zero and one pixel values
+        self.usual_zero = -0.4242129623889923
+        self.usual_one = 2.821486711502075
+
+        self.non_sparse_zero = -1.7120479345321655
+        self.non_sparse_one = 2.533843517303467
+
     def get_dataset_(self, path, which, transform):
         return datasets.MNIST(path, train=(which == 'train'), transform=transform)
 
