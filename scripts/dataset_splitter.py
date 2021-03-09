@@ -23,7 +23,8 @@ parser.add_argument('--dataset', type=str, default='mnist',
                     help='Which dataset to split (e.g. MNIST)')
 config = parser.parse_args()
 transform = transforms.ToTensor()
-ds = DatasetHelperFactory.get(config.dataset).get_dataset(which='train', transform=transform)
+dname = config.dataset
+ds = DatasetHelperFactory.get(dname).get_dataset(which='train', transform=transform)
 #ds = DatasetHelperFactory.get(config.dataset).get_dataset(train=True, transform=None)
 
 
@@ -32,7 +33,8 @@ def save(filename, dataset):
     with open(filename, 'wb') as f:
         pickle.dump(dataset, f)
 
-def split(N):
+
+def split(N, name):
     m = 25_000
     n = 5_000
     #N = len(dataset)
@@ -46,10 +48,10 @@ def split(N):
     #random_split(dataset, (m, m, n, n))
     print(type(train_A))
     print(len(train_A), len(train_B), len(valid_A), len(valid_B))
-    save('./data/MNIST_A/idx/train.p', train_A)
-    save('./data/MNIST_A/idx/test.p', valid_A)
-    save('./data/MNIST_B/idx/train.p', train_B)
-    save('./data/MNIST_B/idx/test.p', valid_B)
+    save(f'./data/{name}_A/idx/train.p', train_A)
+    save(f'./data/{name}_A/idx/test.p', valid_A)
+    save(f'./data/{name}_B/idx/train.p', train_B)
+    save(f'./data/{name}_B/idx/test.p', valid_B)
 
     return train_A, train_B, valid_A, valid_B
 
@@ -78,11 +80,11 @@ def compare_with_loaded(idx, name, train):
 
 
 # Split and return indices
-train_A, train_B, valid_A, valid_B = split(len(ds))
+train_A, train_B, valid_A, valid_B = split(len(ds), dname)
 
-get_dataset_stats('Full MNIST', ds)
+get_dataset_stats(f'Full {dname}', ds)
 
-compare_with_loaded(train_A, 'MNIST_A', train=True)
-compare_with_loaded(train_B, 'MNIST_B', train=True)
-compare_with_loaded(valid_A, 'MNIST_A', train=False)
-compare_with_loaded(valid_B, 'MNIST_B', train=False)
+compare_with_loaded(train_A, f'{dname}_A', train=True)
+compare_with_loaded(train_B, f'{dname}_B', train=True)
+compare_with_loaded(valid_A, f'{dname}_A', train=False)
+compare_with_loaded(valid_B, f'{dname}_B', train=False)
