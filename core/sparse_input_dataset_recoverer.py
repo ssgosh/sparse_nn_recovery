@@ -92,12 +92,12 @@ class SparseInputDatasetRecoverer:
 
             if mode == 'train': # Perform logging only for the train dataset
                 def log_bin(suffix, bin):
-                    self.log_regular_batch_stats(suffix, model, images_tensor[bin], targets_tensor[bin], include_layer_map,
-                                                 sparsity_mode, dataset_epoch)
+                    self.tbh.log_regular_batch_stats(suffix, model, images_tensor[bin], targets_tensor[bin], include_layer_map,
+                                                     sparsity_mode, dataset_epoch)
 
                 #self.log_first_100_images_stats(model, images_tensor, targets_tensor, include_layer_map, sparsity_mode)
-                self.log_regular_batch_stats('', model, images_tensor, targets_tensor, include_layer_map, sparsity_mode,
-                                             dataset_epoch)
+                self.tbh.log_regular_batch_stats('', model, images_tensor, targets_tensor, include_layer_map, sparsity_mode,
+                                                 dataset_epoch)
                 # Bin images by probability and log
                 bin_0_9 = (probs_tensor >= 0.9)
                 bin_0_7_0_8 = (probs_tensor >= 0.7) & (probs_tensor < 0.9)
@@ -184,30 +184,6 @@ class SparseInputDatasetRecoverer:
             model, first_100_images, first_100_targets, include_layer_map[sparsity_mode], include_likelihood=True)
         self.tbh.log_dict(f"{sparsity_mode}", probs, global_step=dataset_epoch)
         self.tbh.log_dict(f"{sparsity_mode}", sparsity, global_step=dataset_epoch)
-        self.tbh.flush()
-
-    def log_regular_batch_stats(self, suffix, model, images_tensor, targets_tensor, include_layer_map, sparsity_mode, dataset_epoch, precomputed=False):
-        prefix = TBLabels.RECOVERY_EPOCH #"recovery_epoch"
-        img_label = f"{prefix}/dataset_images_{suffix}" if suffix else f"{prefix}/dataset_images"
-        tgt_label = f"{prefix}/dataset_targets_{suffix}" if suffix else f"{prefix}/dataset_targets"
-
-        if precomputed:
-            images, targets = images_tensor, targets_tensor
-        else:
-            images, targets = self.get_regular_batch(images_tensor, targets_tensor, self.num_real_classes, 10)
-        targets_list = [foo.item() for foo in targets]
-        self.tbh.add_image_grid(images, img_label, filtered=True, num_per_row=10,
-                                global_step=dataset_epoch)
-        self.tbh.add_list(targets_list, tgt_label, num_per_row=10,
-                          global_step=dataset_epoch)
-        # Run forward on this batch and get losses, probabilities and sparsity for logging
-        # XXX: Skip this - we're going to do this on the full train data in
-        #      AdversarialTrainer::generate_m_images_train_one_epoch_adversarial
-        #
-        # loss, losses, output, probs, sparsity = self.sparse_input_recoverer.forward(
-        #     model, images, targets, include_layer_map[sparsity_mode], include_likelihood=True)
-        # self.tbh.log_dict(f"{prefix}", probs, global_step=dataset_epoch)
-        # self.tbh.log_dict(f"{prefix}", sparsity, global_step=dataset_epoch)
         self.tbh.flush()
 
     # Get a batch of 100 images with 10 images per class

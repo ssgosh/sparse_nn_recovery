@@ -11,6 +11,7 @@ from torchvision.transforms import ToPILImage
 import torch.nn.functional as F
 
 import utils.mnist_helper as mh
+from core.tblabels import TBLabels
 from datasets.dataset_helper_factory import DatasetHelperFactory
 
 
@@ -166,4 +167,28 @@ class TensorBoardHelper:
         table = df.to_markdown()
         #print(table)
         self.writer.add_text(tag, table, global_step)
+
+    def log_regular_batch_stats(self, suffix, model, images_tensor, targets_tensor, include_layer_map, sparsity_mode, dataset_epoch, precomputed=False):
+        prefix = TBLabels.RECOVERY_EPOCH #"recovery_epoch"
+        img_label = f"{prefix}/dataset_images_{suffix}" if suffix else f"{prefix}/dataset_images"
+        tgt_label = f"{prefix}/dataset_targets_{suffix}" if suffix else f"{prefix}/dataset_targets"
+
+        if precomputed:
+            images, targets = images_tensor, targets_tensor
+        else:
+            images, targets = self.get_regular_batch(images_tensor, targets_tensor, self.num_real_classes, 10)
+        targets_list = [foo.item() for foo in targets]
+        self.add_image_grid(images, img_label, filtered=True, num_per_row=10,
+                                global_step=dataset_epoch)
+        self.add_list(targets_list, tgt_label, num_per_row=10,
+                          global_step=dataset_epoch)
+        # Run forward on this batch and get losses, probabilities and sparsity for logging
+        # XXX: Skip this - we're going to do this on the full train data in
+        #      AdversarialTrainer::generate_m_images_train_one_epoch_adversarial
+        #
+        # loss, losses, output, probs, sparsity = self.sparse_input_recoverer.forward(
+        #     model, images, targets, include_layer_map[sparsity_mode], include_likelihood=True)
+        # self.tbh.log_dict(f"{prefix}", probs, global_step=dataset_epoch)
+        # self.tbh.log_dict(f"{prefix}", sparsity, global_step=dataset_epoch)
+        self.flush()
 
