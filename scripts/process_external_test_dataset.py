@@ -1,3 +1,10 @@
+"""
+Process a saved dataset and split into test and valid.
+
+First 1000 data points are for validation
+Remaining data points are for testing
+"""
+
 import torch
 
 fname = "images_0014.pt"

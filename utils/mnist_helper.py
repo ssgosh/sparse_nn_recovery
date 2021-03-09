@@ -4,6 +4,7 @@ from . import image_processor as imp
 # Pre-computed from below commented-out function
 # python3.6/pytorch1.3.0 had some issues with the commented function
 def compute_mnist_transform_low_high():
+    assert False, "This method is now deprecated in favour of DatasetHelper::get_transformed_zero_one()"
     return -0.4242129623889923, 2.821486711502075
 
 

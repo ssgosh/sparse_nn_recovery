@@ -1,9 +1,14 @@
 from __future__ import print_function
 import argparse
+import jsonpickle
 import sys
+
+import matplotlib
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+import matplotlib.pyplot as plot
+from matplotlib.pyplot import imshow
 from torch.utils.data import Subset, DataLoader
 from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
@@ -67,7 +72,7 @@ def training_step_adversarial(config, model, optD, optG, data, target, adv_data,
     # Recomputation needed to separate out the two compute graphs
     adv_outputD = model(adv_data.detach())
     lossDF = F.nll_loss(adv_outputD, adv_targetD)
-    
+
     # Since we have adv_output here, better compute this as well instead of
     # doing this twice
     lossG = compute_generator_loss(config, adv_data, adv_outputG, adv_targetG, model.all_l1)
@@ -78,7 +83,7 @@ def training_step_adversarial(config, model, optD, optG, data, target, adv_data,
     # Steps for training model on real data batch
     # Zero out gradients accumulated in the model's params
     optD.zero_grad()
-    
+
     # Real data output and losses. Cross-entropy on real target
     output = model(data)
     lossDR = F.nll_loss(output, target)
@@ -180,6 +185,8 @@ def main():
                         help='Training mode. One of: ' + ', '.join(available_train_modes))
     parser.add_argument('--name', type=str, default='')
     parser.add_argument('--dataset', type=str, default='MNIST', metavar='MODE')
+    parser.add_argument('--non-sparse-dataset', action='store_true', default=True, dest='non_sparse_dataset', help='Load dataset in non-sparse mode')
+    parser.add_argument('--sparse-dataset', action='store_false', default=True, dest='non_sparse_dataset', help='Load dataset in sparse mode')
     parser.add_argument('--pretrain', action='store_true', default=True, dest='pretrain', help='Pretrain before adversarial training')
     parser.add_argument('--no-pretrain', action='store_false', default=True, dest='pretrain', help='Do not pretrain')
     parser.add_argument('--batch-size', type=int, default=32, metavar='N', help='input batch size for training')
@@ -198,6 +205,8 @@ def main():
     parser.add_argument('--run-suffix', type=str, default='', required=False, metavar='S', help='Will be appended to the run directory provided')
     parser.add_argument('--early-epoch', action='store_true', default=False, dest='early_epoch', help='Finish epoch early (for debugging)')
     parser.add_argument('--num-batches-early-epoch', type=int, default=10, metavar='N', help='Number of batches before epoch finishes')
+    parser.add_argument('--dump-config', action='store_true', default=False, required=False, help='Print config json and exit')
+
 
     # Arguments specific to adversarial training
     parser.add_argument('--generator-lr', type=float, default=0.05,
@@ -230,7 +239,7 @@ def main():
     SparseInputRecoverer.setup_default_config(config)
     # dataset name is 'MNIST'
     #config.dataset_name = 'mnist'
-    dataset_helper: DatasetHelper = DatasetHelperFactory.get(config.dataset)
+    dataset_helper: DatasetHelper = DatasetHelperFactory.get(config.dataset, config.non_sparse_dataset)
     dataset_helper.setup_config(config)
 
     # Setup runs directory, tensorboard helper and sparse input recoverer
@@ -243,9 +252,6 @@ def main():
     # Log config to tensorboard
     tbh.log_config_as_text(config)
     tbh.flush()
-    #tbh.close()
-    #print("Exiting...")
-    #sys.exit(0)
 
     # Set config_dict from args
     config_dict = vars(args)
@@ -314,7 +320,7 @@ def main():
     #    plot.show()
     # imshow(mh.undo_transform(image)[0], cmap='gray')
     # plot.show()
-    
+
     #np_img = mh.undo_transform(image)[0].numpy()
     #img = Image.fromarray(np.uint8(np_img * 255), 'L')
     #img.show()
@@ -325,33 +331,38 @@ def main():
         transforms.ToTensor(),
         transforms.Normalize((0.1307,), (0.3081,))
     ])
+
     # From this tutorial:
     # https://pytorch.org/tutorials/beginner/data_loading_tutorial.html#iterating-through-the-dataset
     # , transforms are applied on each batch dynamically. Hence data gets
     # augmented due to random transforms.
-    train_transform = transforms.Compose([
-        transforms.RandomAffine(degrees=5, translate=(0.1, 0.1), scale=(0.9,
-                                                                        1.1), shear=None),
-        transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,))
-    ])
+    # train_transform = transforms.Compose([
+    #     transforms.RandomAffine(degrees=5, translate=(0.1, 0.1), scale=(0.9,
+    #                                                                     1.1), shear=None),
+    #     transforms.ToTensor(),
+    #     transforms.Normalize((0.1307,), (0.3081,))
+    # ])
+
     # dataset1 = datasets.MNIST('./data', train=True, download=True,
     #                           transform=train_transform)
     #
     # dataset2 = datasets.MNIST('./data', train=False,
     #                    transform=test_transform)
-    dataset1 = dataset_helper.get_dataset(which='train', transform=train_transform)
-    dataset2 = dataset_helper.get_dataset(which='test', transform=test_transform)
+    dataset1 = dataset_helper.get_dataset(which='train', transform='train')
+    dataset2 = dataset_helper.get_dataset(which='test', transform='test')
     print(f"Dataset name : {config.dataset}, train_len = {len(dataset1)}, test_len = {len(dataset2)}")
     train_loader = torch.utils.data.DataLoader(dataset1,**train_kwargs)
     test_loader = torch.utils.data.DataLoader(dataset2, **test_kwargs)
-    full_train_data = datasets.MNIST('./data', train=True, download=True,
-                              transform=test_transform)
+    # full_train_data = datasets.MNIST('./data', train=True, download=True,
+    #                           transform=test_transform)
+    full_train_data = dataset_helper.get_dataset(which='train', transform='test')
     train_samples = DataLoader(Subset(full_train_data, indices=torch.randperm(len(full_train_data))[0:10000]), **test_kwargs)
+
+    #imshow(mh.undo_transform(image)[0], cmap='gray')
+    #plot.show()
 
     if args.train_mode == 'adversarial-continuous':
         # 1000 images of size 28x28, 1 channel
-        mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
         # initialize images with a Gaussian ball close to mnist 0
         #images = torch.normal(mnist_zero + 0.1, 0.1, (1000, 1, 28, 28), requires_grad=True)
         images = torch.randn(1000, 1, 28, 28, requires_grad=True)
@@ -401,7 +412,19 @@ def main():
         adversarial_trainer = AdversarialTrainer(train_loader, train_samples, dataset_recoverer, model, optimizer, config.batch_size,
                                                  device, config.log_interval, config.dry_run, config.early_epoch,
                                                  config.num_batches_early_epoch, test_loader, scheduler,
-                                                 config.adversarial_classification_mode)
+                                                 config.adversarial_classification_mode, config)
+
+    # Log config to tensorboard
+    # tbh.log_config_as_text(config)
+    # tbh.flush()
+    # Dump configuration after setting everything up. For quick debugging
+    config_str = jsonpickle.encode(vars(config), indent=2)
+    with open(f"{config.run_dir}/config.json" , 'w') as f:
+        f.write(config_str)
+    if config.dump_config:
+        #json.dump(vars(config), sys.stdout, indent=2, sort_keys=True)
+        print(config_str)
+        sys.exit(0)
 
     if args.train_mode not in ['adversarial-batches', 'adversarial-epoch']:
         for epoch in range(0, args.epochs):
@@ -422,7 +445,7 @@ def main():
         adversarial_trainer.train_loop(args.epochs, args.train_mode, args.pretrain, args.num_pretrain_epochs, config)
 
     if args.save_model:
-        save_path = config.ckpt_save_path 
+        save_path = config.ckpt_save_path
         save_path.parent.mkdir(exist_ok=True, parents=True)
         print("Saving model to : ", save_path)
         torch.save(model.state_dict(), save_path)

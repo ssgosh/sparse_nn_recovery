@@ -84,6 +84,7 @@ def setup_everything(argv):
 
     rh.setup_run_dir(config, 'image_runs')
     plotter.set_run_dir(config.run_dir)
+    plotter.set_image_zero_one()
 
     model = load_model(config)
 

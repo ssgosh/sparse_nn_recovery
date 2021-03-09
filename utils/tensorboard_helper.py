@@ -1,4 +1,6 @@
 import sys
+
+import jsonpickle
 import torch
 import torchvision
 import pandas as pd
@@ -9,6 +11,8 @@ from torchvision.transforms import ToPILImage
 import torch.nn.functional as F
 
 import utils.mnist_helper as mh
+from datasets.dataset_helper_factory import DatasetHelperFactory
+
 
 class TensorBoardHelper:
 
@@ -19,6 +23,8 @@ class TensorBoardHelper:
         # Reset SummaryWriter after these many global_steps
         self.reset_steps = 5000
         self.next_reset = self.reset_steps
+
+        self.image_zero, self.image_one = DatasetHelperFactory.get().get_transformed_zero_one()
 
     def close(self):
         print("Closing SummaryWriter")
@@ -41,8 +47,7 @@ class TensorBoardHelper:
     def add_image_grid(self, images, tag, filtered, num_per_row, global_step):
         self.reset_if_needed(global_step)
         images = images.detach()
-        mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
-        rng = (mnist_zero, mnist_one) if filtered else None
+        rng = (self.image_zero, self.image_one) if filtered else None
         img_grid = torchvision.utils.make_grid(images, num_per_row, normalize=True,
                 range=rng, padding=2, pad_value=1.0,
                 scale_each=True)
@@ -106,15 +111,21 @@ class TensorBoardHelper:
         hparams = { key:str(config_dict[key]) for key in config_dict }
         self.writer.add_hparams(hparams, {'dummy_metric' : 0.})
 
-    def log_config_as_text(self, config):
-        config_dict = vars(config)
-        #hparams = json.dumps(config_dict, indent=2)
-        #print("Logging config:")
-        #print(hparams)
-        hparams = { key:str(config_dict[key]) for key in config_dict }
-        df = pd.DataFrame.from_dict(hparams, orient='index')
+    def log_config_as_text(self, config, engine='str'):
+        """
+
+        :param config:
+        :param engine: 'str' or 'jsonpickle'
+        :return:
+        """
+        if engine == 'str':
+            config_dict = vars(config)
+            hparams = { key:str(config_dict[key]) for key in config_dict }
+            df = pd.DataFrame.from_dict(hparams, orient='index')
+        else:
+            config_str = jsonpickle.encode(vars(config), indent=2)
+            df = pd.read_json(config_str, orient='index')
         text = df.to_markdown()
-        #print(text)
         self.writer.add_text('config', text)
 
     def add_tensorboard_stuff(self, sparsity_mode, images, losses, probs,

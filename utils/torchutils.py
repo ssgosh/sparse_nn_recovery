@@ -29,3 +29,13 @@ def get_cross(n, like):
 
 def safe_clone(x):
     return torch.clone(x.detach())
+
+
+class ClippedConstantTransform(torch.nn.Module):
+    def __init__(self, val):
+        super().__init__()
+        self.val = val
+
+    def forward(self, x):
+        #print(x)
+        return torch.clamp(x + self.val, min=0., max=1.)

@@ -4,7 +4,7 @@ from datasets.dataset_helper_factory import DatasetHelperFactory
 
 
 class ExternalDatasetManager:
-    def __init__(self, test_batch_size):
+    def __init__(self, test_batch_size, config):
         self.test_batch_size = test_batch_size
 
         self.test_loaders = []
@@ -13,7 +13,10 @@ class ExternalDatasetManager:
         self.valid_loaders = []
         self.valid_names = []
 
-        self.add_dataset('external_B')
+        if not config.non_sparse_dataset:
+            self.add_dataset('external_B')
+        else:
+            self.add_dataset('external_B_non_sparse')
 
     def add_dataset(self, dataset_name):
         self.add_dataset_(dataset_name, which='test')
@@ -31,7 +34,7 @@ class ExternalDatasetManager:
 
         loaders.append(
             DataLoader(
-                DatasetHelperFactory.get_new(dataset_name).get_dataset(which),
+                DatasetHelperFactory.get_new(dataset_name, non_sparse=False).get_dataset(which),
                 **{'batch_size' : self.test_batch_size}
             )
         )

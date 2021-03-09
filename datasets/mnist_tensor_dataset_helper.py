@@ -4,7 +4,7 @@ from datasets.pickled_tensor_dataset_helper import PickledTensorDatasetHelperMix
 
 class MNISTTensorDatasetHelper(MNISTdatasetHelper, PickledTensorDatasetHelperMixin):
     def __init__(self, name):
-        super().__init__(name, subset=False)
+        super().__init__(name, subset=False, non_sparse=False)
 
     def get_dataset_(self, path, which, transform):
         """
