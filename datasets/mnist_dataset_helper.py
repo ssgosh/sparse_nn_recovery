@@ -16,8 +16,8 @@ class MNISTdatasetHelper(DatasetHelper, ):
         self.test_transforms = []
         self.usual_mean = 0.1307
         self.usual_std = 0.3081
-        self.non_sparse_mean = 0.4032246160182823
-        self.non_sparse_std = 0.23552181428064123
+        self.non_sparse_mean = { 0.3 : 0.4032246160182823 }
+        self.non_sparse_std =  { 0.3 : 0.23552181428064123 }
         self.constant_pixel_val = 0.3
 
         # Further needed by the non-sparse mixin
@@ -25,8 +25,8 @@ class MNISTdatasetHelper(DatasetHelper, ):
         self.usual_zero = -0.4242129623889923
         self.usual_one = 2.821486711502075
 
-        self.non_sparse_zero = -1.7120479345321655
-        self.non_sparse_one = 2.533843517303467
+        self.non_sparse_zero = { 0.3 : -1.7120479345321655}
+        self.non_sparse_one =  { 0.3 : 2.533843517303467}
 
     def get_dataset_(self, path, which, transform):
         return datasets.MNIST(path, train=(which == 'train'), transform=transform)

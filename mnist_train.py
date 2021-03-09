@@ -1,5 +1,6 @@
 from __future__ import print_function
 import argparse
+import jsonpickle
 import sys
 
 import matplotlib
@@ -204,6 +205,8 @@ def main():
     parser.add_argument('--run-suffix', type=str, default='', required=False, metavar='S', help='Will be appended to the run directory provided')
     parser.add_argument('--early-epoch', action='store_true', default=False, dest='early_epoch', help='Finish epoch early (for debugging)')
     parser.add_argument('--num-batches-early-epoch', type=int, default=10, metavar='N', help='Number of batches before epoch finishes')
+    parser.add_argument('--dump-config', action='store_true', default=False, required=False, help='Print config json and exit')
+
 
     # Arguments specific to adversarial training
     parser.add_argument('--generator-lr', type=float, default=0.05,
@@ -414,6 +417,12 @@ def main():
                                                  device, config.log_interval, config.dry_run, config.early_epoch,
                                                  config.num_batches_early_epoch, test_loader, scheduler,
                                                  config.adversarial_classification_mode, config)
+
+    # Dump configuration after setting everything up. For quick debugging
+    if config.dump_config:
+        #json.dump(vars(config), sys.stdout, indent=2, sort_keys=True)
+        print(jsonpickle.encode(vars(config), indent=2))
+        sys.exit(0)
 
     if args.train_mode not in ['adversarial-batches', 'adversarial-epoch']:
         for epoch in range(0, args.epochs):
