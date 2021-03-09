@@ -2,14 +2,23 @@ from torchvision import datasets
 from torchvision.transforms import transforms
 
 from datasets.dataset_helper import DatasetHelper
+from datasets.non_sparse_normalization_mixin import NonSparseNormalizationMixin
 from models.mnist_model import ExampleCNNNet
 from utils import mnist_helper
-from utils.torchutils import ClippedConstantTransform
 
 
-class MNISTdatasetHelper(DatasetHelper):
+class MNISTdatasetHelper(DatasetHelper, NonSparseNormalizationMixin):
     def __init__(self, name, subset, non_sparse):
         super().__init__(name, subset, non_sparse)
+
+        # These implement the non-sparse normalization mixin
+        self.train_transforms = [transforms.RandomAffine(degrees=5, translate=(0.1, 0.1), scale=(0.9, 1.1), shear=None),]
+        self.test_transforms = []
+        self.usual_mean = 0.1307
+        self.usual_std = 0.3081
+        self.non_sparse_mean = 0.4032246160182823
+        self.non_sparse_std = 0.23552181428064123
+        self.constant_pixel_val = 0.3
 
     def get_dataset_(self, path, which, transform):
         return datasets.MNIST(path, train=(which == 'train'), transform=transform)
@@ -36,26 +45,25 @@ class MNISTdatasetHelper(DatasetHelper):
         config.model_classname = 'ExampleCNNNet'
 
     def get_train_transform(self):
-        t = [
-            transforms.RandomAffine(degrees=5, translate=(0.1, 0.1), scale=(0.9, 1.1), shear=None),
-            transforms.ToTensor()
-        ]
-        if self.non_sparse:
-            #print('Inside non-sparse')
-            t.append(ClippedConstantTransform(0.3))
-        t.append(transforms.Normalize((0.1307,), (0.3081,)))
-        return transforms.Compose(t)
+        return self.get_train_transform_()
+        # t = [
+        #     transforms.RandomAffine(degrees=5, translate=(0.1, 0.1), scale=(0.9, 1.1), shear=None),
+        #     transforms.ToTensor()
+        # ]
+        # if self.non_sparse:
+        #     #print('Inside non-sparse')
+        #     t.append(ClippedConstantTransform(0.3))
+        # t.append(transforms.Normalize((0.1307,), (0.3081,)))
+        # return transforms.Compose(t)
 
     def get_test_transform(self):
-        t = [transforms.ToTensor()]
-        if self.non_sparse:
-            #print('Inside non-sparse')
-            t.append(ClippedConstantTransform(0.3))
-        t.append(transforms.Normalize((0.1307,), (0.3081,)))
-        return transforms.Compose(t)
+        return self.get_test_transform_()
+        # t = [transforms.ToTensor()]
+        # if self.non_sparse:
+        #     #print('Inside non-sparse')
+        #     t.append(ClippedConstantTransform(0.3))
+        # t.append(transforms.Normalize((0.1307,), (0.3081,)))
+        # return transforms.Compose(t)
 
     def get_without_transform(self):
-        if self.non_sparse:
-            return transforms.Compose([transforms.ToTensor(), ClippedConstantTransform(0.3)])
-        else:
-            return transforms.ToTensor()
+        return self.get_without_transform_()
