@@ -46,7 +46,7 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
         pass
 
     def get_transformed_zero_one(self):
-        self.get_transformed_zero_one_mixin()
+        return self.get_transformed_zero_one_mixin()
 
     def setup_config(self, config):
         zero, one = self.get_transformed_zero_one()
