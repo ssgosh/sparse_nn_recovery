@@ -76,4 +76,5 @@ start = 0
 for i in range(10):
     writer = tensorboard_setup()
     main()
+    writer.close()
 
