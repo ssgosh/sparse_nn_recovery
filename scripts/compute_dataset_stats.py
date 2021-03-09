@@ -55,8 +55,3 @@ mean_sq = total_sq / num
 std = math.sqrt(mean_sq - mean**2)
 
 print(f'mean = {mean}, std = {std}')
-# for ds in [train, test]:
-#     dl = DataLoader(ds, batch_size=1000)
-#     for images, targets in dl:
-#         total += torch.sum(images).item()
-#         num += torch.flatten(images).shape[0]
