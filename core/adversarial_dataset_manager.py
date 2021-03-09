@@ -139,6 +139,7 @@ class AdversarialDatasetManager:
         # Merge new_train with previous train if enabled
         self.train = self.dmerger.combine_with_previous_train(new_train)
         print("Generated train :", len(new_train.dataset), "Combined train :", len(self.train.dataset))
+        self.dataset_count += 1
 
     def get_sample(self, images, targets, fake_class_targets, sample_size, batch_size):
         sample_size = images.shape[0] if images.shape[0] < sample_size else sample_size
@@ -155,7 +156,6 @@ class AdversarialDatasetManager:
     def get_new_train_loader(self, m):
         self.generate_train_test_validation_dataset(m)
         self.dataset_generation_epochs.append(self.dataset_epoch)
-        self.dataset_count += 1
         assert len(self.train_sample) == self.dataset_count
         assert len(self.valid) == self.dataset_count
         assert len(self.test) == self.dataset_count
