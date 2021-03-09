@@ -5,13 +5,11 @@ import sys
 import torch
 from torchvision.transforms import transforms
 
-sys.path.append(".")
-
 import argparse
-
 from torch.utils.data import DataLoader, Dataset, Subset
-
 from datasets.dataset_helper_factory import DatasetHelperFactory
+
+sys.path.append(".")
 
 parser = argparse.ArgumentParser(
     description='Splits train dataset into multiple train and validation',
@@ -25,7 +23,9 @@ config = parser.parse_args()
 transform = transforms.ToTensor()
 dname = config.dataset
 ds = DatasetHelperFactory.get(dname).get_dataset(which='train', transform=transform)
-#ds = DatasetHelperFactory.get(config.dataset).get_dataset(train=True, transform=None)
+
+
+# ds = DatasetHelperFactory.get(config.dataset).get_dataset(train=True, transform=None)
 
 
 def save(filename, dataset):
@@ -37,15 +37,15 @@ def save(filename, dataset):
 def split(N, name):
     m = 25_000
     n = 5_000
-    #N = len(dataset)
+    # N = len(dataset)
     idx = torch.randperm(N)
-    #train_A, train_B, valid_A, valid_B = random_split(dataset, (m, m, n, n))
+    # train_A, train_B, valid_A, valid_B = random_split(dataset, (m, m, n, n))
     # Only save indices of the splits. Subsets of MNIST will be created while loading, on the fly
     train_A = idx[0:m]
-    train_B = idx[m:2*m]
-    valid_A = idx[2*m : 2*m + n]
-    valid_B = idx[2*m + n : 2*m + 2*n]
-    #random_split(dataset, (m, m, n, n))
+    train_B = idx[m:2 * m]
+    valid_A = idx[2 * m: 2 * m + n]
+    valid_B = idx[2 * m + n: 2 * m + 2 * n]
+    # random_split(dataset, (m, m, n, n))
     print(type(train_A))
     print(len(train_A), len(train_B), len(valid_A), len(valid_B))
     save(f'./data/{name}_A/idx/train.p', train_A)
@@ -55,13 +55,15 @@ def split(N, name):
 
     return train_A, train_B, valid_A, valid_B
 
-def get_dataset_stats(name, dataset : Dataset):
+
+def get_dataset_stats(name, dataset: Dataset):
     print("Dataset :", name)
     loader = DataLoader(dataset, batch_size=len(dataset))
     img, tgt = next(iter(loader))
     print(img.shape, tgt.shape)
     stats = torch.bincount(tgt)
     print("\n".join([f"{i} : {n}" for i, n in enumerate(stats)]))
+
 
 def compare_with_loaded(idx, name, train):
     global transform, ds
