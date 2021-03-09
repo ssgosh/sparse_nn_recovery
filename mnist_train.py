@@ -184,6 +184,8 @@ def main():
                         help='Training mode. One of: ' + ', '.join(available_train_modes))
     parser.add_argument('--name', type=str, default='')
     parser.add_argument('--dataset', type=str, default='MNIST', metavar='MODE')
+    parser.add_argument('--non-sparse-dataset', action='store_true', default=True, dest='non_sparse_dataset', help='Load dataset in non-sparse mode')
+    parser.add_argument('--sparse-dataset', action='store_false', default=True, dest='non_sparse_dataset', help='Load dataset in sparse mode')
     parser.add_argument('--pretrain', action='store_true', default=True, dest='pretrain', help='Pretrain before adversarial training')
     parser.add_argument('--no-pretrain', action='store_false', default=True, dest='pretrain', help='Do not pretrain')
     parser.add_argument('--batch-size', type=int, default=32, metavar='N', help='input batch size for training')
@@ -234,7 +236,7 @@ def main():
     SparseInputRecoverer.setup_default_config(config)
     # dataset name is 'MNIST'
     #config.dataset_name = 'mnist'
-    dataset_helper: DatasetHelper = DatasetHelperFactory.get(config.dataset)
+    dataset_helper: DatasetHelper = DatasetHelperFactory.get(config.dataset, config.non_sparse_dataset)
     dataset_helper.setup_config(config)
 
     # Setup runs directory, tensorboard helper and sparse input recoverer
@@ -356,7 +358,6 @@ def main():
     full_train_data = dataset_helper.get_dataset(which='train', transform='test')
     train_samples = DataLoader(Subset(full_train_data, indices=torch.randperm(len(full_train_data))[0:10000]), **test_kwargs)
 
-    sys.exit()(0)
     #imshow(mh.undo_transform(image)[0], cmap='gray')
     #plot.show()
 
