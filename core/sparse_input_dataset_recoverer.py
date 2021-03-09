@@ -22,9 +22,13 @@ class SparseInputDatasetRecoverer:
     def add_command_line_arguments(parser: argparse.ArgumentParser):
         parser.add_argument('--recovery-batch-size', type=int, default=1024, required=False, metavar='N',
                             help='Batch size for image generation')
+        parser.add_argument('--recovery-prune-low-prob', action='store_true', dest='recovery_prune', default=False,
+                            required=False, help='Prune Low Probability Images from adversarial dataset')
+        parser.add_argument('--recovery-low-prob-threshold', type=float, default=0.7, required=False,
+                            help='Generated adversarial images with probability less than this will be pruned')
 
     def __init__(self, sparse_input_recoverer : SparseInputRecoverer, model, num_recovery_steps, batch_size,
-                 sparsity_mode, num_real_classes, dataset_len, each_entry_shape, device, ckpt_saver):
+                 sparsity_mode, num_real_classes, dataset_len, each_entry_shape, device, ckpt_saver, config):
         self.sparse_input_recoverer = sparse_input_recoverer
         self.model = model
         self.include_layer_map = SparseInputRecoverer.include_layer_map
@@ -41,8 +45,12 @@ class SparseInputDatasetRecoverer:
         self.image_zero = self.sparse_input_recoverer.image_zero
         self.image_one = self.sparse_input_recoverer.image_one
 
+        # Prune the recovered dataset for low-probability images
+        self.prune = config.recovery_prune_low_prob
+        self.low_prob_threshold = config.recovery_low_prob_threshold
+
     def recover_image_dataset_internal(self, model, output_shape, num_real_classes, batch_size, num_steps,
-                                       include_layer_map, sparsity_mode, device, mode, dataset_epoch):
+                                       include_layer_map, sparsity_mode, device, mode, dataset_epoch, prune):
         assert output_shape[0] % batch_size == 0,\
             f"Number of images to generate not divisible by image recovery " \
             f"batch size: output_shape[0] = {output_shape[0]}, batch_size = {batch_size} "
@@ -147,8 +155,10 @@ class SparseInputDatasetRecoverer:
                 log_images_sorted()
 
             # Save to ckpt dir
-            self.ckpt_saver.save_images(mode, images_tensor, targets_tensor, dataset_epoch)
+            self.ckpt_saver.save_images(mode, images_tensor, targets_tensor, probs_tensor, dataset_epoch)
 
+            if prune:
+                prune()
             #self.dataset_epoch += 1
 
         return images_tensor, targets_tensor
@@ -223,5 +233,5 @@ class SparseInputDatasetRecoverer:
         output_shape = [self.dataset_len] + list(self.each_entry_shape)
         return self.recover_image_dataset_internal(self.model, output_shape, self.num_real_classes, self.batch_size,
                                                    self.num_recovery_steps, self.include_layer_map, self.sparsity_mode,
-                                                   self.device, mode, dataset_epoch)
+                                                   self.device, mode, dataset_epoch, self.prune)
 

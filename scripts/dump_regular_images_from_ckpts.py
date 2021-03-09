@@ -39,7 +39,7 @@ class ImageDumper:
         try:
             epoch = 0
             while True:
-                images, targets = self.ckpt_saver.load_images(epoch, self.device)
+                images, targets, probs = self.ckpt_saver.load_images(epoch, self.device)
                 images_batch = self.get_regular_batch(images, targets, self.num_classes, 10)
                 image_batches_list.append(images_batch)
                 epoch += 1

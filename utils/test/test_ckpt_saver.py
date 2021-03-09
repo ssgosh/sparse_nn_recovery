@@ -11,13 +11,15 @@ def test_ckpt_save():
     ckpt = CkptSaver("ckpt_test/ckpt")
     images_list = [ torch.randn(20, 28, 28) for i in range(10) ]
     targets_list = [ torch.randint(high=10, low=0, size=(20,)) for i in range(10) ]
-    for dataset_epoch, (images, targets) in enumerate(zip(images_list, targets_list)):
-        ckpt.save_images(images, targets, dataset_epoch)
+    probs_list = [ torch.randn(size=(20,10)) for i in range(10) ]
+    for dataset_epoch, (images, targets, probs) in enumerate(zip(images_list, targets_list, probs_list)):
+        ckpt.save_images('train', images, targets, probs, dataset_epoch)
 
     for dataset_epoch in range(10):
-        images, targets = ckpt.load_images(dataset_epoch)
+        images, targets, probs = ckpt.load_images('train', dataset_epoch)
         assert torch.all(images_list[dataset_epoch] == images).item()
         assert torch.all(targets_list[dataset_epoch] == targets).item()
+        assert torch.all(probs_list[dataset_epoch] == probs).item()
 
     # Test model saving
     #model = torch.nn.Sequential(torch.nn.Linear(10, 20), torch.nn.ReLU(), torch.nn.Linear(20, 5))
