@@ -114,7 +114,10 @@ class AdversarialDatasetManager:
                 loader, sample = None, None
             return loader, sample
         else:
-            loader = DataLoader(adversarial_dataset, **{'batch_size': self.test_batch_size, 'shuffle': True})
+            if len(adversarial_dataset) != 0:
+                loader = DataLoader(adversarial_dataset, **{'batch_size': self.test_batch_size, 'shuffle': True})
+            else:
+                loader = None
             return loader
 
     def generate_train_test_validation_dataset(self, m, t=None, v=None):
