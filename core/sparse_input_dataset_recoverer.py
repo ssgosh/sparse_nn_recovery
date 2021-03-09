@@ -10,7 +10,8 @@ from icontract import ensure
 from core.sparse_input_recoverer import SparseInputRecoverer
 from core.tblabels import TBLabels
 
-from utils.torchutils import get_cross
+from utils.torchutils import get_cross, safe_clone
+
 
 # Creates an entire dataset of images, targets by doing sparse recovery from the model.
 # Note that targets has the actual class for which the images were trained. In order to
@@ -162,7 +163,7 @@ class SparseInputDatasetRecoverer:
                 self.ckpt_saver.save_images(mode, 'pruned', images_tensor, targets_tensor, probs_tensor, dataset_epoch)
             #self.dataset_epoch += 1
 
-        return images_tensor, targets_tensor
+        return images_tensor, targets_tensor, probs_tensor
 
     def log_first_100_images_stats(self, model, images_tensor, targets_tensor, include_layer_map, sparsity_mode, dataset_epoch):
         # Add first 100 images to tensorboard
@@ -235,4 +236,11 @@ class SparseInputDatasetRecoverer:
         return self.recover_image_dataset_internal(self.model, output_shape, self.num_real_classes, self.batch_size,
                                                    self.num_recovery_steps, self.include_layer_map, self.sparsity_mode,
                                                    self.device, mode, dataset_epoch, self.prune)
+
+    def prune_images(self, images_tensor, targets_tensor, probs_tensor):
+        keep = (probs_tensor >= self.low_prob_threshold)
+        img = safe_clone(images_tensor[keep])
+        tgt = safe_clone(targets_tensor[keep])
+        probs = safe_clone(probs_tensor[keep])
+        return img, tgt, probs
 

@@ -3,10 +3,7 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from core.sparse_input_dataset_recoverer import SparseInputDatasetRecoverer
 from utils.infinite_dataloader import InfiniteDataLoader
-
-
-def safe_clone(x):
-    return torch.clone(x.detach())
+from utils.torchutils import safe_clone
 
 
 def _combine(prev : DataLoader, new : DataLoader, beta : float) -> DataLoader:
@@ -99,7 +96,7 @@ class AdversarialDatasetManager:
     def generate_m_images(self, m, mode):
         print(f"Generating {mode} dataset #{self.dataset_epoch}, size = ", m)
         self.sidr.dataset_len = m  # * self.adv_training_batch_size
-        images, targets = self.sidr.recover_image_dataset(mode, self.dataset_epoch)
+        images, targets, _probs = self.sidr.recover_image_dataset(mode, self.dataset_epoch)
 
         # Fake labels are real_label + num_classes. E.g. Fake digit 0 has class 10, fake digit 1 has class 11 and so on
         fake_class_targets = targets.detach() + self.sidr.num_real_classes
@@ -131,6 +128,7 @@ class AdversarialDatasetManager:
         print("Generated train :", len(new_train.dataset), "Combined train :", len(self.train.dataset))
 
     def get_sample(self, images, targets, fake_class_targets, sample_size, batch_size):
+        sample_size = images.shape[0] if images.shape[0] < sample_size else sample_size
         batch_size = sample_size if sample_size < batch_size else batch_size
         print("Generating Sample, size =", sample_size, "batch size =", batch_size)
         with torch.no_grad():
