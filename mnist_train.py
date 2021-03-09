@@ -321,27 +321,29 @@ def main():
     # Show one image
     #sys.exit(1)
 
-    test_transform=transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,))
-    ])
+    # test_transform=transforms.Compose([
+    #     transforms.ToTensor(),
+    #     transforms.Normalize((0.1307,), (0.3081,))
+    # ])
+
     # From this tutorial:
     # https://pytorch.org/tutorials/beginner/data_loading_tutorial.html#iterating-through-the-dataset
     # , transforms are applied on each batch dynamically. Hence data gets
     # augmented due to random transforms.
-    train_transform = transforms.Compose([
-        transforms.RandomAffine(degrees=5, translate=(0.1, 0.1), scale=(0.9,
-                                                                        1.1), shear=None),
-        transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,))
-    ])
+    # train_transform = transforms.Compose([
+    #     transforms.RandomAffine(degrees=5, translate=(0.1, 0.1), scale=(0.9,
+    #                                                                     1.1), shear=None),
+    #     transforms.ToTensor(),
+    #     transforms.Normalize((0.1307,), (0.3081,))
+    # ])
+
     # dataset1 = datasets.MNIST('./data', train=True, download=True,
     #                           transform=train_transform)
     #
     # dataset2 = datasets.MNIST('./data', train=False,
     #                    transform=test_transform)
-    dataset1 = dataset_helper.get_dataset(which='train', transform=train_transform)
-    dataset2 = dataset_helper.get_dataset(which='test', transform=test_transform)
+    dataset1 = dataset_helper.get_dataset(which='train', transform='train')
+    dataset2 = dataset_helper.get_dataset(which='test', transform='test')
     print(f"Dataset name : {config.dataset}, train_len = {len(dataset1)}, test_len = {len(dataset2)}")
     train_loader = torch.utils.data.DataLoader(dataset1,**train_kwargs)
     test_loader = torch.utils.data.DataLoader(dataset2, **test_kwargs)
