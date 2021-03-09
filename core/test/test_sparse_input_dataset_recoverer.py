@@ -25,7 +25,7 @@ class TestSparseInputDatasetRecoverer(TestCase):
                                                         batch_size=bs, sparsity_mode=config.recovery_penalty_mode,
                                                         num_real_classes=10, dataset_len=n,
                                                         each_entry_shape=(1, 28, 28), device='cpu',
-                                                        ckpt_saver=ckpt_saver)
+                                                        ckpt_saver=ckpt_saver, config=config)
 
         for i in range(20):
             images, targets = dataset_recoverer.recover_image_dataset()

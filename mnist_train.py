@@ -393,7 +393,7 @@ def main():
             num_real_classes=dataset_helper.get_num_classes(),
             dataset_len=dataset_len,
             each_entry_shape=dataset_helper.get_each_entry_shape(),
-            device=device, ckpt_saver=ckpt_saver)
+            device=device, ckpt_saver=ckpt_saver, config=config)
         #images, targets = dataset_recoverer.recover_image_dataset()
         #print("Recovered images, targets", images.shape, targets.shape, targets.detach().numpy())
         #sys.exit(0)

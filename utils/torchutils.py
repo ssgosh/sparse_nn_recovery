@@ -25,3 +25,7 @@ def get_cross(n, like):
     d2 = torch.flip(d1, dims=[1, ])
     cross = ((d1 + d2) > 0.).float().unsqueeze(dim=0)
     return cross
+
+
+def safe_clone(x):
+    return torch.clone(x.detach())

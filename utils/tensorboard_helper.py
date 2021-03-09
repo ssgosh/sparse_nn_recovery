@@ -13,7 +13,12 @@ import utils.mnist_helper as mh
 class TensorBoardHelper:
 
     def __init__(self, name=None):
+        self.name = name
         self.writer = SummaryWriter(name)
+
+        # Reset SummaryWriter after these many global_steps
+        self.reset_steps = 5000
+        self.next_reset = self.reset_steps
 
     def close(self):
         print("Closing SummaryWriter")
@@ -23,7 +28,18 @@ class TensorBoardHelper:
         print("Flushing SummaryWriter")
         self.writer.flush()
 
+    def reset(self):
+        self.close()
+        print('Creating new SummaryWriter')
+        self.writer = SummaryWriter(self.name)
+
+    def reset_if_needed(self, global_step):
+        if global_step >= self.next_reset:
+            self.reset()
+            self.next_reset = global_step + self.reset_steps
+
     def add_image_grid(self, images, tag, filtered, num_per_row, global_step):
+        self.reset_if_needed(global_step)
         images = images.detach()
         mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
         rng = (mnist_zero, mnist_one) if filtered else None
@@ -80,6 +96,7 @@ class TensorBoardHelper:
         plot.close()
 
     def log_dict(self, label, scalars, global_step):
+        self.reset_if_needed(global_step)
         for key in scalars:
             tag = f"{label}/{key}" if label else key
             self.writer.add_scalar(tag, scalars[key], global_step=global_step)
@@ -102,6 +119,7 @@ class TensorBoardHelper:
 
     def add_tensorboard_stuff(self, sparsity_mode, images, losses, probs,
                               sparsity, global_step, add_images=True):
+        self.reset_if_needed(global_step)
         if add_images:
             #self.writer.add_images(f"{sparsity_mode}/Unfiltered Images", images, dataformats="NCHW",
             #        global_step=global_step)
@@ -120,6 +138,7 @@ class TensorBoardHelper:
 
     # Adds a list as text
     def add_list(self, lst, tag, num_per_row, global_step):
+        self.reset_if_needed(global_step)
         n = len(lst)
         #text = ''
         chunked_lst = []

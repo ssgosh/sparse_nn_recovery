@@ -3,10 +3,7 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from core.sparse_input_dataset_recoverer import SparseInputDatasetRecoverer
 from utils.infinite_dataloader import InfiniteDataLoader
-
-
-def safe_clone(x):
-    return torch.clone(x.detach())
+from utils.torchutils import safe_clone
 
 
 def _combine(prev : DataLoader, new : DataLoader, beta : float) -> DataLoader:
@@ -44,7 +41,7 @@ class DatasetMerger:
         self.last_combined_train = None
         self.last_generated_train : DataLoader = None
 
-    def combine_with_previous_train(self, new_train):
+    def combine_with_previous_train(self, new_train) -> DataLoader:
         if not self.combine or self.last_combined_train is None:
             self.last_combined_train = self.last_generated_train = new_train
             return new_train
@@ -65,7 +62,7 @@ class AdversarialDatasetManager:
         # XXX: Train dataset is not kept in a list so as to be gc'd by python
         #      Only current train dataset is kept.
         # Depending on the mode, current train data may be a geometric combination of previous train datasets
-        self.train = None
+        self.train : DataLoader = None
         self.valid = []
         self.test = []
 
@@ -99,7 +96,7 @@ class AdversarialDatasetManager:
     def generate_m_images(self, m, mode):
         print(f"Generating {mode} dataset #{self.dataset_epoch}, size = ", m)
         self.sidr.dataset_len = m  # * self.adv_training_batch_size
-        images, targets = self.sidr.recover_image_dataset(mode, self.dataset_epoch)
+        images, targets, _probs = self.sidr.recover_image_dataset(mode, self.dataset_epoch)
 
         # Fake labels are real_label + num_classes. E.g. Fake digit 0 has class 10, fake digit 1 has class 11 and so on
         fake_class_targets = targets.detach() + self.sidr.num_real_classes
@@ -110,11 +107,19 @@ class AdversarialDatasetManager:
         #                                                       images, targets, fake_class_targets)
         adversarial_dataset = torch.utils.data.TensorDataset(images, targets, fake_class_targets)
         if mode == 'train':
-            loader = InfiniteDataLoader(adversarial_dataset, **{'batch_size': self.train_batch_size, 'shuffle': True})
-            sample = self.get_sample(images, targets, fake_class_targets, self.sidr.batch_size, self.test_batch_size)
+            if len(adversarial_dataset) != 0:
+                loader = InfiniteDataLoader(adversarial_dataset, **{'batch_size': self.train_batch_size, 'shuffle': True})
+                sample = self.get_sample(images, targets, fake_class_targets, self.sidr.batch_size, self.test_batch_size)
+            else:
+                print(f'Got empty dataset for {mode} in epoch {self.dataset_epoch}')
+                loader, sample = None, None
             return loader, sample
         else:
-            loader = DataLoader(adversarial_dataset, **{'batch_size': self.test_batch_size, 'shuffle': True})
+            if len(adversarial_dataset) != 0:
+                loader = DataLoader(adversarial_dataset, **{'batch_size': self.test_batch_size, 'shuffle': True})
+            else:
+                print(f'Got empty dataset for {mode} in epoch {self.dataset_epoch}')
+                loader = None
             return loader
 
     def generate_train_test_validation_dataset(self, m, t=None, v=None):
@@ -122,15 +127,25 @@ class AdversarialDatasetManager:
         v = v if v is not None else self.sidr.batch_size
 
         new_train, sample = self.generate_m_images(m, 'train')
+        valid = self.generate_m_images(v, 'valid')
+        test = self.generate_m_images(t, 'test')
+
+        if new_train is None or sample is None or valid is None or test is None:
+            print('*** Pruned all adversarial images in dataset generated in epoch', self.dataset_epoch, '***')
+            return False
+
         self.train_sample.append(sample)
-        self.valid.append(self.generate_m_images(v, 'valid'))
-        self.test.append(self.generate_m_images(t, 'test'))
+        self.valid.append(valid)
+        self.test.append(test)
 
         # Merge new_train with previous train if enabled
         self.train = self.dmerger.combine_with_previous_train(new_train)
         print("Generated train :", len(new_train.dataset), "Combined train :", len(self.train.dataset))
+        self.dataset_count += 1
+        return True
 
     def get_sample(self, images, targets, fake_class_targets, sample_size, batch_size):
+        sample_size = images.shape[0] if images.shape[0] < sample_size else sample_size
         batch_size = sample_size if sample_size < batch_size else batch_size
         print("Generating Sample, size =", sample_size, "batch size =", batch_size)
         with torch.no_grad():
@@ -142,11 +157,11 @@ class AdversarialDatasetManager:
                               **{'batch_size' : batch_size})
 
     def get_new_train_loader(self, m):
-        self.generate_train_test_validation_dataset(m)
-        self.dataset_generation_epochs.append(self.dataset_epoch)
-        self.dataset_count += 1
+        generated = self.generate_train_test_validation_dataset(m)
+        if generated:
+            self.dataset_generation_epochs.append(self.dataset_epoch)
         assert len(self.train_sample) == self.dataset_count
         assert len(self.valid) == self.dataset_count
         assert len(self.test) == self.dataset_count
-        return self.train
+        return self.train, generated
 
