@@ -7,10 +7,11 @@ from torch.utils.tensorboard import SummaryWriter
 from torchvision import datasets, transforms
 
 def tensorboard_setup():
-    writer = SummaryWriter()
+    writer = SummaryWriter('sandbox/test_runs')
     return writer
 
 def main():
+    global start
     x = torch.rand(10, 28, 28, requires_grad=True)
     target = torch.diagflat(torch.ones(28))
     target1 = torch.flip(target, dims=[1, ])
@@ -18,7 +19,8 @@ def main():
     print(target.shape)
 
     opt = torch.optim.SGD([x], lr=1.0, momentum=0.9)
-    for i in range(200):
+    n = 20
+    for i in range(start, start + n):
         opt.zero_grad()
         diff = x - target
         mse = torch.mean(diff * diff)
@@ -31,6 +33,7 @@ def main():
 
         img_grid = torchvision.utils.make_grid(torch.unsqueeze(x, dim=1), 4)
         writer.add_image("Image Grid", img_grid, global_step=i)
+    start = start + n
 
 def foobar():
     # Writer will output to ./runs/ directory by default
@@ -66,9 +69,11 @@ def test_scalars():
         writer.add_scalars("another/tag", {'x' : x, 'x*cos(x)' : x*math.cos(x)}, x)
 
 
-test_scalars()
+#test_scalars()
 
 #foobar()
-writer = tensorboard_setup()
-main()
+start = 0
+for i in range(10):
+    writer = tensorboard_setup()
+    main()
 
