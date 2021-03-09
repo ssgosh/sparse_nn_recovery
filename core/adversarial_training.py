@@ -71,7 +71,8 @@ class AdversarialTrainer:
                  model, opt_model, adv_training_batch_size, device, log_interval, dry_run, early_epoch,
                  num_batches_early_epoch,
                  test_loader : DataLoader, lr_scheduler_model : StepLR,
-                 adversarial_classification_mode : str):
+                 adversarial_classification_mode : str,
+                 config):
         self.adv_training_batch_size = adv_training_batch_size  # Same batch size is used for both real and adversarial training
         self.real_data_train_loader = real_data_train_loader
         self.real_data_train_samples = real_data_train_samples
@@ -103,7 +104,7 @@ class AdversarialTrainer:
         self.dataset_mgr : AdversarialDatasetManager = AdversarialDatasetManager(sparse_input_dataset_recoverer,
                                                      train_batch_size=adv_training_batch_size,
                                                      test_batch_size=test_loader.batch_size)
-        self.external_dataset_mgr = ExternalDatasetManager(test_loader.batch_size)
+        self.external_dataset_mgr = ExternalDatasetManager(test_loader.batch_size, config)
 
     # Train model on the given batch. Used for real data or adversarial data training
     def train_one_batch(self, batch_inputs, batch_targets):

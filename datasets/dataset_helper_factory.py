@@ -43,6 +43,8 @@ class DatasetHelperFactory:
         elif 'cifar' in dataset_name:
             return CIFARDatasetHelper(name=cased_dataset_name, subset=subset, non_sparse=non_sparse)
         elif dataset_name == 'external_b':
+            # Non-sparse param doesn't make sense with a pre-processed tensor dataset
+            assert not non_sparse
             return MNISTTensorDatasetHelper(name=cased_dataset_name)
         else:
             raise ValueError("Invalid dataset name: %s" % dataset_name)
