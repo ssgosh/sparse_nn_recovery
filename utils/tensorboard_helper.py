@@ -170,10 +170,10 @@ class TensorBoardHelper:
         #print(table)
         self.writer.add_text(tag, table, global_step)
 
-    def log_regular_batch_stats(self, suffix, model, images_tensor, targets_tensor, include_layer_map, sparsity_mode, dataset_epoch, precomputed=False):
+    def log_regular_batch_stats(self, data_type, suffix, model, images_tensor, targets_tensor, include_layer_map, sparsity_mode, dataset_epoch, precomputed=False):
         prefix = TBLabels.RECOVERY_EPOCH #"recovery_epoch"
-        img_label = f"{prefix}/dataset_images_{suffix}" if suffix else f"{prefix}/dataset_images"
-        tgt_label = f"{prefix}/dataset_targets_{suffix}" if suffix else f"{prefix}/dataset_targets"
+        img_label = f"{prefix}/{data_type}_dataset_images_{suffix}" if suffix else f"{prefix}/dataset_images"
+        tgt_label = f"{prefix}/{data_type}_dataset_targets_{suffix}" if suffix else f"{prefix}/dataset_targets"
 
         if precomputed:
             images, targets = images_tensor, targets_tensor

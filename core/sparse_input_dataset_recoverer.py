@@ -92,11 +92,11 @@ class SparseInputDatasetRecoverer:
 
             if mode == 'train': # Perform logging only for the train dataset
                 def log_bin(suffix, bin):
-                    self.tbh.log_regular_batch_stats(suffix, model, images_tensor[bin], targets_tensor[bin], include_layer_map,
+                    self.tbh.log_regular_batch_stats('adv', suffix, model, images_tensor[bin], targets_tensor[bin], include_layer_map,
                                                      sparsity_mode, dataset_epoch)
 
                 #self.log_first_100_images_stats(model, images_tensor, targets_tensor, include_layer_map, sparsity_mode)
-                self.tbh.log_regular_batch_stats('', model, images_tensor, targets_tensor, include_layer_map, sparsity_mode,
+                self.tbh.log_regular_batch_stats('adv', '', model, images_tensor, targets_tensor, include_layer_map, sparsity_mode,
                                                  dataset_epoch)
                 # Bin images by probability and log
                 bin_0_9 = (probs_tensor >= 0.9)
@@ -125,7 +125,7 @@ class SparseInputDatasetRecoverer:
                             if i >= img_per_bin:
                                 break
                         while i < img_per_bin:
-                            ret.append(get_cross(28, imgs1))
+                            ret.append(self.image_one * get_cross(28, imgs1) + self.image_zero)
                             i += 1
                         return ret
 
@@ -153,7 +153,7 @@ class SparseInputDatasetRecoverer:
                     images1_tensor = torch.stack(images1, dim=0)
                     targets1_tensor = torch.tensor([cls for cls in range(self.num_real_classes)],
                                                    device=targets_tensor.device)
-                    self.tbh.log_regular_batch_stats('sorted', model, images1_tensor, targets1_tensor, include_layer_map,
+                    self.tbh.log_regular_batch_stats('adv', 'sorted', model, images1_tensor, targets1_tensor, include_layer_map,
                                                  sparsity_mode, dataset_epoch, precomputed=True)
                 # Log unconfident images
                 log_images_sorted()
