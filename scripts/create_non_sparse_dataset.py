@@ -19,3 +19,5 @@ config = parser.parse_args()
 transform = transforms.ToTensor()
 dname = config.dataset
 ds = DatasetHelperFactory.get(dname).get_dataset(which='train', transform=transform)
+
+new_dname = f"{dname}_non_sparse"

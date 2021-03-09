@@ -6,8 +6,8 @@ from utils import mnist_helper
 
 
 class MNISTdatasetHelper(DatasetHelper):
-    def __init__(self, name, subset):
-        super().__init__(name, subset)
+    def __init__(self, name, subset, non_sparse):
+        super().__init__(name, subset, non_sparse)
 
     def get_dataset_(self, path, which, transform):
         return datasets.MNIST(path, train=(which == 'train'), transform=transform)

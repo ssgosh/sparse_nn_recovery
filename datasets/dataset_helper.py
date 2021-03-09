@@ -9,9 +9,10 @@ from torch.utils.data import Dataset, Subset
 # Used in the main scripts.
 class DatasetHelper(ABC):
 
-    def __init__(self, name, subset):
+    def __init__(self, name, subset, non_sparse):
         self.name = name
         self.subset = subset
+        self.non_sparse = non_sparse
 
     def get_dataset(self, which='train', transform=None) -> Dataset:
         """
@@ -21,7 +22,7 @@ class DatasetHelper(ABC):
         :param transform:
         :return:
         """
-        train = which == 'train'
+        train = (which == 'train')
         if transform == 'train' : transform = self.get_train_transform()
         elif transform == 'test' : transform = self.get_test_transform()
         path = './data'
