@@ -40,7 +40,8 @@ class NamedExpt:
         self.names = [
             'quick', 'quick-debug', # Only for checking if the pipeline works without any python errors. Doesn't care about algo output
             'quick-opt', # For quickly testing if the optimization is somewhat working, with minimal number of epochs, batches etc
-            'full',  # For full expt
+            'full-sparse',  # For full expt, with data loaded in normal mode
+            'full-non-sparse',  # For full expt, with data loaded in non-sparse mode (add constant pixel)
             'pretrain-MNIST_B', # For pretraining on dataset B
         ]
         self.parser = argparse.ArgumentParser(description='Named Experiments', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -94,8 +95,12 @@ class NamedExpt:
                   f'--num-adversarial-images-epoch-mode 128 ' \
                   f'--recovery-batch-size 128 ' \
                   f'--num-batches-early-epoch 100 '
-        elif args.expt == 'full':
-            pass
+        elif args.expt == 'full-sparse':
+            cmd = cmd + \
+                    f'--sparse-dataset ' 
+        elif args.expt == 'full-non-sparse':
+            cmd = cmd + \
+                    f'--non-sparse-dataset ' 
         elif args.expt == 'pretrain-MNIST_B':
             cmd = cmd + \
                     f'--dataset MNIST_B ' \
