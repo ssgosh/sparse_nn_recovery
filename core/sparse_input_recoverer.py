@@ -50,7 +50,6 @@ class SparseInputRecoverer:
                             default=True, required=False,
                             help='Enable Projected Gradient Descent (clipping)')
 
-
     @staticmethod
     def setup_default_config(config):
         config.include_layer = SparseInputRecoverer.include_layer_map
@@ -64,6 +63,8 @@ class SparseInputRecoverer:
         :type tbh: TensorBoardHelper
         :type verbose: bool
         """
+        self.recovery_lambd = config.recovery_lambd
+        self.recovery_lambd_layers = config.recovery_lambd_layers
         self.verbose = verbose
         self.config = config
         self.tbh = tbh
@@ -129,10 +130,12 @@ class SparseInputRecoverer:
 
     def forward(self, model, images, targets, include_layer, include_likelihood):
         # lambda for input
-        lambd = self.config.recovery_lambd
+        #lambd = self.config.recovery_lambd
+        lambd = self.recovery_lambd
         # lambd = 0.01
         # lambda for each layer
-        lambd_layers = self.config.recovery_lambd_layers  # [0.1, 0.1, 0.1]
+        #lambd_layers = self.config.recovery_lambd_layers  # [0.1, 0.1, 0.1]
+        lambd_layers = self.recovery_lambd_layers  # [0.1, 0.1, 0.1]
         # lambd_layers = [0.01, 0.01, 0.01]
         # lambd2 = 1.
         losses = {}
@@ -250,3 +253,8 @@ class SparseInputRecoverer:
         imp.post_process_images(initial_image, mode='low_high', low=-0.5, high=2.0)
         plotter.show_image(initial_image[0][0])
 
+    def anneal_lambda(self, lambda_annealing_factor):
+        before = self.recovery_lambd
+        self.recovery_lambd *= lambda_annealing_factor
+        self.recovery_lambd_layers = 3 * [self.recovery_lambd]
+        print(f"Annealed lambda to {self.recovery_lambd} from {before}")
