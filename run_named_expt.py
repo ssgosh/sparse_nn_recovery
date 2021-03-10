@@ -126,8 +126,10 @@ class NamedExpt:
 
         try:
             with open(f'{args.run_dir}/logfile.txt', 'a') as f:
+                f.write(" ".join(cmd_lst) +"\n")
+                f.flush()
                 foo = self.run_command(cmd_lst)
-                print(foo)
+                #print(foo)
                 for l, rc in foo:
                     print(l, end="", flush=True)
                     f.write(l)
