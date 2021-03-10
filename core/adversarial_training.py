@@ -450,6 +450,7 @@ class AdversarialTrainer:
                         epoch_over = self.generate_m_images_train_k_batches_adversarial(
                             m=config.num_adversarial_images_batch_mode, k=config.num_adversarial_train_batches)
                 elif train_mode == 'adversarial-epoch':
+                    self.pre_epoch_stuff(epoch)
                     self.dataset_mgr.dataset_epoch = epoch
                     generated = self.generate_m_images_train_one_epoch_adversarial(
                         m=config.num_adversarial_images_epoch_mode)
@@ -467,11 +468,13 @@ class AdversarialTrainer:
             img, target = next(iter(dl))
             self.tbh.log_regular_batch_stats('real', '', None, img, target, None, '', dataset_epoch=self.epoch, precomputed=False)
 
-    def post_epoch_stuff(self, generated, epoch):
-        if not generated and self.lambda_annealing:
-            self.sparse_input_dataset_recoverer.sparse_input_recoverer.anneal_lambda(self.lambda_annealing_factor)
-
+    def pre_epoch_stuff(self, epoch):
         # Lambda logging is done whether or not annealing is enabled
         self.tbh.log_dict(label='adversarial_training',
                           scalars={'lambda': self.sparse_input_dataset_recoverer.sparse_input_recoverer.recovery_lambd},
                           global_step=epoch)
+
+    def post_epoch_stuff(self, generated, epoch):
+        if not generated and self.lambda_annealing:
+            self.sparse_input_dataset_recoverer.sparse_input_recoverer.anneal_lambda(self.lambda_annealing_factor)
+
