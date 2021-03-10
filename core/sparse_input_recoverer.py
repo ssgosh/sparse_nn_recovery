@@ -258,5 +258,3 @@ class SparseInputRecoverer:
         self.recovery_lambd *= lambda_annealing_factor
         self.recovery_lambd_layers = 3 * [self.recovery_lambd]
         print(f"Annealed lambda to {self.recovery_lambd} from {before}")
-
-

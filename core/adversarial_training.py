@@ -228,8 +228,6 @@ class AdversarialTrainer:
                 break
 
         self.epoch += 1
-        if not generated and self.lambda_annealing:
-            self.sparse_input_dataset_recoverer.sparse_input_recoverer.anneal_lambda(self.lambda_annealing_factor)
         return generated
 
     # Say adversarial image batch size is 32
@@ -453,8 +451,9 @@ class AdversarialTrainer:
                             m=config.num_adversarial_images_batch_mode, k=config.num_adversarial_train_batches)
                 elif train_mode == 'adversarial-epoch':
                     self.dataset_mgr.dataset_epoch = epoch
-                    self.generate_m_images_train_one_epoch_adversarial(
+                    generated = self.generate_m_images_train_one_epoch_adversarial(
                         m=config.num_adversarial_images_epoch_mode)
+                    self.post_epoch_stuff(generated, epoch)
             self.validate()
             self.ckpt_saver.save_model(self.model, epoch, config.model_classname)
             self.lr_scheduler_model.step()
@@ -467,3 +466,12 @@ class AdversarialTrainer:
             dl = torch.utils.data.DataLoader(self.real_data_train_loader.dataset, batch_size=1000, shuffle=True)
             img, target = next(iter(dl))
             self.tbh.log_regular_batch_stats('real', '', None, img, target, None, '', dataset_epoch=self.epoch, precomputed=False)
+
+    def post_epoch_stuff(self, generated, epoch):
+        if not generated and self.lambda_annealing:
+            self.sparse_input_dataset_recoverer.sparse_input_recoverer.anneal_lambda(self.lambda_annealing_factor)
+
+        # Lambda logging is done whether or not annealing is enabled
+        self.tbh.log_dict(label='adversarial_training',
+                          scalars={'lambda': self.sparse_input_dataset_recoverer.sparse_input_recoverer.recovery_lambd},
+                          global_step=epoch)
