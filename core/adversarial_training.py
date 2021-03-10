@@ -66,6 +66,13 @@ class AdversarialTrainer:
                             metavar='CMODE', choices=cls.valid_adversarial_classification_modes,
                             help='Whether to use fake classes or soft labels with equal probability on real classes '
                                  'for adversarial examples. One of: ' + ', '.join(cls.valid_adversarial_classification_modes))
+        parser.add_argument('--lambda-annealing', action='store_true', default=True, dest='lambda_annealing',
+                            help='Anneal L1 penalty used for recovering sparse adversarial images '
+                                 'if no adversarial images generated in last epoch')
+        parser.add_argument('--no-lambda-annealing', action='store_false', default=True, dest='lambda_annealing',
+                            help='Disable annealing of L1 penalty used for recovering sparse adversarial images ')
+        parser.add_argument('--lambda-annealing-factor', type=float, default=0.5,
+                            help='L1 penalty is multiplied by this factor when annealing')
 
     def __init__(self, real_data_train_loader, real_data_train_samples, sparse_input_dataset_recoverer: SparseInputDatasetRecoverer,
                  model, opt_model, adv_training_batch_size, device, log_interval, dry_run, early_epoch,
@@ -105,6 +112,9 @@ class AdversarialTrainer:
                                                      train_batch_size=adv_training_batch_size,
                                                      test_batch_size=test_loader.batch_size)
         self.external_dataset_mgr = ExternalDatasetManager(test_loader.batch_size, config)
+
+        self.lambda_annealing = config.lambda_annealing
+        self.lambda_annealing_factor = config.lambda_annealing_factor
 
     # Train model on the given batch. Used for real data or adversarial data training
     def train_one_batch(self, batch_inputs, batch_targets):
@@ -218,6 +228,7 @@ class AdversarialTrainer:
                 break
 
         self.epoch += 1
+        return generated
 
     # Say adversarial image batch size is 32
     # and m is 10
@@ -439,9 +450,11 @@ class AdversarialTrainer:
                         epoch_over = self.generate_m_images_train_k_batches_adversarial(
                             m=config.num_adversarial_images_batch_mode, k=config.num_adversarial_train_batches)
                 elif train_mode == 'adversarial-epoch':
+                    self.pre_epoch_stuff(epoch)
                     self.dataset_mgr.dataset_epoch = epoch
-                    self.generate_m_images_train_one_epoch_adversarial(
+                    generated = self.generate_m_images_train_one_epoch_adversarial(
                         m=config.num_adversarial_images_epoch_mode)
+                    self.post_epoch_stuff(generated, epoch)
             self.validate()
             self.ckpt_saver.save_model(self.model, epoch, config.model_classname)
             self.lr_scheduler_model.step()
@@ -454,3 +467,14 @@ class AdversarialTrainer:
             dl = torch.utils.data.DataLoader(self.real_data_train_loader.dataset, batch_size=1000, shuffle=True)
             img, target = next(iter(dl))
             self.tbh.log_regular_batch_stats('real', '', None, img, target, None, '', dataset_epoch=self.epoch, precomputed=False)
+
+    def pre_epoch_stuff(self, epoch):
+        # Lambda logging is done whether or not annealing is enabled
+        self.tbh.log_dict(label='adversarial_training',
+                          scalars={'lambda': self.sparse_input_dataset_recoverer.sparse_input_recoverer.recovery_lambd},
+                          global_step=epoch)
+
+    def post_epoch_stuff(self, generated, epoch):
+        if not generated and self.lambda_annealing:
+            self.sparse_input_dataset_recoverer.sparse_input_recoverer.anneal_lambda(self.lambda_annealing_factor)
+
