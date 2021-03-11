@@ -14,10 +14,16 @@ class CIFARDatasetHelper(DatasetHelper):
         self.train_transforms = [
             transforms.RandomCrop(32, padding=4),
             transforms.RandomHorizontalFlip(),
+            # XXX: RandomAffine is not used here: https://github.com/kuangliu/pytorch-cifar/issues/130
             #transforms.RandomAffine(degrees=5, translate=(0.1, 0.1), scale=(0.9, 1.1), shear=None),
         ]
         self.test_transforms = []
         self.usual_mean = (0.4914, 0.4822, 0.4465)
+        # XXX: This is what is used in https://github.com/kuangliu/pytorch-cifar/blob/49b7aa97b0c12fe0d4054e670403a16b6b834ddd/main.py#L34
+        #   However, it does not match the computed std deviation values.
+        #   Computed values are:
+        #   mean = [0.4913996458053589, 0.48215845227241516, 0.44653093814849854]
+        #   std = [0.2470322549343109, 0.24348513782024384, 0.26158788800239563]
         self.usual_std = (0.2023, 0.1994, 0.2010)
         self.non_sparse_mean = {}
         self.non_sparse_std = {}
