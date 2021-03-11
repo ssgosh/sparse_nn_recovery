@@ -1,8 +1,8 @@
 """Computes the mean and std of an entire dataset"""
 import sys
+
 sys.path.insert(0, ".")
 import argparse
-import math
 
 import torch
 from torch.utils.data import DataLoader
@@ -43,22 +43,23 @@ if config.stats == 'mean_std':
     }
     datasets = choices[config.which]
 
-    total = 0.
-    total_sq = 0.
+    channels = dh.get_each_entry_shape()[0]
+    total = torch.zeros(channels)
+    total_sq = torch.zeros(channels)
     num = 0
     for ds in datasets:
         dl = DataLoader(ds, batch_size=1000)
         for images, targets in dl:
-            total += torch.sum(images).item()
-            total_sq += torch.sum(images * images).item()
-            num += torch.flatten(images).shape[0]
-
+            total += torch.sum(images, (0, 2, 3))
+            total_sq += torch.sum(images * images, (0, 2, 3))
+            num += images.shape[0] * images.shape[2] * images.shape[3]
 
     mean = total / num
     mean_sq = total_sq / num
-    std = math.sqrt(mean_sq - mean**2)
+    std = torch.sqrt(mean_sq - mean**2)
 
-    print(f'mean = {mean}, std = {std}')
+    print(f'mean = {mean.tolist()}, std = {std.tolist()}')
+
 elif config.stats == 'zero_one':
     zero, one = dh.compute_transform_low_high()
     print(f'zero = {zero}, one = {one}')
