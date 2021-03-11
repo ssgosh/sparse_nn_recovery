@@ -14,19 +14,19 @@ class CIFARdatasetHelper(DatasetHelper):
             transforms.RandomAffine(degrees=5, translate=(0.1, 0.1), scale=(0.9, 1.1), shear=None),
         ]
         self.test_transforms = []
-        self.usual_mean = 0.
-        self.usual_std = 0.
+        self.usual_mean = (0.4914, 0.4822, 0.4465)
+        self.usual_std = (0.2023, 0.1994, 0.2010)
         self.non_sparse_mean = {}
         self.non_sparse_std = {}
         self.constant_pixel_val = 0.3
 
         # Further needed by the non-sparse mixin
         # These are transformed values of zero and one pixel values
-        self.usual_zero = -0.4242129623889923
-        self.usual_one = 2.821486711502075
+        self.usual_zero = 0.    #-0.4242129623889923
+        self.usual_one = 1.     #2.821486711502075
 
-        self.non_sparse_zero = {0.3: -1.7120479345321655}
-        self.non_sparse_one = {0.3: 2.533843517303467}
+        self.non_sparse_zero = {}
+        self.non_sparse_one = {}
 
     def get_dataset_(self, path, which, transform):
         return datasets.MNIST(path, train=(which == 'train'), transform=transform)
