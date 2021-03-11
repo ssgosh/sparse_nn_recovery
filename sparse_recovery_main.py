@@ -68,27 +68,29 @@ def add_main_script_arguments():
 
 def setup_config(config):
     # This will change when we support multiple datasets
-    DatasetHelperFactory.get(config.dataset).setup_config(config)
+    dh = DatasetHelperFactory.get(config.dataset)
+    dh.setup_config(config)
     SparseInputRecoverer.setup_default_config(config)
     # initial_image = torch.normal(mnist_zero, 0.01, (1, 1, 28, 28))
     if config.dump_config:
         json.dump(vars(config), sys.stdout, indent=2, sort_keys=True)
         sys.exit(0)
 
-    return config, config.include_layer, config.labels
+    return config, config.include_layer, config.labels, dh
 
 
 def setup_everything(argv):
     parser = add_main_script_arguments()
     SparseInputRecoverer.add_command_line_arguments(parser)
     config = parser.parse_args(argv)
-    config, include_layer, labels = setup_config(config)
+    config, include_layer, labels, dh = setup_config(config)
 
     rh.setup_run_dir(config, 'image_runs')
     plotter.set_run_dir(config.run_dir)
     plotter.set_image_zero_one()
 
-    model = load_model(config)
+    # model = load_model(config)
+    model = dh.get_model('max-entropy', device='cpu', config=config, load=True)
 
 
     tbh = TensorBoardHelper(config.run_dir)

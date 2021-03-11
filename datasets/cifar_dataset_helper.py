@@ -4,6 +4,7 @@ from torchvision import datasets
 from torchvision.transforms import transforms
 
 from datasets.dataset_helper import DatasetHelper
+from pytorch_cifar.models import ResNet18
 
 
 class CIFARDatasetHelper(DatasetHelper):
