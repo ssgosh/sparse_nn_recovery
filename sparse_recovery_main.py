@@ -92,17 +92,17 @@ def setup_everything(argv):
     # model = load_model(config)
     model = dh.get_model('max-entropy', device='cpu', config=config, load=True)
 
-
     tbh = TensorBoardHelper(config.run_dir)
 
     sparse_input_recoverer = SparseInputRecoverer(config, tbh, verbose=True)
 
-    return config, include_layer, labels, model, tbh, sparse_input_recoverer
+    return config, include_layer, labels, model, tbh, sparse_input_recoverer, dh
 
 
 def main():
-    config, include_layer, labels, model, tbh, sparse_input_recoverer = setup_everything(sys.argv[1:])
-    initial_image = torch.randn(1, 1, 28, 28)
+    config, include_layer, labels, model, tbh, sparse_input_recoverer, dh = setup_everything(sys.argv[1:])
+    #initial_image = torch.randn(1, 1, 28, 28)
+    initial_image = torch.randn( *( [1] + list(dh.get_each_entry_shape()) ) )
     #images_list = torch.load("images_list.pt")
     #post_processed_images_list = torch.load("post_processed_images_list.pt")
 
