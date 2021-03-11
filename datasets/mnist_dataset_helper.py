@@ -41,7 +41,7 @@ class MNISTdatasetHelper(DatasetHelper, ):
     def get_model(self, model_mode, device):
         if model_mode == 'fake-classes': model = ExampleCNNNet(20).to(device)
         elif model_mode == 'max-entropy': model = ExampleCNNNet(10).to(device)
-        else: raise ValueError(f"Invalid mode mode {model_mode}")
+        else: raise ValueError(f"Invalid model mode {model_mode}")
         # model = MLPNet().to(device)
         # model = MLPNet3Layer(num_classes=20).to(device)
         # model = MaxNormMLP(num_classes=20).to(device)
