@@ -73,7 +73,7 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
         pass
 
     @abstractmethod
-    def get_model(self, model_mode, device):
+    def get_model(self, model_mode, device, config=None, load=False):
         pass
 
     @abstractmethod

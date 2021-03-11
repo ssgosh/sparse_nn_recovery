@@ -1,3 +1,4 @@
+import torch
 from icontract import require
 from torchvision import datasets
 from torchvision.transforms import transforms
@@ -46,12 +47,15 @@ class CIFARDatasetHelper(DatasetHelper):
     def get_each_entry_shape(self):
         return (3, 28, 28)
 
-    def get_model(self, model_mode, device):
+    def get_model(self, model_mode, device, config=None, load=False):
         model = None
         if model_mode == 'fake-classes':
             raise ValueError(f"Model mode {model_mode} not supported for CIFAR10")
         elif model_mode == 'max-entropy':
-            raise NotImplementedError()
+            assert load
+            model = ResNet18()
+            checkpoint = torch.load(config.discriminator_model_file)
+            model.load_state_dict(checkpoint['net'])
         else:
             raise ValueError(f"Invalid model mode {model_mode}")
         # model = MLPNet().to(device)
@@ -60,5 +64,6 @@ class CIFARDatasetHelper(DatasetHelper):
         return model
 
     def update_config(self, config):
-        config.model_classname = 'Resnet18'
+        config.model_classname = 'ResNet18'
+        config.discriminator_model_file = 'ckpt/ResNet18/ckpt.pth'
 

@@ -45,6 +45,8 @@ def add_main_script_arguments():
                                                  'discriminative model by gradient descent on input')
     parser.add_argument('--mode', type=str, default='all-digits', required=False,
                         help='Image recovery mode: "single-digit" or "all-digits"')
+    parser.add_argument('--dataset', type=str, default='mnist', required=False, choices=['mnist', 'cifar'],
+                        help='Which dataset images to recover')
     parser.add_argument('--run-dir', type=str, default=None, required=False,
                         help='Directory inside which outputs and tensorboard logs will be saved')
     parser.add_argument('--run-suffix', type=str, default='', required=False,
@@ -66,7 +68,7 @@ def add_main_script_arguments():
 
 def setup_config(config):
     # This will change when we support multiple datasets
-    DatasetHelperFactory.get('mnist').setup_config(config)
+    DatasetHelperFactory.get(config.dataset).setup_config(config)
     SparseInputRecoverer.setup_default_config(config)
     # initial_image = torch.normal(mnist_zero, 0.01, (1, 1, 28, 28))
     if config.dump_config:
