@@ -28,12 +28,14 @@ def get_mnist_zero():
 
 
 def undo_transform(image):
+    assert False, "This method is now deprecated"
     mean = 0.1307
     std = 0.3081
     return mean + image * std
 
 
 def mnist_post_process_images_list(images_list):
+    assert False, "This method is now deprecated"
     transformed_low, transformed_high = compute_mnist_transform_low_high()
     imp.post_process_images_list(images_list, transformed_low,
             transformed_high)

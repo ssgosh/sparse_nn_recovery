@@ -1,20 +1,14 @@
-import sys
-
 import jsonpickle
-import torch
-import torchvision
 import pandas as pd
-import json
-
+import torch
+import torch.nn.functional as F
+import torchvision
 from icontract import require
 from torch.utils.tensorboard import SummaryWriter
-from torchvision.transforms import ToPILImage
-import torch.nn.functional as F
 
-import utils.image_processor
-import utils.mnist_helper as mh
 from core.tblabels import TBLabels
 from datasets.dataset_helper_factory import DatasetHelperFactory
+from utils.image_processor import post_process_image_batch
 from utils.torchutils import get_cross
 
 
@@ -142,7 +136,7 @@ class TensorBoardHelper:
             self.add_image_grid(images, f"{sparsity_mode}/Unfiltered Images",
                                 filtered=False, num_per_row=3, global_step=global_step)
             #add_figure(images, f"{sparsity_mode}/Unfiltered Images", global_step, sparsity_mode)
-            filtered_images = utils.image_processor.mnist_post_process_image_batch(images, self.image_zero, self.image_one)
+            filtered_images = post_process_image_batch(images, self.image_zero, self.image_one)
             #add_figure(filtered_images, f"{sparsity_mode}/Filtered Images", global_step, sparsity_mode)
             self.add_image_grid(filtered_images, f"{sparsity_mode}/Filtered Images",
                                 filtered=True, num_per_row=3, global_step=global_step)
