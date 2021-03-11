@@ -12,7 +12,9 @@ class CIFARDatasetHelper(DatasetHelper):
 
         # These implement the non-sparse normalization mixin
         self.train_transforms = [
-            transforms.RandomAffine(degrees=5, translate=(0.1, 0.1), scale=(0.9, 1.1), shear=None),
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            #transforms.RandomAffine(degrees=5, translate=(0.1, 0.1), scale=(0.9, 1.1), shear=None),
         ]
         self.test_transforms = []
         self.usual_mean = (0.4914, 0.4822, 0.4465)
@@ -30,7 +32,7 @@ class CIFARDatasetHelper(DatasetHelper):
         self.non_sparse_one = {}
 
     def get_dataset_(self, path, which, transform):
-        return datasets.CIFAR10(path, train=(which == 'train'), transform=transform)
+        return datasets.CIFAR10(path, download=True, train=(which == 'train'), transform=transform)
 
     def get_num_classes(self):
         return 10

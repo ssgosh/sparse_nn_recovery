@@ -32,8 +32,8 @@ config = parser.parse_args()
 dh = DatasetHelperFactory.get(config.dataset, non_sparse=config.non_sparse)
 
 if config.stats == 'mean_std':
-    train = dh.get_dataset(which='train', transform='without_transform')
-    test = dh.get_dataset(which='test', transform='without_transform')
+    train = dh.get_dataset(which='train', transform=config.transform)
+    test = dh.get_dataset(which='test', transform=config.transform)
 
     # Switch/case in Python
     choices = {
