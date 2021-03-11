@@ -19,7 +19,7 @@ class CIFARDatasetHelper(DatasetHelper):
         self.usual_std = (0.2023, 0.1994, 0.2010)
         self.non_sparse_mean = {}
         self.non_sparse_std = {}
-        self.constant_pixel_val = 0.3
+        self.constant_pixel_val = 0.
 
         # Further needed by the non-sparse mixin
         # These are transformed values of zero and one pixel values
