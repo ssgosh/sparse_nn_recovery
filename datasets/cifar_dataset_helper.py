@@ -1,4 +1,5 @@
 from icontract import require
+from torchvision import datasets
 from torchvision.transforms import transforms
 
 from datasets.dataset_helper import DatasetHelper
@@ -29,19 +30,20 @@ class CIFARdatasetHelper(DatasetHelper):
         self.non_sparse_one = {}
 
     def get_dataset_(self, path, which, transform):
-        return datasets.MNIST(path, train=(which == 'train'), transform=transform)
+        return datasets.CIFAR10(path, train=(which == 'train'), transform=transform)
 
     def get_num_classes(self):
         return 10
 
     def get_each_entry_shape(self):
-        return (1, 28, 28)
+        return (3, 28, 28)
 
     def get_model(self, model_mode, device):
+        model = None
         if model_mode == 'fake-classes':
-            model = ExampleCNNNet(20).to(device)
+            raise ValueError(f"Model mode {model_mode} not supported for CIFAR10")
         elif model_mode == 'max-entropy':
-            model = ExampleCNNNet(10).to(device)
+            raise NotImplementedError()
         else:
             raise ValueError(f"Invalid model mode {model_mode}")
         # model = MLPNet().to(device)
@@ -50,11 +52,5 @@ class CIFARdatasetHelper(DatasetHelper):
         return model
 
     def update_config(self, config):
-        config.model_classname = 'ExampleCNNNet'
+        config.model_classname = 'Resnet18'
 
-# class CIFARDatasetHelper(DatasetHelper):
-#     def __init__(self, name, subset):
-#         super().__init__(name, subset)
-#
-#     def get_transformed_zero_one(self):
-#         raise NotImplementedError()
