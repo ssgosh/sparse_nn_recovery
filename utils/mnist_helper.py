@@ -22,25 +22,20 @@ def compute_mnist_transform_low_high():
 
 
 def get_mnist_zero():
+    assert False, "This method is now deprecated in favour of DatasetHelper::get_transformed_zero_one()"
     mnist_zero, mnist_one = compute_mnist_transform_low_high()
     return mnist_zero
 
 
 def undo_transform(image):
+    assert False, "This method is now deprecated"
     mean = 0.1307
     std = 0.3081
     return mean + image * std
 
 
-def mnist_post_process_image_batch(images):
-    transformed_low, transformed_high = compute_mnist_transform_low_high()
-    copied_images = images.clone().detach()
-    imp.post_process_images(copied_images, mode='low_high',
-            low=transformed_low,
-            high=transformed_high)
-    return copied_images
-
 def mnist_post_process_images_list(images_list):
+    assert False, "This method is now deprecated"
     transformed_low, transformed_high = compute_mnist_transform_low_high()
     imp.post_process_images_list(images_list, transformed_low,
             transformed_high)
