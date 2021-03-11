@@ -1,6 +1,8 @@
 import torch
 
 # high-pass and low-pass filter for images
+
+
 def post_process_images(images, mode='mean_median', low=None, high=None):
     n = images.shape[0]
     channel = 0
@@ -43,3 +45,10 @@ def get_sparsity_batch(images, zero):
         return torch.sum(images > zero, dim=list(range(1, n)))
 
 
+def mnist_post_process_image_batch(images, transformed_low, transformed_high):
+    # transformed_low, transformed_high = compute_mnist_transform_low_high()
+    copied_images = images.clone().detach()
+    post_process_images(copied_images, mode='low_high',
+            low=transformed_low,
+            high=transformed_high)
+    return copied_images
