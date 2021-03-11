@@ -14,10 +14,10 @@ class MNISTdatasetHelper(DatasetHelper, ):
         # These implement the non-sparse normalization mixin
         self.train_transforms = [transforms.RandomAffine(degrees=5, translate=(0.1, 0.1), scale=(0.9, 1.1), shear=None),]
         self.test_transforms = []
-        self.usual_mean = 0.1307
-        self.usual_std = 0.3081
-        self.non_sparse_mean = { 0.3 : 0.4032246160182823 }
-        self.non_sparse_std =  { 0.3 : 0.23552181428064123 }
+        self.usual_mean = (0.1307, )
+        self.usual_std = (0.3081, )
+        self.non_sparse_mean = { 0.3 : (0.4032246160182823, ) }
+        self.non_sparse_std =  { 0.3 : (0.23552181428064123, ) }
         self.constant_pixel_val = 0.3
 
         # Further needed by the non-sparse mixin

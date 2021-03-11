@@ -19,12 +19,12 @@ class NonSparseNormalizationMixin:
             t.append(ClippedConstantTransform(self.constant_pixel_val))
             t.append(
                 transforms.Normalize(
-                    (self.non_sparse_mean[self.constant_pixel_val],),
-                    (self.non_sparse_std[self.constant_pixel_val],)
+                    self.non_sparse_mean[self.constant_pixel_val],
+                    self.non_sparse_std[self.constant_pixel_val]
                 )
             )
         else:
-            t.append(transforms.Normalize((self.usual_mean,), (self.usual_std,)))
+            t.append(transforms.Normalize(self.usual_mean, self.usual_std))
         return transforms.Compose(t)
 
     def get_without_transform_(self):
