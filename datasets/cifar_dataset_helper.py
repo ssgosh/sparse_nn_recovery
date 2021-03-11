@@ -5,7 +5,7 @@ from torchvision.transforms import transforms
 from datasets.dataset_helper import DatasetHelper
 
 
-class CIFARdatasetHelper(DatasetHelper):
+class CIFARDatasetHelper(DatasetHelper):
     @require(lambda non_sparse: not non_sparse)
     def __init__(self, name, subset, non_sparse):
         super().__init__(name, subset, non_sparse)
@@ -23,8 +23,8 @@ class CIFARdatasetHelper(DatasetHelper):
 
         # Further needed by the non-sparse mixin
         # These are transformed values of zero and one pixel values
-        self.usual_zero = 0.    #-0.4242129623889923
-        self.usual_one = 1.     #2.821486711502075
+        self.usual_zero = [-2.429065704345703, -2.418254852294922, -2.22139310836792]
+        self.usual_one = [2.5140879154205322, 2.596790313720703, 2.7537312507629395]
 
         self.non_sparse_zero = {}
         self.non_sparse_one = {}

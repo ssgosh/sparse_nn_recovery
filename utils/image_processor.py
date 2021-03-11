@@ -1,6 +1,7 @@
 import torch
 
 # high-pass and low-pass filter for images
+from icontract import require
 
 
 def post_process_images(images, mode='mean_median', low=None, high=None):
@@ -38,6 +39,7 @@ def post_process_images_list(images_list, low, high):
 
 
 # Computes sparsity of each image in the batch separately
+@require(lambda images: images.shape[1] == 1) # Only supports single channel as of now
 def get_sparsity_batch(images, zero):
     n = len(images.shape)
     assert n > 1
@@ -45,6 +47,7 @@ def get_sparsity_batch(images, zero):
         return torch.sum(images > zero, dim=list(range(1, n)))
 
 
+@require(lambda images: images.shape[1] == 1) # Only supports single channel as of now
 def post_process_image_batch(images, transformed_low, transformed_high):
     # transformed_low, transformed_high = compute_mnist_transform_low_high()
     copied_images = images.detach().clone()
