@@ -98,13 +98,14 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
         """
         mean, std = self.get_mean_std()
         transform = transforms.Normalize(mean, std)
-        low = torch.zeros(1, 1, 1)
+        channels = self.get_each_entry_shape()[0]
+        low = torch.zeros(channels, 1, 1)
         high = low + 1
         print(torch.sum(low).item(), torch.sum(high).item())
-        transformed_low = transform(low).item()
-        transformed_high = transform(high).item()
+        transformed_low = transform(low)#.item()
+        transformed_high = transform(high)#.item()
         print(transformed_low, transformed_high)
-        return transformed_low, transformed_high
+        return transformed_low.squeeze().tolist(), transformed_high.squeeze().tolist()
 
     def get_mean_std(self):
         return self.get_mean_std_mixin()
