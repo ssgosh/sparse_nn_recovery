@@ -39,7 +39,7 @@ def post_process_images_list(images_list, low, high):
 
 
 # Computes sparsity of each image in the batch separately
-@require(lambda images: images.shape[1] == 1) # Only supports single channel as of now
+# @require(lambda images: images.shape[1] == 1) # Only supports single channel as of now
 def get_sparsity_batch(images, zero):
     n = len(images.shape)
     assert n > 1
