@@ -47,7 +47,7 @@ class CIFARDatasetHelper(DatasetHelper):
         return 10
 
     def get_each_entry_shape(self):
-        return (3, 28, 28)
+        return (3, 32, 32)
 
     def get_model(self, model_mode, device, config=None, load=False):
         model = None

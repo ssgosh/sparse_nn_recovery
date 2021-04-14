@@ -7,6 +7,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
+from datasets.dataset_helper_factory import DatasetHelperFactory
 from utils import image_processor as imp
 from utils import plotter
 from utils.metrics_helper import MetricsHelper
@@ -68,8 +69,13 @@ class SparseInputRecoverer:
         self.verbose = verbose
         self.config = config
         self.tbh = tbh
+        # Following are either floats or list of floats
         self.image_zero = config.image_zero
         self.image_one = config.image_one
+        # Following are of shape [1, c, 1, 1], where c is the number of channels of the dataset
+        self.batched_image_zero = DatasetHelperFactory.get().get_zero_correct_dims()
+        self.batched_image_one = DatasetHelperFactory.get().get_one_correct_dims()
+
         self.metrics_helper = MetricsHelper.get() # MetricsHelper(self.image_zero, self.image_one)
         # 'all' : both images and stats
         # 'none' : disable tensorboard logging
@@ -150,7 +156,7 @@ class SparseInputRecoverer:
         # include l1 penalty only if it's given as true for that layer
         l1_loss = torch.tensor(0.)
         if include_layer[0]:
-            l1_loss = lambd * (torch.norm(images - self.image_zero, 1)
+            l1_loss = lambd * (torch.norm(images - self.batched_image_zero, 1)
                                / torch.numel(images))
         losses[f"input_l1_loss"] = l1_loss.item()
         l1_layers = torch.tensor(0.)
