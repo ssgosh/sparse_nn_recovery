@@ -23,6 +23,8 @@ class TensorBoardHelper:
         self.next_reset = self.reset_steps
 
         self.image_zero, self.image_one = DatasetHelperFactory.get().get_transformed_zero_one()
+        self.batch_image_zero = DatasetHelperFactory.get().get_zero_correct_dims()
+        self.batch_image_one = DatasetHelperFactory.get().get_one_correct_dims()
         self.num_real_classes = DatasetHelperFactory.get().get_num_classes()
 
     def close(self):
@@ -136,7 +138,7 @@ class TensorBoardHelper:
             self.add_image_grid(images, f"{sparsity_mode}/Unfiltered Images",
                                 filtered=False, num_per_row=3, global_step=global_step)
             #add_figure(images, f"{sparsity_mode}/Unfiltered Images", global_step, sparsity_mode)
-            filtered_images = post_process_image_batch(images, self.image_zero, self.image_one)
+            filtered_images = post_process_image_batch(images, self.batch_image_zero, self.batch_image_one)
             #add_figure(filtered_images, f"{sparsity_mode}/Filtered Images", global_step, sparsity_mode)
             self.add_image_grid(filtered_images, f"{sparsity_mode}/Filtered Images",
                                 filtered=True, num_per_row=3, global_step=global_step)

@@ -80,8 +80,13 @@ class SparseInputRecoverer:
         # 'all' : both images and stats
         # 'none' : disable tensorboard logging
         # 'stats_only' : log only stats, no images
-        self.tensorboard_logging = 'all'
+        self.tensorboard_logging = 'none'
         self.tensorboard_label = None
+
+        # out_fn is either F.log_softmax or just identity depending on what the model does internally
+
+    def out_fn(self, model_output):
+        return F.log_softmax(model_output, dim=1)
 
     # Clip the pixels to between (mnist_zero, mnist_one)
     def clip_if_needed(self, images):
@@ -148,7 +153,7 @@ class SparseInputRecoverer:
         losses = {}
         probs = {}
         sparsity = {}
-        output = model(images)
+        output = self.out_fn(model(images))
         if include_likelihood:
             nll_loss = F.nll_loss(output, targets)
         else:
