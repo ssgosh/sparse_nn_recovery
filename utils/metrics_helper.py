@@ -31,7 +31,9 @@ def _safe_divide(y, x):
 class MetricsHelper:
     @classmethod
     def get(cls, mlabels : MLabels = None, adversarial_classification_mode='max-entropy') -> 'MetricsHelper':
-        zero, one = DatasetHelperFactory.get().get_transformed_zero_one()
+        # zero, one = DatasetHelperFactory.get().get_transformed_zero_one()
+        zero = DatasetHelperFactory.get().get_zero_correct_dims()
+        one = DatasetHelperFactory.get().get_one_correct_dims()
         # XXX: Change this to get_num_classes. This is not valid in case of soft adversarial labels
         num_total_classes = DatasetHelperFactory.get().get_num_total_classes()
         return cls(zero, one, mlabels, num_total_classes, adversarial_classification_mode)
@@ -52,10 +54,10 @@ class MetricsHelper:
         overall_metrics.finalized = True
         return overall_metrics
 
-    def __init__(self, image_zero, image_one, mlabels : MLabels = None, num_total_classes=None,
+    def __init__(self, batched_image_zero, batched_image_one, mlabels : MLabels = None, num_total_classes=None,
                  adversarial_classification_mode='max-entropy'):
-        self.image_zero = image_zero
-        self.image_one = image_one
+        self.batched_image_zero = batched_image_zero
+        self.batched_image_one = batched_image_one
         self.agg = {}
         self.per_class = {}
         self.correct = 0
@@ -91,7 +93,7 @@ class MetricsHelper:
     # Also for each layer for each class in batch
     def compute_sparsities(self, images, model, targets, sparsity):
         n = targets.shape[0]
-        batch_sparsity = imp.get_sparsity_batch(images, zero=self.image_zero)
+        batch_sparsity = imp.get_sparsity_batch(images, zero=self.batched_image_zero)
         count = {}
         for i in range(n):
             _accumulate_val_in_dict(count, targets[i].item(), 1)
@@ -253,7 +255,7 @@ class MetricsHelper:
     # XXX: Inefficient Implmentation
     def compute_sparsities_per_class(self, images, model, targets):
         n = targets.shape[0]
-        batch_sparsity = imp.get_sparsity_batch(images, zero=self.image_zero)
+        batch_sparsity = imp.get_sparsity_batch(images, zero=self.batched_image_zero)
         for i in range(n):
             _accumulate_val_in_dict(self.per_class_numel_sparsity, targets[i].item(), 1)
             key = f"class_{targets[i]}/sparsity/image"
