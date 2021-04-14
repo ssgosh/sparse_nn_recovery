@@ -15,16 +15,27 @@ import utils.mnist_helper as mh
 run_dir = '.'
 
 def set_image_zero_one():
-    global mnist_zero, mnist_one
+    global mnist_zero, mnist_one, mean, std
     #mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
     mnist_zero, mnist_one = DatasetHelperFactory.get().get_transformed_zero_one()
+    mean, std = DatasetHelperFactory.get().get_mean_std_correct_dims(include_batch=False)
 
 def set_run_dir(some_dir):
     global run_dir
     run_dir = some_dir
 
+# vmin and vmax are ignore in case of RGB image
 def plot_image_on_axis(ax, image, title, fig, vmin=None, vmax=None):
-    im = ax.imshow(image, cmap='gray', vmin=vmin, vmax=vmax)
+    shape = image.shape
+    assert len(shape) == 2 or len(shape) == 3
+    if len(shape) == 2:
+        im = ax.imshow(image, cmap='gray', vmin=vmin, vmax=vmax)
+    elif shape[2] == 1:
+        im = ax.imshow(image, cmap='gray', vmin=vmin, vmax=vmax)
+    else:
+        # This is an RGB image of shape h x w x channel
+        im = ax.imshow(image)
+
     ax.set_title(title)
 
     # Add colorbar for this image
@@ -38,6 +49,11 @@ def plot_single_digit(image, digit, label, filtered):
     ax = plot.gca()
     title = "%d : %s" % (digit, label)
     (vmin, vmax) = (mnist_zero, mnist_one) if filtered else (None, None)
+    # We will first transform the image to the range (0, 1)
+    print(std)
+    print(mean)
+    image = image * std + mean
+    image = image.permute((1, 2, 0)) # matplotlib expects H x W x C
     plot_image_on_axis(ax, image, title, fig, vmin=vmin, vmax=vmax)
     filtered_str = "filtered" if filtered else "unfiltered"
     filename = f"{run_dir}/output/{digit}_{label}_{filtered_str}.jpg"

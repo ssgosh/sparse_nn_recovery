@@ -82,7 +82,9 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
 
     # Returns a tensor of shape [1, c, 1, 1] or [c, 1, 1], where c = len(val) or 1 if val is a number
     def get_correct_dims(self, val, include_batch):
-        z = torch.tensor(val if type(val) is list else [val])
+        z = torch.tensor(val)
+        if len(z.shape) == 0:
+            z = torch.tensor([val])
         if include_batch:
             z = z.unsqueeze(0).unsqueeze(2).unsqueeze(3)
         else:
@@ -126,3 +128,8 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
 
     def get_mean_std(self):
         return self.get_mean_std_mixin()
+
+    # Returns mean and std in shape [1, c, 1, 1] for easy tensor operations later
+    def get_mean_std_correct_dims(self, include_batch):
+        mean, std = self.get_mean_std()
+        return self.get_correct_dims(mean, include_batch), self.get_correct_dims(std, include_batch)

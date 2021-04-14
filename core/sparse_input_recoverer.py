@@ -185,9 +185,9 @@ class SparseInputRecoverer:
     def recover_and_plot_single_digit(self, initial_image, label, targets, include_layer, model):
         self.recover_image_batch(model, initial_image, targets, self.config.recovery_num_steps, include_layer[label], label,
                                  include_likelihood=True)
-        plotter.plot_single_digit(initial_image.detach()[0][0], targets[0], label,
+        plotter.plot_single_digit(initial_image.detach()[0], targets[0], label,
                                   filtered=False)
-        plotter.plot_single_digit(initial_image.detach()[0][0], targets[0], label,
+        plotter.plot_single_digit(initial_image.detach()[0], targets[0], label,
                                   filtered=True)
         return initial_image
 
