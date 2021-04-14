@@ -12,7 +12,7 @@ from utils import image_processor as imp
 from utils import plotter
 from utils.metrics_helper import MetricsHelper
 from utils.model_context_manager import model_eval_no_grad, images_require_grad
-from utils.torchutils import compute_probs_tensor
+from utils.torchutils import compute_probs_tensor, clip_tensor_range
 
 
 class SparseInputRecoverer:
@@ -88,7 +88,8 @@ class SparseInputRecoverer:
         if self.config.recovery_use_pgd:
             with torch.no_grad():
                 #torch.clip(images, self.image_zero, self.image_one, out=images)
-                torch.clamp(images, self.image_zero, self.image_one, out=images)
+                #torch.clamp(images, self.image_zero, self.image_one, out=images)
+                clip_tensor_range(images, self.batched_image_zero, self.batched_image_one, out=images)
 
     # include_layer: boolean vector of whether to include a layer's l1 penalty
     def recover_image_batch(self, model, images, targets, num_steps, include_layer, penalty_mode,

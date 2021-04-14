@@ -47,3 +47,11 @@ def load_data_parallel_state_dict_as_normal(state_dict):
         name = k[7:]  # remove 'module.' of dataparallel
         new_state_dict[name] = v
     return new_state_dict
+
+def clip_tensor_range(images, batched_image_zero, batched_image_one, out):
+    a = torch.min(images, batched_image_one, out=out)
+    b = torch.max(a, batched_image_zero, out=out)
+    return b
+
+
+
