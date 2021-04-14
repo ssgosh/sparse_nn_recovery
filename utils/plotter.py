@@ -1,4 +1,5 @@
 import matplotlib
+import torch
 
 from datasets.dataset_helper_factory import DatasetHelperFactory
 
@@ -19,6 +20,7 @@ def set_image_zero_one():
     #mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
     mnist_zero, mnist_one = DatasetHelperFactory.get().get_transformed_zero_one()
     mean, std = DatasetHelperFactory.get().get_mean_std_correct_dims(include_batch=False)
+    print(mean, std)
 
 def set_run_dir(some_dir):
     global run_dir
@@ -52,7 +54,9 @@ def plot_single_digit(image, digit, label, filtered):
     # We will first transform the image to the range (0, 1)
     print(std)
     print(mean)
+    print('Before transform: image min, max = ', torch.amin(image, dim=(1, 2)), torch.amax(image, dim=(1, 2)))
     image = image * std + mean
+    print('After transform: image min, max = ', torch.amin(image, dim=(1, 2)), torch.amax(image, dim=(1, 2)))
     image = image.permute((1, 2, 0)) # matplotlib expects H x W x C
     plot_image_on_axis(ax, image, title, fig, vmin=vmin, vmax=vmax)
     filtered_str = "filtered" if filtered else "unfiltered"
