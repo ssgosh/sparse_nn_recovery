@@ -82,7 +82,7 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
 
     # Returns a tensor of shape [1, c, 1, 1] or [c, 1, 1], where c = len(val) or 1 if val is a number
     def get_correct_dims(self, val, include_batch):
-        z = torch.tensor(val)
+        z = torch.tensor(val if type(val) is list else [val])
         if include_batch:
             z = z.unsqueeze(0).unsqueeze(2).unsqueeze(3)
         else:
