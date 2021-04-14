@@ -2,6 +2,7 @@ import torch
 from torch.nn import functional as F
 
 from icontract import require, ensure
+from collections import OrderedDict
 
 
 # Input contract
@@ -39,3 +40,10 @@ class ClippedConstantTransform(torch.nn.Module):
     def forward(self, x):
         #print(x)
         return torch.clamp(x + self.val, min=0., max=1.)
+
+def load_data_parallel_state_dict_as_normal(state_dict):
+    new_state_dict = OrderedDict()
+    for k, v in state_dict.items():
+        name = k[7:]  # remove 'module.' of dataparallel
+        new_state_dict[name] = v
+    return new_state_dict

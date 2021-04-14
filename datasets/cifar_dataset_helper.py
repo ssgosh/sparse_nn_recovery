@@ -5,6 +5,7 @@ from torchvision.transforms import transforms
 
 from datasets.dataset_helper import DatasetHelper
 from pytorch_cifar.models import ResNet18
+from utils import torchutils
 
 
 class CIFARDatasetHelper(DatasetHelper):
@@ -56,7 +57,8 @@ class CIFARDatasetHelper(DatasetHelper):
             assert load
             model = ResNet18()
             checkpoint = torch.load(config.discriminator_model_file, map_location=torch.device(device))
-            model.load_state_dict(checkpoint['net'])
+            model_state_dict = torchutils.load_data_parallel_state_dict_as_normal(checkpoint['net'])
+            model.load_state_dict(model_state_dict)
         else:
             raise ValueError(f"Invalid model mode {model_mode}")
         # model = MLPNet().to(device)
