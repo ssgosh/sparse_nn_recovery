@@ -7,11 +7,12 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
+from datasets.dataset_helper_factory import DatasetHelperFactory
 from utils import image_processor as imp
 from utils import plotter
 from utils.metrics_helper import MetricsHelper
 from utils.model_context_manager import model_eval_no_grad, images_require_grad
-from utils.torchutils import compute_probs_tensor
+from utils.torchutils import compute_probs_tensor, clip_tensor_range
 
 
 class SparseInputRecoverer:
@@ -68,8 +69,13 @@ class SparseInputRecoverer:
         self.verbose = verbose
         self.config = config
         self.tbh = tbh
+        # Following are either floats or list of floats
         self.image_zero = config.image_zero
         self.image_one = config.image_one
+        # Following are of shape [1, c, 1, 1], where c is the number of channels of the dataset
+        self.batched_image_zero = DatasetHelperFactory.get().get_zero_correct_dims()
+        self.batched_image_one = DatasetHelperFactory.get().get_one_correct_dims()
+
         self.metrics_helper = MetricsHelper.get() # MetricsHelper(self.image_zero, self.image_one)
         # 'all' : both images and stats
         # 'none' : disable tensorboard logging
@@ -77,12 +83,18 @@ class SparseInputRecoverer:
         self.tensorboard_logging = 'all'
         self.tensorboard_label = None
 
+        # out_fn is either F.log_softmax or just identity depending on what the model does internally
+
+    def out_fn(self, model_output):
+        return F.log_softmax(model_output, dim=1)
+
     # Clip the pixels to between (mnist_zero, mnist_one)
     def clip_if_needed(self, images):
         if self.config.recovery_use_pgd:
             with torch.no_grad():
                 #torch.clip(images, self.image_zero, self.image_one, out=images)
-                torch.clamp(images, self.image_zero, self.image_one, out=images)
+                #torch.clamp(images, self.image_zero, self.image_one, out=images)
+                clip_tensor_range(images, self.batched_image_zero, self.batched_image_one, out=images)
 
     # include_layer: boolean vector of whether to include a layer's l1 penalty
     def recover_image_batch(self, model, images, targets, num_steps, include_layer, penalty_mode,
@@ -141,7 +153,7 @@ class SparseInputRecoverer:
         losses = {}
         probs = {}
         sparsity = {}
-        output = model(images)
+        output = self.out_fn(model(images))
         if include_likelihood:
             nll_loss = F.nll_loss(output, targets)
         else:
@@ -150,7 +162,7 @@ class SparseInputRecoverer:
         # include l1 penalty only if it's given as true for that layer
         l1_loss = torch.tensor(0.)
         if include_layer[0]:
-            l1_loss = lambd * (torch.norm(images - self.image_zero, 1)
+            l1_loss = lambd * (torch.norm(images - self.batched_image_zero, 1)
                                / torch.numel(images))
         losses[f"input_l1_loss"] = l1_loss.item()
         l1_layers = torch.tensor(0.)
@@ -173,9 +185,9 @@ class SparseInputRecoverer:
     def recover_and_plot_single_digit(self, initial_image, label, targets, include_layer, model):
         self.recover_image_batch(model, initial_image, targets, self.config.recovery_num_steps, include_layer[label], label,
                                  include_likelihood=True)
-        plotter.plot_single_digit(initial_image.detach()[0][0], targets[0], label,
+        plotter.plot_single_digit(initial_image.detach()[0], targets[0], label,
                                   filtered=False)
-        plotter.plot_single_digit(initial_image.detach()[0][0], targets[0], label,
+        plotter.plot_single_digit(initial_image.detach()[0], targets[0], label,
                                   filtered=True)
         return initial_image
 
@@ -188,7 +200,7 @@ class SparseInputRecoverer:
         transformed_low, transformed_high = self.image_zero, self.image_one
         n = targets.shape[0]
         for label in labels:
-            images = torch.zeros(n, 1, 28, 28)
+            images = torch.zeros([n] + list(initial_image.shape[1:]))
             images += initial_image  # Use same initial image for each digit
             images_list.append(images)
             self.recover_image_batch(model, images, targets, num_steps, include_layer[label],
@@ -196,14 +208,14 @@ class SparseInputRecoverer:
                                      include_likelihood)
 
         post_processed_images_list = []
-        for images in images_list:
-            # post_process_images(images)
-            copied_images = images.clone().detach()
-            # post_process_images(copied_images, mode='low_high', low=-0.5, high=2.0)
-            imp.post_process_images(copied_images, mode='low_high',
-                                    low=transformed_low,
-                                    high=transformed_high)
-            post_processed_images_list.append(copied_images)
+        # for images in images_list:
+        #     # post_process_images(images)
+        #     copied_images = images.clone().detach()
+        #     # post_process_images(copied_images, mode='low_high', low=-0.5, high=2.0)
+        #     imp.post_process_images(copied_images, mode='low_high',
+        #                             low=transformed_low,
+        #                             high=transformed_high)
+        #     post_processed_images_list.append(copied_images)
 
         # One folder per digit, containing filtered and unfiltered images for that
         # digit

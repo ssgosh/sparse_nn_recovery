@@ -380,7 +380,11 @@ def main():
         #print(batch_a[0], batch_b[0], batch_c[0])
         #sys.exit(0)
 
-    model = dataset_helper.get_model(config.adversarial_classification_mode, device)
+    load = False
+    if config.dataset.lower() == 'cifar':
+        load = True
+        # config.discriminator_model_file =
+    model = dataset_helper.get_model(config.adversarial_classification_mode, device, load=load, config=config)
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
     if args.train_mode == 'adversarial-continuous':
         optD = optimizer
@@ -438,9 +442,9 @@ def main():
                                   adversarial_train_loader, optD, optG, epoch)
             else:
                 raise ValueError("invalid train_mode : " + args.train_mode)
-        test(model, device, test_loader)
-        ckpt_saver.save_model(model, epoch, config.model_classname)
-        scheduler.step()
+            test(model, device, test_loader)
+            ckpt_saver.save_model(model, epoch, config.model_classname)
+            scheduler.step()
     else:
         adversarial_trainer.train_loop(args.epochs, args.train_mode, args.pretrain, args.num_pretrain_epochs, config)
 

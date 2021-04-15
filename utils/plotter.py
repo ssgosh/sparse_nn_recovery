@@ -1,4 +1,5 @@
 import matplotlib
+import torch
 
 from datasets.dataset_helper_factory import DatasetHelperFactory
 
@@ -15,16 +16,38 @@ import utils.mnist_helper as mh
 run_dir = '.'
 
 def set_image_zero_one():
-    global mnist_zero, mnist_one
+    global mnist_zero, mnist_one, mean, std
     #mnist_zero, mnist_one = mh.compute_mnist_transform_low_high()
     mnist_zero, mnist_one = DatasetHelperFactory.get().get_transformed_zero_one()
+    mean, std = DatasetHelperFactory.get().get_mean_std_correct_dims(include_batch=False)
+    print(mean, std)
 
 def set_run_dir(some_dir):
     global run_dir
     run_dir = some_dir
 
+# Gets image in the range [0, 1] by undoing the transformation done on the training dataset
+def get_transformed_image(image):
+    print(std)
+    print(mean)
+    print('Before transform: image min, max = ', torch.amin(image, dim=(1, 2)), torch.amax(image, dim=(1, 2)))
+    image = image * std + mean
+    print('After transform: image min, max = ', torch.amin(image, dim=(1, 2)), torch.amax(image, dim=(1, 2)))
+    image = image.permute((1, 2, 0)) # matplotlib expects H x W x C
+    return image
+
+# vmin and vmax are ignore in case of RGB image
 def plot_image_on_axis(ax, image, title, fig, vmin=None, vmax=None):
-    im = ax.imshow(image, cmap='gray', vmin=vmin, vmax=vmax)
+    shape = image.shape
+    assert len(shape) == 2 or len(shape) == 3
+    if len(shape) == 2:
+        im = ax.imshow(image, cmap='gray', vmin=vmin, vmax=vmax)
+    elif shape[2] == 1:
+        im = ax.imshow(image, cmap='gray', vmin=vmin, vmax=vmax)
+    else:
+        # This is an RGB image of shape h x w x channel
+        im = ax.imshow(image)
+
     ax.set_title(title)
 
     # Add colorbar for this image
@@ -37,7 +60,9 @@ def plot_single_digit(image, digit, label, filtered):
     fig = plot.gcf()
     ax = plot.gca()
     title = "%d : %s" % (digit, label)
-    (vmin, vmax) = (mnist_zero, mnist_one) if filtered else (None, None)
+    (vmin, vmax) = (0., 1.) if filtered else (None, None)
+    # We will first transform the image to the range (0, 1)
+    image = get_transformed_image(image)
     plot_image_on_axis(ax, image, title, fig, vmin=vmin, vmax=vmax)
     filtered_str = "filtered" if filtered else "unfiltered"
     filename = f"{run_dir}/output/{digit}_{label}_{filtered_str}.jpg"
@@ -66,10 +91,12 @@ def plot_multiple_images_varying_penalty(filename, images_list, targets,
     for i, images in enumerate(images_list):
         assert images.shape[0] == ncols
         for j in range(ncols):
-            image = images[j][0]
+            image = images[j]
             ax = axes[i][j]
             title = "%d : %s" % (targets[j], labels[i])
             #plot_image_on_axis(ax, image, title, fig)
+            # We will first transform the image to the range (0, 1)
+            image = get_transformed_image(image)
             plot_image_on_axis(ax, image, title, fig, vmin=mnist_zero, vmax=mnist_one)
 
     plot.tight_layout(pad=2.)
@@ -87,9 +114,9 @@ def generate_multi_plot_all_digits(images_list, post_processed_images_list, targ
 
     #filename = "./output/mean_0.5/10k/filtered_10k_varying_penalty.jpg"
     #filename = "./output/mean_0.5/2k/filtered_2k_varying_penalty.jpg"
-    filename = f"{run_dir}/output/all_digits_filtered_varying_penalty.jpg"
-    plot_multiple_images_varying_penalty(filename, post_processed_images_list, targets,
-            labels)
+    # filename = f"{run_dir}/output/all_digits_filtered_varying_penalty.jpg"
+    # plot_multiple_images_varying_penalty(filename, post_processed_images_list, targets,
+    #         labels)
 
 def generate_multi_plots_separate_digits(images_list,
         post_processed_images_list, targets, labels):
@@ -103,10 +130,10 @@ def generate_multi_plots_separate_digits(images_list,
                 labels, i, filtered=False)
 
         #filename = f"./output/mean_0.5/10k/{digit}/filtered_10k_varying_penalty.jpg"
-        filename = f"{run_dir}/output/{digit}_filtered_varying_penalty.jpg"
-        plot_multiple_images_varying_penalty_single_digit(filename,
-                post_processed_images_list, targets,
-                labels, i, filtered=True)
+        # filename = f"{run_dir}/output/{digit}_filtered_varying_penalty.jpg"
+        # plot_multiple_images_varying_penalty_single_digit(filename,
+        #         post_processed_images_list, targets,
+        #         labels, i, filtered=True)
 
 
 def get_range_filtered(filtered):
@@ -129,7 +156,9 @@ def plot_multiple_images_varying_penalty_single_digit(filename, images_list, tar
             fig.delaxes(ax)
             continue
         images = images_list[i]
-        image = images[index][0]
+        image = images[index]
+        # We will first transform the image to the range (0, 1)
+        image = get_transformed_image(image)
         title = "%d : %s" % (targets[index], labels[i])
         #plot_image_on_axis(ax, image, title, fig, vmin=-0.5, vmax=2.0)
         #plot_image_on_axis(ax, image, title, fig, vmin=mnist_zero, vmax=mnist_one)

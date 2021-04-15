@@ -45,6 +45,8 @@ def add_main_script_arguments():
                                                  'discriminative model by gradient descent on input')
     parser.add_argument('--mode', type=str, default='all-digits', required=False,
                         help='Image recovery mode: "single-digit" or "all-digits"')
+    parser.add_argument('--dataset', type=str, default='mnist', required=False, choices=['mnist', 'cifar'],
+                        help='Which dataset images to recover')
     parser.add_argument('--run-dir', type=str, default=None, required=False,
                         help='Directory inside which outputs and tensorboard logs will be saved')
     parser.add_argument('--run-suffix', type=str, default='', required=False,
@@ -66,39 +68,41 @@ def add_main_script_arguments():
 
 def setup_config(config):
     # This will change when we support multiple datasets
-    DatasetHelperFactory.get('mnist').setup_config(config)
+    dh = DatasetHelperFactory.get(config.dataset)
+    dh.setup_config(config)
     SparseInputRecoverer.setup_default_config(config)
     # initial_image = torch.normal(mnist_zero, 0.01, (1, 1, 28, 28))
     if config.dump_config:
         json.dump(vars(config), sys.stdout, indent=2, sort_keys=True)
         sys.exit(0)
 
-    return config, config.include_layer, config.labels
+    return config, config.include_layer, config.labels, dh
 
 
 def setup_everything(argv):
     parser = add_main_script_arguments()
     SparseInputRecoverer.add_command_line_arguments(parser)
     config = parser.parse_args(argv)
-    config, include_layer, labels = setup_config(config)
+    config, include_layer, labels, dh = setup_config(config)
 
     rh.setup_run_dir(config, 'image_runs')
     plotter.set_run_dir(config.run_dir)
     plotter.set_image_zero_one()
 
-    model = load_model(config)
-
+    # model = load_model(config)
+    model = dh.get_model('max-entropy', device='cpu', config=config, load=True)
 
     tbh = TensorBoardHelper(config.run_dir)
 
     sparse_input_recoverer = SparseInputRecoverer(config, tbh, verbose=True)
 
-    return config, include_layer, labels, model, tbh, sparse_input_recoverer
+    return config, include_layer, labels, model, tbh, sparse_input_recoverer, dh
 
 
 def main():
-    config, include_layer, labels, model, tbh, sparse_input_recoverer = setup_everything(sys.argv[1:])
-    initial_image = torch.randn(1, 1, 28, 28)
+    config, include_layer, labels, model, tbh, sparse_input_recoverer, dh = setup_everything(sys.argv[1:])
+    #initial_image = torch.randn(1, 1, 28, 28)
+    initial_image = torch.randn( *( [1] + list(dh.get_each_entry_shape()) ) )
     #images_list = torch.load("images_list.pt")
     #post_processed_images_list = torch.load("post_processed_images_list.pt")
 
@@ -110,11 +114,12 @@ def main():
         targets = torch.tensor(range(n))
         config.num_targets = n
         config.targets = targets
+        labels = ['no penalty', 'input only']
         images_list, post_processed_images_list = sparse_input_recoverer.recover_and_plot_images_varying_penalty(
             initial_image,
             include_likelihood=config.recovery_include_likelihood,
             num_steps=config.recovery_num_steps,
-            labels=config.labels,
+            labels=labels,
             model=model,
             include_layer=include_layer,
             targets=targets

@@ -1,3 +1,4 @@
+import torch
 from torchvision import datasets
 from torchvision.transforms import transforms
 
@@ -38,10 +39,14 @@ class MNISTdatasetHelper(DatasetHelper, ):
     def get_each_entry_shape(self):
         return (1, 28, 28)
 
-    def get_model(self, model_mode, device):
+    def get_model(self, model_mode, device, config=None, load=False):
         if model_mode == 'fake-classes': model = ExampleCNNNet(20).to(device)
         elif model_mode == 'max-entropy': model = ExampleCNNNet(10).to(device)
         else: raise ValueError(f"Invalid model mode {model_mode}")
+        if load:
+            # Load model from state dictionary
+            checkpoint = torch.load(config.discriminator_model_file, map_location=torch.device(device))
+            model.load_state_dict(checkpoint)
         # model = MLPNet().to(device)
         # model = MLPNet3Layer(num_classes=20).to(device)
         # model = MaxNormMLP(num_classes=20).to(device)

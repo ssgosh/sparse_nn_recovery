@@ -23,6 +23,8 @@ class TensorBoardHelper:
         self.next_reset = self.reset_steps
 
         self.image_zero, self.image_one = DatasetHelperFactory.get().get_transformed_zero_one()
+        self.batch_image_zero = DatasetHelperFactory.get().get_zero_correct_dims()
+        self.batch_image_one = DatasetHelperFactory.get().get_one_correct_dims()
         self.num_real_classes = DatasetHelperFactory.get().get_num_classes()
 
     def close(self):
@@ -46,6 +48,7 @@ class TensorBoardHelper:
     def add_image_grid(self, images, tag, filtered, num_per_row, global_step):
         self.reset_if_needed(global_step)
         images = images.detach()
+        # XXX: Remove scaling inside the range, and instead perform transformation into the range (0, 1)
         rng = (self.image_zero, self.image_one) if filtered else None
         img_grid = torchvision.utils.make_grid(images, num_per_row, normalize=True,
                 range=rng, padding=2, pad_value=1.0,
@@ -136,10 +139,10 @@ class TensorBoardHelper:
             self.add_image_grid(images, f"{sparsity_mode}/Unfiltered Images",
                                 filtered=False, num_per_row=3, global_step=global_step)
             #add_figure(images, f"{sparsity_mode}/Unfiltered Images", global_step, sparsity_mode)
-            filtered_images = post_process_image_batch(images, self.image_zero, self.image_one)
-            #add_figure(filtered_images, f"{sparsity_mode}/Filtered Images", global_step, sparsity_mode)
-            self.add_image_grid(filtered_images, f"{sparsity_mode}/Filtered Images",
-                                filtered=True, num_per_row=3, global_step=global_step)
+            # filtered_images = post_process_image_batch(images, self.batch_image_zero, self.batch_image_one)
+            # #add_figure(filtered_images, f"{sparsity_mode}/Filtered Images", global_step, sparsity_mode)
+            # self.add_image_grid(filtered_images, f"{sparsity_mode}/Filtered Images",
+            #                     filtered=True, num_per_row=3, global_step=global_step)
             #self.writer.add_images(f"{sparsity_mode}/Filtered Images", filtered_images, dataformats="NCHW",
             #        global_step=global_step)
         self.log_dict(f"{sparsity_mode}/0-losses", losses, global_step)

@@ -39,7 +39,7 @@ def post_process_images_list(images_list, low, high):
 
 
 # Computes sparsity of each image in the batch separately
-@require(lambda images: images.shape[1] == 1) # Only supports single channel as of now
+# @require(lambda images: images.shape[1] == 1) # Only supports single channel as of now
 def get_sparsity_batch(images, zero):
     n = len(images.shape)
     assert n > 1
@@ -51,7 +51,9 @@ def get_sparsity_batch(images, zero):
 def post_process_image_batch(images, transformed_low, transformed_high):
     # transformed_low, transformed_high = compute_mnist_transform_low_high()
     copied_images = images.detach().clone()
-    post_process_images(copied_images, mode='low_high',
-            low=transformed_low,
-            high=transformed_high)
+    clip_tensor_range(copied_images, batched_image_zero, batched_image_one, out)
+
+    # post_process_images(copied_images, mode='low_high',
+    #         low=transformed_low,
+    #         high=transformed_high)
     return copied_images
