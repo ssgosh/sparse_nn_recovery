@@ -58,7 +58,7 @@ def plot_single_digit(image, digit, label, filtered):
     image = image * std + mean
     print('After transform: image min, max = ', torch.amin(image, dim=(1, 2)), torch.amax(image, dim=(1, 2)))
     image = image.permute((1, 2, 0)) # matplotlib expects H x W x C
-    plot_image_on_axis(ax, image, title, fig, vmin=vmin, vmax=vmax)
+    plot_image_on_axis(ax, image, title, fig, vmin=0., vmax=1.)
     filtered_str = "filtered" if filtered else "unfiltered"
     filename = f"{run_dir}/output/{digit}_{label}_{filtered_str}.jpg"
     print(filename)
