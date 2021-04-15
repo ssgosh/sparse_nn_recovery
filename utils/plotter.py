@@ -26,6 +26,16 @@ def set_run_dir(some_dir):
     global run_dir
     run_dir = some_dir
 
+# Gets image in the range [0, 1] by undoing the transformation done on the training dataset
+def get_transformed_image(image):
+    print(std)
+    print(mean)
+    print('Before transform: image min, max = ', torch.amin(image, dim=(1, 2)), torch.amax(image, dim=(1, 2)))
+    image = image * std + mean
+    print('After transform: image min, max = ', torch.amin(image, dim=(1, 2)), torch.amax(image, dim=(1, 2)))
+    image = image.permute((1, 2, 0)) # matplotlib expects H x W x C
+    return image
+
 # vmin and vmax are ignore in case of RGB image
 def plot_image_on_axis(ax, image, title, fig, vmin=None, vmax=None):
     shape = image.shape
@@ -50,15 +60,10 @@ def plot_single_digit(image, digit, label, filtered):
     fig = plot.gcf()
     ax = plot.gca()
     title = "%d : %s" % (digit, label)
-    (vmin, vmax) = (mnist_zero, mnist_one) if filtered else (None, None)
+    (vmin, vmax) = (0., 1.) if filtered else (None, None)
     # We will first transform the image to the range (0, 1)
-    print(std)
-    print(mean)
-    print('Before transform: image min, max = ', torch.amin(image, dim=(1, 2)), torch.amax(image, dim=(1, 2)))
-    image = image * std + mean
-    print('After transform: image min, max = ', torch.amin(image, dim=(1, 2)), torch.amax(image, dim=(1, 2)))
-    image = image.permute((1, 2, 0)) # matplotlib expects H x W x C
-    plot_image_on_axis(ax, image, title, fig, vmin=0., vmax=1.)
+    image = get_transformed_image(image)
+    plot_image_on_axis(ax, image, title, fig, vmin=vmin, vmax=vmax)
     filtered_str = "filtered" if filtered else "unfiltered"
     filename = f"{run_dir}/output/{digit}_{label}_{filtered_str}.jpg"
     print(filename)
@@ -86,10 +91,12 @@ def plot_multiple_images_varying_penalty(filename, images_list, targets,
     for i, images in enumerate(images_list):
         assert images.shape[0] == ncols
         for j in range(ncols):
-            image = images[j][0]
+            image = images[j]
             ax = axes[i][j]
             title = "%d : %s" % (targets[j], labels[i])
             #plot_image_on_axis(ax, image, title, fig)
+            # We will first transform the image to the range (0, 1)
+            image = get_transformed_image(image)
             plot_image_on_axis(ax, image, title, fig, vmin=mnist_zero, vmax=mnist_one)
 
     plot.tight_layout(pad=2.)
@@ -149,7 +156,9 @@ def plot_multiple_images_varying_penalty_single_digit(filename, images_list, tar
             fig.delaxes(ax)
             continue
         images = images_list[i]
-        image = images[index][0]
+        image = images[index]
+        # We will first transform the image to the range (0, 1)
+        image = get_transformed_image(image)
         title = "%d : %s" % (targets[index], labels[i])
         #plot_image_on_axis(ax, image, title, fig, vmin=-0.5, vmax=2.0)
         #plot_image_on_axis(ax, image, title, fig, vmin=mnist_zero, vmax=mnist_one)
