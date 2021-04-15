@@ -80,7 +80,7 @@ class SparseInputRecoverer:
         # 'all' : both images and stats
         # 'none' : disable tensorboard logging
         # 'stats_only' : log only stats, no images
-        self.tensorboard_logging = 'none'
+        self.tensorboard_logging = 'all'
         self.tensorboard_label = None
 
         # out_fn is either F.log_softmax or just identity depending on what the model does internally
