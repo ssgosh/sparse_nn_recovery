@@ -107,9 +107,9 @@ def generate_multi_plot_all_digits(images_list, post_processed_images_list, targ
 
     #filename = "./output/mean_0.5/10k/filtered_10k_varying_penalty.jpg"
     #filename = "./output/mean_0.5/2k/filtered_2k_varying_penalty.jpg"
-    filename = f"{run_dir}/output/all_digits_filtered_varying_penalty.jpg"
-    plot_multiple_images_varying_penalty(filename, post_processed_images_list, targets,
-            labels)
+    # filename = f"{run_dir}/output/all_digits_filtered_varying_penalty.jpg"
+    # plot_multiple_images_varying_penalty(filename, post_processed_images_list, targets,
+    #         labels)
 
 def generate_multi_plots_separate_digits(images_list,
         post_processed_images_list, targets, labels):
@@ -123,10 +123,10 @@ def generate_multi_plots_separate_digits(images_list,
                 labels, i, filtered=False)
 
         #filename = f"./output/mean_0.5/10k/{digit}/filtered_10k_varying_penalty.jpg"
-        filename = f"{run_dir}/output/{digit}_filtered_varying_penalty.jpg"
-        plot_multiple_images_varying_penalty_single_digit(filename,
-                post_processed_images_list, targets,
-                labels, i, filtered=True)
+        # filename = f"{run_dir}/output/{digit}_filtered_varying_penalty.jpg"
+        # plot_multiple_images_varying_penalty_single_digit(filename,
+        #         post_processed_images_list, targets,
+        #         labels, i, filtered=True)
 
 
 def get_range_filtered(filtered):

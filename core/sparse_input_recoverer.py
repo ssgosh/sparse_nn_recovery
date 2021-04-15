@@ -200,7 +200,7 @@ class SparseInputRecoverer:
         transformed_low, transformed_high = self.image_zero, self.image_one
         n = targets.shape[0]
         for label in labels:
-            images = torch.zeros(n, 1, 28, 28)
+            images = torch.zeros([n] + list(initial_image.shape[1:]))
             images += initial_image  # Use same initial image for each digit
             images_list.append(images)
             self.recover_image_batch(model, images, targets, num_steps, include_layer[label],
@@ -208,14 +208,14 @@ class SparseInputRecoverer:
                                      include_likelihood)
 
         post_processed_images_list = []
-        for images in images_list:
-            # post_process_images(images)
-            copied_images = images.clone().detach()
-            # post_process_images(copied_images, mode='low_high', low=-0.5, high=2.0)
-            imp.post_process_images(copied_images, mode='low_high',
-                                    low=transformed_low,
-                                    high=transformed_high)
-            post_processed_images_list.append(copied_images)
+        # for images in images_list:
+        #     # post_process_images(images)
+        #     copied_images = images.clone().detach()
+        #     # post_process_images(copied_images, mode='low_high', low=-0.5, high=2.0)
+        #     imp.post_process_images(copied_images, mode='low_high',
+        #                             low=transformed_low,
+        #                             high=transformed_high)
+        #     post_processed_images_list.append(copied_images)
 
         # One folder per digit, containing filtered and unfiltered images for that
         # digit
