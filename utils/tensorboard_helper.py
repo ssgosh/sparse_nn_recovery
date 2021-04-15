@@ -48,6 +48,7 @@ class TensorBoardHelper:
     def add_image_grid(self, images, tag, filtered, num_per_row, global_step):
         self.reset_if_needed(global_step)
         images = images.detach()
+        # XXX: Remove scaling inside the range, and instead perform transformation into the range (0, 1)
         rng = (self.image_zero, self.image_one) if filtered else None
         img_grid = torchvision.utils.make_grid(images, num_per_row, normalize=True,
                 range=rng, padding=2, pad_value=1.0,

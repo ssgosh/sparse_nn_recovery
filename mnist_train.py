@@ -380,7 +380,11 @@ def main():
         #print(batch_a[0], batch_b[0], batch_c[0])
         #sys.exit(0)
 
-    model = dataset_helper.get_model(config.adversarial_classification_mode, device)
+    load = False
+    if config.dataset.lower() == 'cifar':
+        load = True
+        # config.discriminator_model_file =
+    model = dataset_helper.get_model(config.adversarial_classification_mode, device, load=load, config=config)
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
     if args.train_mode == 'adversarial-continuous':
         optD = optimizer
