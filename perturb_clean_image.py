@@ -1,5 +1,6 @@
 import torch
 import torchvision.transforms
+from matplotlib import pyplot as plot
 
 from datasets.dataset_helper import DatasetHelper
 from datasets.dataset_helper_factory import DatasetHelperFactory
@@ -13,3 +14,22 @@ print(torch.max(dataset[0][0]).item(), torch.min(dataset[0][0]).item())
 num = len(dataset)
 idx = torch.randint(0, num, ()).item()
 image, target = dataset[idx]
+
+image = image.permute((1, 2, 0))
+plot.imshow(image, cmap='gray')
+plot.show()
+
+d = torch.load('ckpt/attack/images_list.pt')
+sparse_attack_images = d['images'][1]
+attack_targets = d['targets']
+
+attack_image = sparse_attack_images[0]
+attack_image = attack_image.permute((1, 2, 0))
+attack_target = attack_targets[0]
+plot.imshow(attack_image, cmap='gray')
+plot.show()
+
+lambd = 0.1
+perturbed_image = torch.clamp(image + lambd * attack_image, 0., 1.)
+plot.imshow(perturbed_image, cmap='gray')
+plot.show()

@@ -125,8 +125,8 @@ def main():
             targets=targets
         )
 
-        torch.save(images_list, f"{config.run_dir}/ckpt/images_list.pt")
-        torch.save(post_processed_images_list, f"{config.run_dir}/ckpt/post_processed_images_list.pt")
+        torch.save({'images' : images_list, 'targets' : targets, 'labels' : labels}, f"{config.run_dir}/ckpt/images_list.pt")
+        # torch.save(post_processed_images_list, f"{config.run_dir}/ckpt/post_processed_images_list.pt")
     elif config.mode == 'single-digit':
         n = 1
         targets = torch.tensor([config.digit])

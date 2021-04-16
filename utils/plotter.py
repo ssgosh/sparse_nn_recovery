@@ -97,7 +97,7 @@ def plot_multiple_images_varying_penalty(filename, images_list, targets,
             #plot_image_on_axis(ax, image, title, fig)
             # We will first transform the image to the range (0, 1)
             image = get_transformed_image(image)
-            plot_image_on_axis(ax, image, title, fig, vmin=mnist_zero, vmax=mnist_one)
+            plot_image_on_axis(ax, image, title, fig, vmin=0., vmax=1.)
 
     plot.tight_layout(pad=2.)
     plot.savefig(filename)
