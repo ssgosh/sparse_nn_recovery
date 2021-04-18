@@ -1,4 +1,6 @@
 import torch
+from torch import optim
+from torch.optim.lr_scheduler import StepLR
 from torchvision import datasets
 from torchvision.transforms import transforms
 
@@ -54,4 +56,11 @@ class MNISTdatasetHelper(DatasetHelper, ):
 
     def update_config(self, config):
         config.model_classname = 'ExampleCNNNet'
+        config.mnist_lr_step_size = 1
+
+    def get_optimizer_scheduler(self, config, model):
+        optimizer = optim.Adadelta(model.parameters(), lr=config.lr)
+        # Learning rate scheduler
+        scheduler = StepLR(optimizer, step_size=config.mnist_lr_step_size, gamma=config.gamma)
+        return optimizer, scheduler
 

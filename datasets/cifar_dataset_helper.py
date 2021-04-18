@@ -1,5 +1,6 @@
 import torch
 from icontract import require
+from torch import optim
 from torchvision import datasets
 from torchvision.transforms import transforms
 import torch.nn.functional as F
@@ -71,4 +72,15 @@ class CIFARDatasetHelper(DatasetHelper):
     def update_config(self, config):
         config.model_classname = 'ResNet18'
         config.discriminator_model_file = 'ckpt/ResNet18/ckpt.pth'
+        config.cifar_lr = 0.1
+        config.cifar_momentum = 0.9
+        config.cifar_weight_decay = 5e-4
+        config.cifar_lr_scheduler = 'CosineAnnealingLR'
+        config.cifar_t_max = 200
+
+    def get_optimizer_scheduler(self, config, model):
+        optimizer = optim.SGD(model.parameters(), lr=config.cifar_lr,
+                              momentum=config.cifar_momentum, weight_decay=config.cifar_weight_decay)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=config.cifar_t_max)
+        return optimizer, scheduler
 

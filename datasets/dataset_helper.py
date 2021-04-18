@@ -133,3 +133,6 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
     def get_mean_std_correct_dims(self, include_batch):
         mean, std = self.get_mean_std()
         return self.get_correct_dims(mean, include_batch), self.get_correct_dims(std, include_batch)
+
+    def get_optimizer_scheduler(self, config, model):
+        raise NotImplementedError('Please implement this in a sublcass')
