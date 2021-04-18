@@ -55,6 +55,7 @@ class CIFARDatasetHelper(DatasetHelper):
             raise ValueError(f"Model mode {model_mode} not supported for CIFAR10")
         elif model_mode == 'max-entropy':
             assert load
+            print('Loading model from', config.discriminator_model_file)
             model = ResNet18()
             checkpoint = torch.load(config.discriminator_model_file, map_location=torch.device(device))
             model_state_dict = torchutils.load_data_parallel_state_dict_as_normal(checkpoint['net'])
