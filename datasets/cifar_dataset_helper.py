@@ -2,6 +2,7 @@ import torch
 from icontract import require
 from torchvision import datasets
 from torchvision.transforms import transforms
+import torch.nn.functional as F
 
 from datasets.dataset_helper import DatasetHelper
 from pytorch_cifar.models import ResNet18
