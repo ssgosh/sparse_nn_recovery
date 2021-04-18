@@ -26,6 +26,7 @@ class TensorBoardHelper:
         self.batch_image_zero = DatasetHelperFactory.get().get_zero_correct_dims()
         self.batch_image_one = DatasetHelperFactory.get().get_one_correct_dims()
         self.num_real_classes = DatasetHelperFactory.get().get_num_classes()
+        self.mean, self.std = DatasetHelperFactory.get().get_mean_std_correct_dims(include_batch=True)
 
     def close(self):
         print("Closing SummaryWriter")
@@ -45,14 +46,21 @@ class TensorBoardHelper:
             self.reset()
             self.next_reset = global_step + self.reset_steps
 
+    def transform_image_batch_to_valid_pixel_range(self, images):
+        return images * self.std + self.mean
+
     def add_image_grid(self, images, tag, filtered, num_per_row, global_step):
         self.reset_if_needed(global_step)
         images = images.detach()
         # XXX: Remove scaling inside the range, and instead perform transformation into the range (0, 1)
-        rng = (self.image_zero, self.image_one) if filtered else None
-        img_grid = torchvision.utils.make_grid(images, num_per_row, normalize=True,
-                range=rng, padding=2, pad_value=1.0,
-                scale_each=True)
+        # rng = (self.image_zero, self.image_one) if filtered else None
+        # img_grid = torchvision.utils.make_grid(images, num_per_row, normalize=True,
+        #         range=rng, padding=2, pad_value=1.0,
+        #         scale_each=True)
+
+        images = self.transform_image_batch_to_valid_pixel_range(images)
+        img_grid = torchvision.utils.make_grid(images, num_per_row, pad_value=1.0, padding=2)
+
         # Resize image grid
         #print(images.shape)
         #print(img_grid.shape)

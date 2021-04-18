@@ -92,6 +92,10 @@ class ResNet(nn.Module):
     def get_layers(self):
         return self.layers
 
+    # Needed for integrating with adversarial training code
+    def get_weight_decay(self):
+        return 0.
+
     def _make_layer(self, block, planes, num_blocks, stride):
         strides = [stride] + [1]*(num_blocks-1)
         layers = []
