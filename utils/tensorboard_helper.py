@@ -27,6 +27,7 @@ class TensorBoardHelper:
         self.batch_image_one = DatasetHelperFactory.get().get_one_correct_dims()
         self.num_real_classes = DatasetHelperFactory.get().get_num_classes()
         self.mean, self.std = DatasetHelperFactory.get().get_mean_std_correct_dims(include_batch=True)
+        self.shape = DatasetHelperFactory.get().get_each_entry_shape()
 
     def close(self):
         print("Closing SummaryWriter")
@@ -219,9 +220,9 @@ class TensorBoardHelper:
             # All-zero images can be produced easily by our optimization algo,
             # But cross image is hard to be produced by accident
             for j in range(count, num_per_class):
-                cross = get_cross(28, targets)
+                cross = get_cross(self.shape[2], self.shape[0], targets)
 
-                entries.append(cross * self.image_one + self.image_zero)
+                entries.append(cross * self.batch_image_one.squeeze(dim=0) + self.batch_image_zero.squeeze(dim=0))
                 tgt_entries.append(torch.tensor(cls, device=targets.device))
 
         return torch.stack(entries), torch.stack(tgt_entries)

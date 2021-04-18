@@ -9,6 +9,7 @@ from icontract import ensure
 
 from core.sparse_input_recoverer import SparseInputRecoverer
 from core.tblabels import TBLabels
+from datasets.dataset_helper_factory import DatasetHelperFactory
 
 from utils.torchutils import get_cross, safe_clone
 
@@ -45,6 +46,8 @@ class SparseInputDatasetRecoverer:
         #self.dataset_epoch = 0
         self.image_zero = self.sparse_input_recoverer.image_zero
         self.image_one = self.sparse_input_recoverer.image_one
+        self.batched_image_zero = self.sparse_input_recoverer.batched_image_zero
+        self.batched_image_one = self.sparse_input_recoverer.batched_image_one
 
         # Prune the recovered dataset for low-probability images
         self.prune = config.recovery_prune_low_prob
@@ -125,7 +128,8 @@ class SparseInputDatasetRecoverer:
                             if i >= img_per_bin:
                                 break
                         while i < img_per_bin:
-                            ret.append(self.image_one * get_cross(28, imgs1) + self.image_zero)
+                            shape = DatasetHelperFactory.get().get_each_entry_shape()
+                            ret.append(self.batched_image_one.squeeze(dim=0) * get_cross(shape[2], shape[0], imgs1) + self.batched_image_zero.squeeze(dim=0))
                             i += 1
                         return ret
 

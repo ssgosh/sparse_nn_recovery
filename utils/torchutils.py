@@ -20,12 +20,13 @@ def compute_probs_tensor(output, targets):
     return output.gather(1, targets)[:, 0], softmax.gather(1, targets)[:, 0]
 
 
-def get_cross(n, like):
-    """Returns an n x n cross X image, on the same device as 'like'"""
+def get_cross(n, c, like):
+    """Returns a c x n x n cross X image, on the same device as 'like'"""
     d1 = torch.diagflat(torch.ones(n, device=like.device))
     d2 = torch.flip(d1, dims=[1, ])
-    cross = ((d1 + d2) > 0.).float().unsqueeze(dim=0)
-    return cross
+    # cross = ((d1 + d2) > 0.).float().unsqueeze(dim=0)
+    cross = ((d1 + d2) > 0.).float()
+    return torch.stack(c * [cross])
 
 
 def safe_clone(x):
@@ -38,8 +39,9 @@ class ClippedConstantTransform(torch.nn.Module):
         self.val = val
 
     def forward(self, x):
-        #print(x)
+        # print(x)
         return torch.clamp(x + self.val, min=0., max=1.)
+
 
 def load_data_parallel_state_dict_as_normal(state_dict):
     new_state_dict = OrderedDict()
@@ -48,10 +50,8 @@ def load_data_parallel_state_dict_as_normal(state_dict):
         new_state_dict[name] = v
     return new_state_dict
 
+
 def clip_tensor_range(images, batched_image_zero, batched_image_one, out):
     a = torch.min(images, batched_image_one, out=out)
     b = torch.max(a, batched_image_zero, out=out)
     return b
-
-
-
