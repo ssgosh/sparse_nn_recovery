@@ -42,6 +42,7 @@ class NamedExpt:
             'quick-opt', # For quickly testing if the optimization is somewhat working, with minimal number of epochs, batches etc
             'full-sparse',  # For full expt, with data loaded in normal mode
             'full-non-sparse',  # For full expt, with data loaded in non-sparse mode (add constant pixel)
+            'full-cifar', # For full cifar-10 expts, with epochs etc set for cifar dataset
             'pretrain-MNIST_B', # For pretraining on dataset B
         ]
         self.parser = argparse.ArgumentParser(description='Named Experiments', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -102,9 +103,12 @@ class NamedExpt:
             cmd = cmd + \
                     f'--non-sparse-dataset ' 
         elif args.expt == 'full-cifar':
+            assert args.dataset.lower() == 'cifar'
             cmd = cmd + \
-                  f'--epochs 200 ' \
-                  f'--num-pretrain-epochs 50 '
+                    f'--sparse-dataset ' \
+                    f'--epochs 200 ' \
+                    f'--num-pretrain-epochs 0 ' \
+                    f'--recovery-batch-size 32'
         elif args.expt == 'pretrain-MNIST_B':
             cmd = cmd + \
                     f'--dataset MNIST_B ' \
