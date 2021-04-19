@@ -44,11 +44,12 @@ attack_image = attack_image * std + mean
 print('Attack image shape: ', attack_image.shape)
 print('Attack image min, max:', attack_image.min(), attack_image.max())
 plotter.plot_single_digit(attack_image, attack_target, 'Attack Image', filtered=True, show=True, transform=False)
-sys.exit(0)
+# sys.exit(0)
 # plot.show()
 
 class Config:
-    pass
+    def __init__(self):
+        self.device = 'cpu'
 
 config = Config()
 dataset_helper.setup_config(config)
@@ -57,16 +58,22 @@ model = dataset_helper.get_model('max-entropy', device='cpu', config=config, loa
 
 (mean,), (std,) = dataset_helper.get_mean_std()
 print(mean, std)
-for lambd in [0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 0.8, 0.9, 1.0]:
+for lambd in [0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 0.8, 0.9, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 7.0, 10.0]:
     perturbed_image = torch.clamp(image + lambd * attack_image, 0., 1.)
+    print('Perturbed image shape: ', perturbed_image.shape)
     batch = perturbed_image.unsqueeze(0)
-    batch = batch.permute((0, 3, 1, 2))  # Channel dimension should be second
+    #batch = batch.permute((0, 3, 1, 2))  # Channel dimension should be second
     batch = (batch - mean) / std
     output = model(batch)
     print(output)
     # probs = F.softmax(output)
-    probs = torch.pow(math.e, output)
+    probs = torch.pow(math.e, output)[0]
     print('lambda = ', lambd)
     print(probs)
-    plot.imshow(perturbed_image, cmap='gray')
-    plot.show()
+    print('Perturbed image min, max:', perturbed_image.min(), perturbed_image.max())
+    plotter.plot_single_digit(
+        perturbed_image, target,
+        f'Perturbed Image {target} : {probs[target]:.3f} -> {attack_target} : {probs[attack_target]:.3f}',
+        filtered=True, show=True, transform=False)
+    # plot.imshow(perturbed_image, cmap='gray')
+    # plot.show()
