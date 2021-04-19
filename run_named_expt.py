@@ -62,7 +62,7 @@ class NamedExpt:
 
         # Create runs dir here, so that we can write to <run-dir>/logfile.txt
         args.run_dir = None
-        args.run_suffix = f"_{args.expt}"
+        args.run_suffix = f"_{args.expt}_{args.dataset}"
         rh.setup_run_dir(args, 'train_runs')
 
         # Save git information in the run directory before proceeding
@@ -101,6 +101,10 @@ class NamedExpt:
         elif args.expt == 'full-non-sparse':
             cmd = cmd + \
                     f'--non-sparse-dataset ' 
+        elif args.expt == 'full-cifar':
+            cmd = cmd + \
+                  f'--epochs 200 ' \
+                  f'--num-pretrain-epochs 50 '
         elif args.expt == 'pretrain-MNIST_B':
             cmd = cmd + \
                     f'--dataset MNIST_B ' \
