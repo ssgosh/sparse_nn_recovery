@@ -92,6 +92,10 @@ class ResNet(nn.Module):
     def get_layers(self):
         return self.layers
 
+    # Needed for integrating with adversarial training code
+    def get_weight_decay(self):
+        return 0.
+
     def _make_layer(self, block, planes, num_blocks, stride):
         strides = [stride] + [1]*(num_blocks-1)
         layers = []
@@ -109,6 +113,7 @@ class ResNet(nn.Module):
         out = F.avg_pool2d(out, 4)
         out = out.view(out.size(0), -1)
         out = self.linear(out)
+        out = F.log_softmax(out, dim=1)
         return out
 
 

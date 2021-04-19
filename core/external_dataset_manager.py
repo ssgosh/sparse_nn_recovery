@@ -13,10 +13,11 @@ class ExternalDatasetManager:
         self.valid_loaders = []
         self.valid_names = []
 
-        if not config.non_sparse_dataset:
-            self.add_dataset('external_B')
-        else:
-            self.add_dataset('external_B_non_sparse')
+        if config.dataset.lower() not in ['cifar']:
+            if not config.non_sparse_dataset:
+                self.add_dataset('external_B')
+            else:
+                self.add_dataset('external_B_non_sparse')
 
     def add_dataset(self, dataset_name):
         self.add_dataset_(dataset_name, which='test')
