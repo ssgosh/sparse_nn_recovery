@@ -14,6 +14,7 @@ matplotlib.use('TkAgg')
 
 dataset_helper: DatasetHelper = DatasetHelperFactory.get('mnist', non_sparse=False)
 dataset = dataset_helper.get_dataset(which='train', transform=torchvision.transforms.ToTensor())
+mean, std = dataset_helper.get_mean_std_correct_dims(include_batch=False)
 print(dataset[0])
 print(dataset[0][0].shape)
 print(torch.max(dataset[0][0]).item(), torch.min(dataset[0][0]).item())
@@ -26,6 +27,7 @@ image, target = dataset[idx]
 plotter.set_image_zero_one()
 #image = image.permute((1, 2, 0))
 print('Dataset image shape: ', image.shape)
+print('Attack image min, max:', image.min(), image.max())
 plotter.plot_single_digit(image, target, 'Plain Dataset Image', filtered=True, show=True, transform=False)
 #plot.imshow(image, cmap='gray')
 # plot.show()
@@ -37,8 +39,10 @@ attack_targets = d['targets']
 attack_image = sparse_attack_images[1]
 # attack_image = attack_image.permute((1, 2, 0))
 attack_target = attack_targets[1]
+attack_image = attack_image * std + mean
 # plot.imshow(attack_image, cmap='gray')
 print('Attack image shape: ', attack_image.shape)
+print('Attack image min, max:', attack_image.min(), attack_image.max())
 plotter.plot_single_digit(attack_image, attack_target, 'Attack Image', filtered=True, show=True, transform=False)
 sys.exit(0)
 # plot.show()
