@@ -36,9 +36,10 @@ d = torch.load('ckpt/attack/images_list.pt')
 sparse_attack_images = d['images'][1]
 attack_targets = d['targets']
 
-attack_image = sparse_attack_images[1]
+d = 5
+attack_image = sparse_attack_images[d]
 # attack_image = attack_image.permute((1, 2, 0))
-attack_target = attack_targets[1]
+attack_target = attack_targets[d]
 attack_image = attack_image * std + mean
 # plot.imshow(attack_image, cmap='gray')
 print('Attack image shape: ', attack_image.shape)
@@ -73,7 +74,7 @@ for lambd in [0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 0.8, 0.9, 1.0, 1.5, 2.0, 2.5, 3.0, 4
     print('Perturbed image min, max:', perturbed_image.min(), perturbed_image.max())
     plotter.plot_single_digit(
         perturbed_image, target,
-        f'Perturbed Image {target} : {probs[target]:.3f} -> {attack_target} : {probs[attack_target]:.3f}',
+        f'Perturbed Image; lambda = {lambd}, {target} : {probs[target]:.3f} -> {attack_target} : {probs[attack_target]:.3f}',
         filtered=True, show=True, transform=False)
     # plot.imshow(perturbed_image, cmap='gray')
     # plot.show()
