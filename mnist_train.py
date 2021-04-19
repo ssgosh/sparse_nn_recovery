@@ -385,13 +385,10 @@ def main():
         load = True
         # config.discriminator_model_file =
     model = dataset_helper.get_model(config.adversarial_classification_mode, device, load=load, config=config)
-    optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
+    optimizer, scheduler = dataset_helper.get_optimizer_scheduler(config, model)
     if args.train_mode == 'adversarial-continuous':
         optD = optimizer
         optG = optim.Adam([images], lr=args.generator_lr)
-
-    # Learning rate scheduler
-    scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
 
     # Setup sparse dataset recovery here, after model etc are all set up
     if args.train_mode in [ 'adversarial-epoch', 'adversarial-batches' ]:
