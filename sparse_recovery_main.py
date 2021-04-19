@@ -67,6 +67,8 @@ def add_main_script_arguments():
 
 
 def setup_config(config):
+    use_cuda = True
+    config.device = torch.device("cuda" if use_cuda else "cpu")
     # This will change when we support multiple datasets
     dh = DatasetHelperFactory.get(config.dataset)
     dh.setup_config(config)
@@ -90,7 +92,7 @@ def setup_everything(argv):
     plotter.set_image_zero_one()
 
     # model = load_model(config)
-    model = dh.get_model('max-entropy', device='cpu', config=config, load=True)
+    model = dh.get_model('max-entropy', device=config.device, config=config, load=True)
 
     tbh = TensorBoardHelper(config.run_dir)
 

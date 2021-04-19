@@ -52,6 +52,7 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
         zero, one = self.get_transformed_zero_one()
         config.image_zero = zero
         config.image_one = one
+        self.device = config.device
         self.update_config(config)
 
     # XXX: Rename method to get_num_real_classes and update usage.
@@ -74,17 +75,17 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
 
     def get_zero_correct_dims(self, include_batch=True):
         zero, one = self.get_transformed_zero_one()
-        return self.get_correct_dims(zero, include_batch)
+        return self.get_correct_dims(zero, include_batch, self.device)
 
-    def get_one_correct_dims(self, include_batch=True):
+    def get_one_correct_dims(self, include_batch=True): 
         zero, one = self.get_transformed_zero_one()
-        return self.get_correct_dims(one, include_batch)
+        return self.get_correct_dims(one, include_batch, self.device)
 
     # Returns a tensor of shape [1, c, 1, 1] or [c, 1, 1], where c = len(val) or 1 if val is a number
-    def get_correct_dims(self, val, include_batch):
-        z = torch.tensor(val)
+    def get_correct_dims(self, val, include_batch, device):
+        z = torch.tensor(val, device=device)
         if len(z.shape) == 0:
-            z = torch.tensor([val])
+            z = torch.tensor([val], device=device)
         if include_batch:
             z = z.unsqueeze(0).unsqueeze(2).unsqueeze(3)
         else:
@@ -132,7 +133,9 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
     # Returns mean and std in shape [1, c, 1, 1] for easy tensor operations later
     def get_mean_std_correct_dims(self, include_batch):
         mean, std = self.get_mean_std()
-        return self.get_correct_dims(mean, include_batch), self.get_correct_dims(std, include_batch)
+        return self.get_correct_dims(mean, include_batch, self.device), self.get_correct_dims(std, include_batch,
+                self.device)
 
     def get_optimizer_scheduler(self, config, model):
         raise NotImplementedError('Please implement this in a sublcass')
+

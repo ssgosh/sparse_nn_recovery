@@ -236,6 +236,11 @@ def main():
     args = parser.parse_args()
 
     config = args
+
+    use_cuda = not args.no_cuda and torch.cuda.is_available()
+    device = torch.device("cuda" if use_cuda else "cpu")
+    config.device = device
+
     SparseInputRecoverer.setup_default_config(config)
     # dataset name is 'MNIST'
     #config.dataset_name = 'mnist'
@@ -260,11 +265,7 @@ def main():
     config_dict['generator_include_likelihood'] = True
     config_dict['generator_include_layer'] = include_layer[args.generator_mode]
 
-    use_cuda = not args.no_cuda and torch.cuda.is_available()
-
     torch.manual_seed(args.seed)
-
-    device = torch.device("cuda" if use_cuda else "cpu")
 
     train_kwargs = {'batch_size': args.batch_size}
     test_kwargs = {'batch_size': args.test_batch_size}
