@@ -466,6 +466,8 @@ class AdversarialTrainer:
         with torch.no_grad():
             dl = torch.utils.data.DataLoader(self.real_data_train_loader.dataset, batch_size=1000, shuffle=True)
             img, target = next(iter(dl))
+            img = img.to(self.device)
+            target = target.to(self.device)
             self.tbh.log_regular_batch_stats('real', '', None, img, target, None, '', dataset_epoch=self.epoch, precomputed=False)
 
     def pre_epoch_stuff(self, epoch):
