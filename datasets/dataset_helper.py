@@ -17,6 +17,7 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
         self.name = name
         self.subset = subset
         self.non_sparse = non_sparse
+        self.device = 'cpu'     # Device is cpu by default
 
     def get_dataset(self, which='train', transform=None) -> Dataset:
         """

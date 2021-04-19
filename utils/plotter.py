@@ -33,7 +33,6 @@ def get_transformed_image(image):
     print('Before transform: image min, max = ', torch.amin(image, dim=(1, 2)), torch.amax(image, dim=(1, 2)))
     image = image * std + mean
     print('After transform: image min, max = ', torch.amin(image, dim=(1, 2)), torch.amax(image, dim=(1, 2)))
-    image = image.permute((1, 2, 0)) # matplotlib expects H x W x C
     return image
 
 # vmin and vmax are ignore in case of RGB image
@@ -56,18 +55,23 @@ def plot_image_on_axis(ax, image, title, fig, vmin=None, vmax=None):
     fig.colorbar(im, cax=cax, orientation='vertical')
 
 
-def plot_single_digit(image, digit, label, filtered):
+def plot_single_digit(image, digit, label, filtered, show=False, transform=True):
     fig = plot.gcf()
     ax = plot.gca()
     title = "%d : %s" % (digit, label)
     (vmin, vmax) = (0., 1.) if filtered else (None, None)
     # We will first transform the image to the range (0, 1)
-    image = get_transformed_image(image)
+    if transform:
+        image = get_transformed_image(image)
+    image = image.permute((1, 2, 0)) # matplotlib expects H x W x C
     plot_image_on_axis(ax, image, title, fig, vmin=vmin, vmax=vmax)
-    filtered_str = "filtered" if filtered else "unfiltered"
-    filename = f"{run_dir}/output/{digit}_{label}_{filtered_str}.jpg"
-    print(filename)
-    plot.savefig(filename)
+    if show:
+        plot.show()
+    else:
+        filtered_str = "filtered" if filtered else "unfiltered"
+        filename = f"{run_dir}/output/{digit}_{label}_{filtered_str}.jpg"
+        print(filename)
+        plot.savefig(filename)
     plot.close()
 
 # 1 col each for:
@@ -97,6 +101,7 @@ def plot_multiple_images_varying_penalty(filename, images_list, targets,
             #plot_image_on_axis(ax, image, title, fig)
             # We will first transform the image to the range (0, 1)
             image = get_transformed_image(image)
+            image = image.permute((1, 2, 0))  # matplotlib expects H x W x C
             plot_image_on_axis(ax, image, title, fig, vmin=0., vmax=1.)
 
     plot.tight_layout(pad=2.)
@@ -159,6 +164,7 @@ def plot_multiple_images_varying_penalty_single_digit(filename, images_list, tar
         image = images[index]
         # We will first transform the image to the range (0, 1)
         image = get_transformed_image(image)
+        image = image.permute((1, 2, 0))  # matplotlib expects H x W x C
         title = "%d : %s" % (targets[index], labels[i])
         #plot_image_on_axis(ax, image, title, fig, vmin=-0.5, vmax=2.0)
         #plot_image_on_axis(ax, image, title, fig, vmin=mnist_zero, vmax=mnist_one)
