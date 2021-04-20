@@ -11,12 +11,29 @@ from torch.utils.data import Subset, DataLoader
 from datasets.dataset_helper import DatasetHelper
 from datasets.dataset_helper_factory import DatasetHelperFactory
 from utils import plotter
+
 matplotlib.use('TkAgg')
+
 
 # Fake config class
 class Config:
     def __init__(self):
         self.device = 'cpu'
+
+
+class Stats:
+    def __init__(self):
+        pass
+
+    def accumulate(self, probs, d1, d2, lambd):
+        pass
+
+    def finalize(self):
+        pass
+
+    def dump(self):
+        pass
+
 
 class ImageAttack:
     def __init__(self):
@@ -55,7 +72,8 @@ class ImageAttack:
         if show:
             print('Attack image shape: ', attack_image.shape)
             print('Attack image min, max:', attack_image.min(), attack_image.max())
-            plotter.plot_single_digit(attack_image, attack_target, 'Attack Image', filtered=True, show=True, transform=False)
+            plotter.plot_single_digit(attack_image, attack_target, 'Attack Image', filtered=True, show=True,
+                                      transform=False)
         return attack_image, attack_target
 
     def attack_manual_check(self):
@@ -78,7 +96,6 @@ class ImageAttack:
                 f'Perturbed Image; lambda = {lambd}, {target} : {probs[target]:.3f} -> {attack_target} : {probs[attack_target]:.3f}',
                 filtered=True, show=True, transform=False)
 
-
     def sample_1000_images_per_class(self):
         targets = torch.tensor(self.dataset.targets)
         # images = torch.tensor(self.dataset.images)
@@ -90,8 +107,6 @@ class ImageAttack:
             idx = idx[perm[0:n]]
             dls.append(DataLoader(Subset(self.dataset, idx), batch_size=n))
         return dls
-
-
 
     # Collect statistics about image attacks
     # What stats to collect?
@@ -105,6 +120,7 @@ class ImageAttack:
     # Avg Pr[d1]
     # Avg Pr[d2]
     def attack_with_stats(self):
+        stats = Stats()
         dls = im.sample_1000_images_per_class()
         mean, std = self.mean.unsqueeze(0), self.std.unsqueeze(0)
         for d1 in range(10):
@@ -113,6 +129,7 @@ class ImageAttack:
             for lambd in [0.1, 1.0]:
                 for dl in dls:
                     for images, targets in dl:
+                        d2 = targets[0]
                         perturbed_images = torch.clamp(images + lambd * attack_image, 0., 1.)
                         # Transform images
                         perturbed_images = (perturbed_images - mean) / std
@@ -120,6 +137,9 @@ class ImageAttack:
                         probs = torch.pow(math.e, output)
                         # Find predictions by taking argmax of probs along dim 1
                         # Collect stats as noted earlier
+                        stats.accumulate(probs, d1, d2, lambd)
+        stats.finalize()
+        stats.dump()
 
 
 im = ImageAttack()
@@ -129,5 +149,5 @@ for dl in dls:
         print(image.shape, target.shape)
         print(target[0])
 
-#im.attack_manual_check()
+# im.attack_manual_check()
 # attack_manual_check()
