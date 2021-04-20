@@ -23,10 +23,39 @@ class Config:
 
 class Stats:
     def __init__(self):
-        pass
+        self.stats = {}
 
-    def accumulate(self, probs, d1, d2, lambd):
-        pass
+    def accumulate(self, probs, preds, d1, d2, lambd):
+        sd = self.get_stats_dict(d1, d2, lambd)
+        success = preds == d1
+        failure = preds == d2
+        something_else = torch.logical_and(preds != d1, preds != d2)
+
+        attack_success = torch.sum(success).item()
+        attack_failure = torch.sum(failure).item()
+        attack_something_else = torch.sum(something_else).item()
+
+        avg_prob_success = torch.sum(probs[success]) / attack_success
+        avg_prob_failure = torch.sum(probs[failure]) / attack_failure
+        avg_prob_something_else = torch.sum(probs[something_else]) / attack_something_else
+
+        n = probs.shape[0]
+        sd['success'] = attack_success / n
+        sd['failure'] = attack_failure / n
+        sd['something_else'] = attack_something_else / n
+
+        sd['prob_success'] = avg_prob_success
+        sd['prob_failure'] = avg_prob_failure
+        sd['prob_something_else'] = avg_prob_something_else
+
+    def get_stats_dict(self, d1, d2, lambd):
+        if d1 not in self.stats:
+            self.stats[d1] = {}
+        if d2 not in self.stats[d1]:
+            self.stats[d1][d2] = {}
+        if lambd not in self.stats[d1][d2]:
+            self.stats[d1][d2][lambd] = {}
+        return self.stats[d1][d2][lambd]
 
     def finalize(self):
         pass
@@ -136,8 +165,9 @@ class ImageAttack:
                         output = self.model(perturbed_images)
                         probs = torch.pow(math.e, output)
                         # Find predictions by taking argmax of probs along dim 1
+                        preds = torch.argmax(probs, 1)
                         # Collect stats as noted earlier
-                        stats.accumulate(probs, d1, d2, lambd)
+                        stats.accumulate(probs, preds, d1, d2, lambd)
         stats.finalize()
         stats.dump()
 
