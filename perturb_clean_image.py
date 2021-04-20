@@ -73,7 +73,7 @@ class Stats:
             # print('||')
             alphas = list(self.stats[d1][0].keys())
             for alpha in alphas:
-                vals = [f"{self.stats[d1][d2][alpha]['success']:.2f}" for d2 in self.stats[d1]]
+                vals = [f"{self.stats[d1][d2][alpha]['frac_attack_class']:.2f}" for d2 in self.stats[d1]]
                 vals.insert(0, str(alpha))
                 print('\t'.join(vals))
 
