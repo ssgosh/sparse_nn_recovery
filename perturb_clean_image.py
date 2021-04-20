@@ -30,7 +30,8 @@ class Stats:
         sd = self.get_stats_dict(d1, d2, alpha)
         success = preds == d1
         failure = preds == d2
-        something_else = torch.logical_and(preds != d1, preds != d2)
+        #something_else = torch.logical_and(preds != d1, preds != d2)
+        something_else = ((preds != d1) * (preds != d2)) > 0.
 
         attack_success = torch.sum(success).item()
         attack_failure = torch.sum(failure).item()
@@ -115,9 +116,11 @@ class ImageAttack:
         assert d == attack_target
         attack_image = attack_image * self.std + self.mean
         epsilon = 1. / 256
-        print(f'Num less than epsilon ({epsilon}) = ', torch.sum(torch.logical_and(attack_image < epsilon, attack_image > 0.)).item())
+        #print(f'Num less than epsilon ({epsilon}) = ', torch.sum(torch.logical_and(attack_image < epsilon, attack_image > 0.)).item())
+        print(f'Num less than epsilon ({epsilon}) = ', torch.sum( ((attack_image < epsilon) * (attack_image > 0.)) > 0.).item())
         attack_image[attack_image < epsilon] = 0
-        print(f'Num less than epsilon ({epsilon}) = ', torch.sum(torch.logical_and(attack_image < epsilon, attack_image > 0.)).item())
+        #print(f'Num less than epsilon ({epsilon}) = ', torch.sum(torch.logical_and(attack_image < epsilon, attack_image > 0.)).item())
+        print(f'Num less than epsilon ({epsilon}) = ', torch.sum( ((attack_image < epsilon) * (attack_image > 0.)) > 0.).item())
         print(f'Sparsity = ', torch.sum(attack_image > 0.).item())
         if show:
             print('Attack image shape: ', attack_image.shape)
