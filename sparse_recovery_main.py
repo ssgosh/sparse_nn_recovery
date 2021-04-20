@@ -85,6 +85,7 @@ def setup_everything(argv):
     parser = add_main_script_arguments()
     SparseInputRecoverer.add_command_line_arguments(parser)
     config = parser.parse_args(argv)
+    config.device = 'cuda' if torch.cuda.is_available() else 'cpu'
     config, include_layer, labels, dh = setup_config(config)
 
     rh.setup_run_dir(config, 'image_runs')
@@ -104,7 +105,7 @@ def setup_everything(argv):
 def main():
     config, include_layer, labels, model, tbh, sparse_input_recoverer, dh = setup_everything(sys.argv[1:])
     #initial_image = torch.randn(1, 1, 28, 28)
-    initial_image = torch.randn( *( [1] + list(dh.get_each_entry_shape()) ) )
+    initial_image = torch.randn( *( [1] + list(dh.get_each_entry_shape()) ) ).to(config.device)
     #images_list = torch.load("images_list.pt")
     #post_processed_images_list = torch.load("post_processed_images_list.pt")
 
@@ -113,7 +114,7 @@ def main():
 
     if config.mode == 'all-digits':
         n = 10
-        targets = torch.tensor(range(n))
+        targets = torch.tensor(range(n), device=config.device)
         config.num_targets = n
         config.targets = targets
         labels = ['no penalty', 'input only']
@@ -131,7 +132,7 @@ def main():
         # torch.save(post_processed_images_list, f"{config.run_dir}/ckpt/post_processed_images_list.pt")
     elif config.mode == 'single-digit':
         n = 1
-        targets = torch.tensor([config.digit])
+        targets = torch.tensor([config.digit], device=config.device)
         config.num_targets = n
         config.targets = targets
         label = config.recovery_penalty_mode

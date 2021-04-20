@@ -13,13 +13,13 @@ from datasets.dataset_helper import DatasetHelper
 from datasets.dataset_helper_factory import DatasetHelperFactory
 from utils import plotter
 
-matplotlib.use('TkAgg')
+#matplotlib.use('TkAgg')
 
 
 # Fake config class
 class Config:
     def __init__(self):
-        self.device = 'cpu'
+        self.device = 'cuda'
 
 
 class Stats:

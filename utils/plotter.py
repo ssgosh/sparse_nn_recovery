@@ -30,13 +30,14 @@ def set_run_dir(some_dir):
 def get_transformed_image(image):
     print(std)
     print(mean)
-    print('Before transform: image min, max = ', torch.amin(image, dim=(1, 2)), torch.amax(image, dim=(1, 2)))
+    #print('Before transform: image min, max = ', torch.amin(image, dim=(1, 2)), torch.amax(image, dim=(1, 2)))
     image = image * std + mean
-    print('After transform: image min, max = ', torch.amin(image, dim=(1, 2)), torch.amax(image, dim=(1, 2)))
+    #print('After transform: image min, max = ', torch.amin(image, dim=(1, 2)), torch.amax(image, dim=(1, 2)))
     return image
 
 # vmin and vmax are ignore in case of RGB image
 def plot_image_on_axis(ax, image, title, fig, vmin=None, vmax=None):
+    image = image.detach().cpu()
     shape = image.shape
     assert len(shape) == 2 or len(shape) == 3
     if len(shape) == 2:
