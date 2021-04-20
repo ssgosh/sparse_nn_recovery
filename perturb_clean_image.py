@@ -171,11 +171,12 @@ class ImageAttack:
         mean, std = self.mean.unsqueeze(0), self.std.unsqueeze(0)
         attack_probs = []
         for d1 in range(10):
-            attack_image, attack_target = self.choose_attack_image(d1)
-            attack_image = attack_image.unsqueeze(0)
-            attack_out = self.model((attack_image - mean) / std)
-            attack_prob = torch.pow(math.e, attack_out)[0][d1]
-            attack_probs.append(attack_prob)
+            with torch.no_grad():
+                attack_image, attack_target = self.choose_attack_image(d1)
+                attack_image = attack_image.unsqueeze(0)
+                attack_out = self.model((attack_image - mean) / std)
+                attack_prob = torch.pow(math.e, attack_out)[0][d1].item()
+                attack_probs.append(attack_prob)
             for alpha1 in list(range(10)) + list(range(10, 110, 10)) + list(range(100, 1001, 100)):
                 alpha = alpha1 / 10.
                 for dl in dls:
