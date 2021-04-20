@@ -114,6 +114,11 @@ class ImageAttack:
         attack_target = self.attack_targets[d]
         assert d == attack_target
         attack_image = attack_image * self.std + self.mean
+        epsilon = 1. / 256
+        print(f'Num less than epsilon ({epsilon}) = ', torch.sum(torch.logical_and(attack_image < epsilon, attack_image > 0.)).item())
+        attack_image[attack_image < epsilon] = 0
+        print(f'Num less than epsilon ({epsilon}) = ', torch.sum(torch.logical_and(attack_image < epsilon, attack_image > 0.)).item())
+        print(f'Sparsity = ', torch.sum(attack_image > 0.).item())
         if show:
             print('Attack image shape: ', attack_image.shape)
             print('Attack image min, max:', attack_image.min(), attack_image.max())
