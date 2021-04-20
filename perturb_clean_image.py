@@ -35,9 +35,9 @@ class Stats:
         attack_failure = torch.sum(failure).item()
         attack_something_else = torch.sum(something_else).item()
 
-        avg_prob_success = torch.sum(probs[success]) / attack_success
-        avg_prob_failure = torch.sum(probs[failure]) / attack_failure
-        avg_prob_something_else = torch.sum(probs[something_else]) / attack_something_else
+        avg_prob_success = 0. if attack_success == 0. else torch.sum(probs[success]).item() / attack_success
+        avg_prob_failure = 0. if attack_failure == 0. else torch.sum(probs[failure]).item() / attack_failure
+        avg_prob_something_else = 0. if attack_something_else == 0. else torch.sum(probs[something_else]).item() / attack_something_else
 
         n = probs.shape[0]
         sd['success'] = attack_success / n
@@ -61,7 +61,15 @@ class Stats:
         pass
 
     def dump(self):
-        pass
+        for d1 in self.stats:
+            print(f'class of attack image : {d1}')
+            print('lambd\t', '\t'.join([str(d2) for d2 in self.stats[d1]]))
+            # print('||')
+            lambds = list(self.stats[d1][0].keys())
+            for lambd in lambds:
+                vals = [str(self.stats[d1][d2][lambd]['success']) for d2 in self.stats[d1]]
+                vals.insert(0, str(lambd))
+                print('\t'.join(vals))
 
 
 class ImageAttack:
@@ -129,7 +137,7 @@ class ImageAttack:
         targets = torch.tensor(self.dataset.targets)
         # images = torch.tensor(self.dataset.images)
         dls = []
-        n = 1000
+        n = 10
         for d in range(10):
             idx = (targets == d).nonzero().squeeze(-1)
             perm = torch.randperm(idx.shape[0])
@@ -155,10 +163,11 @@ class ImageAttack:
         for d1 in range(10):
             attack_image, attack_target = self.choose_attack_image(d1)
             attack_image = attack_image.unsqueeze(0)
-            for lambd in [0.1, 1.0]:
+            for lambd1 in range(10):
+                lambd = lambd1 / 10.
                 for dl in dls:
                     for images, targets in dl:
-                        d2 = targets[0]
+                        d2 = targets[0].item()
                         perturbed_images = torch.clamp(images + lambd * attack_image, 0., 1.)
                         # Transform images
                         perturbed_images = (perturbed_images - mean) / std
@@ -173,11 +182,12 @@ class ImageAttack:
 
 
 im = ImageAttack()
-dls = im.sample_1000_images_per_class()
-for dl in dls:
-    for image, target in dl:
-        print(image.shape, target.shape)
-        print(target[0])
+im.attack_with_stats()
+# dls = im.sample_1000_images_per_class()
+# for dl in dls:
+#     for image, target in dl:
+#         print(image.shape, target.shape)
+#         print(target[0])
 
 # im.attack_manual_check()
 # attack_manual_check()
