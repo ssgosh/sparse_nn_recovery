@@ -19,7 +19,7 @@ from utils import plotter
 # Fake config class
 class Config:
     def __init__(self):
-        self.device = 'cuda'
+        self.device = 'cpu'
 
 
 class Stats:
@@ -93,9 +93,10 @@ class ImageAttack:
         self.num = len(self.dataset)
         self.is_dataset = ckpt_type == 'dataset'
         if ckpt_type == 'dataset':
-            image_dict = torch.load('ckpt/attack/images_0000.pt')
+            image_dict = torch.load('ckpt/attack/images_0000.pt', map_location=self.config.device)
             self.sparse_attack_images = image_dict['images'].to(self.config.device)
             self.attack_targets = image_dict['targets'].to(self.config.device)
+            self.precomputed_probs = image_dict['probs'].to(self.config.device)
         else:
             image_dict = torch.load('ckpt/attack/images_list.pt')
             self.sparse_attack_images = image_dict['images'][1].to(self.config.device)
@@ -114,35 +115,38 @@ class ImageAttack:
             plotter.plot_single_digit(image, target, 'Plain Dataset Image', filtered=True, show=True, transform=False)
         return image, target
 
-    def choose_attack_image(self, d, show=False, num=1):
+    def choose_attack_image(self, d, show=False, num=10):
         if not self.is_dataset:
             # d = 5
             attack_image = self.sparse_attack_images[d]
             # attack_image = attack_image.permute((1, 2, 0))
             attack_target = self.attack_targets[d]
             assert d == attack_target
+            precomputed_probs = None
         else:
             idx = (self.attack_targets == d).nonzero().squeeze(-1)
+            print('idx =', idx)
             perm = torch.randperm(idx.shape[0])
             idx = idx[perm[0:num]]
             attack_image = self.sparse_attack_images[idx].detach().clone()
             attack_target = self.attack_targets[idx].detach().clone()
+            precomputed_probs = self.precomputed_probs[idx].detach().clone()
 
         attack_image = attack_image * self.std + self.mean
         epsilon = 1. / 256
         #print(f'Num less than epsilon ({epsilon}) = ', torch.sum(torch.logical_and(attack_image < epsilon, attack_image > 0.)).item())
-        print(f'Num less than epsilon ({epsilon}) = ', torch.mean(torch.sum( ((attack_image < epsilon) * (attack_image > 0.)) > 0., dim=(1, 2, 3))).item())
+        print(f'Num less than epsilon ({epsilon}) = ', torch.mean(1.0 * torch.sum( ((attack_image < epsilon) * (attack_image > 0.)) > 0., dim=(1, 2, 3))).item())
         attack_image[attack_image < epsilon] = 0
         #print(f'Num less than epsilon ({epsilon}) = ', torch.sum(torch.logical_and(attack_image < epsilon, attack_image > 0.)).item())
-        print(f'Num less than epsilon ({epsilon}) = ', torch.mean(torch.sum( ((attack_image < epsilon) * (attack_image > 0.)) > 0., dim=(1, 2, 3))).item())
+        print(f'Num less than epsilon ({epsilon}) = ', torch.mean(1.0 * torch.sum( ((attack_image < epsilon) * (attack_image > 0.)) > 0., dim=(1, 2, 3))).item())
         # print(f'Num less than epsilon ({epsilon}) = ', torch.sum( ((attack_image < epsilon) * (attack_image > 0.)) > 0.).item())
-        print(f'Sparsity = ', torch.mean(torch.sum(attack_image > 0., dim=(1, 2, 3))).item())
+        print(f'Sparsity = ', torch.mean(1.0 * torch.sum(attack_image > 0., dim=(1, 2, 3))).item())
         if show:
             print('Attack image shape: ', attack_image.shape)
             print('Attack image min, max:', attack_image.min(), attack_image.max())
             plotter.plot_single_digit(attack_image, attack_target, 'Attack Image', filtered=True, show=True,
                                       transform=False)
-        return attack_image, attack_target
+        return attack_image, attack_target, precomputed_probs
 
     def attack_manual_check(self):
         mean, std = self.mean.unsqueeze(0), self.std.unsqueeze(0)
@@ -195,10 +199,16 @@ class ImageAttack:
         attack_probs = []
         for d1 in range(10):
             with torch.no_grad():
-                attack_image, attack_target = self.choose_attack_image(d1)
-                attack_image = attack_image.unsqueeze(0)
+                attack_image, attack_target, precomputed_probs = self.choose_attack_image(d1)
+                print('attack image shape ', attack_image.shape)
+                #attack_image = attack_image.unsqueeze(0)
+                #print('attack image shape ', attack_image.shape)
                 attack_out = self.model((attack_image - mean) / std)
-                attack_prob = torch.pow(math.e, attack_out)[0][d1].item()
+                attack_prob = torch.pow(math.e, attack_out)[:, d1]
+                print('attack probability', attack_prob)
+                print('precomputed attack probability', precomputed_probs)
+                continue
+                # attack_prob = torch.pow(math.e, attack_out)[0][d1].item()
                 attack_probs.append(attack_prob)
             for alpha1 in list(range(10)) + list(range(10, 110, 10)) + list(range(100, 1001, 100)) + [2000, 3000] :
                 alpha = alpha1 / 10.
