@@ -42,13 +42,14 @@ class Stats:
         avg_prob_something_else = 0. if attack_something_else == 0. else torch.sum(probs[something_else]).item() / attack_something_else
 
         n = probs.shape[0]
-        sd['frac_attack_class'] = attack_success / n
-        sd['frac_actual_class'] = attack_failure / n
-        sd['frac_other_class'] = attack_something_else / n
+        sd['frac_attack_class'] += attack_success / n
+        sd['frac_actual_class'] += attack_failure / n
+        sd['frac_other_class'] += attack_something_else / n
 
-        sd['prob_attack_class'] = avg_prob_success
-        sd['prob_actual_class'] = avg_prob_failure
-        sd['prob_other_class'] = avg_prob_something_else
+        sd['prob_attack_class'] += avg_prob_success
+        sd['prob_actual_class'] += avg_prob_failure
+        sd['prob_other_class'] += avg_prob_something_else
+        sd['num'] += 1
 
     def get_stats_dict(self, d1, d2, alpha):
         if d1 not in self.stats:
@@ -57,10 +58,22 @@ class Stats:
             self.stats[d1][d2] = {}
         if alpha not in self.stats[d1][d2]:
             self.stats[d1][d2][alpha] = {}
-        return self.stats[d1][d2][alpha]
+        sd = self.stats[d1][d2][alpha]
+        if not list(sd.keys()):
+            sd['frac_attack_class'] = 0.
+            sd['frac_actual_class'] = 0.
+            sd['frac_other_class'] = 0.
+            sd['prob_attack_class'] = 0.
+            sd['prob_actual_class'] = 0.
+            sd['prob_other_class'] = 0.
+            sd['num'] = 0
+        return sd
 
-    def finalize(self):
-        pass
+    def finalize(self, d1, d2, alpha):
+        sd = self.stats[d1][d2][alpha]
+        for key, val in sd.items():
+            if key != 'num':
+                sd[key] = val / sd['num']
 
     def dump(self, attack_probs):
         with open('sparse_attack_stats.p', 'wb') as f:
@@ -199,34 +212,34 @@ class ImageAttack:
         attack_probs = []
         for d1 in range(10):
             with torch.no_grad():
-                attack_image, attack_target, precomputed_probs = self.choose_attack_image(d1)
-                print('attack image shape ', attack_image.shape)
+                attack_images, attack_targets, precomputed_probs = self.choose_attack_image(d1)
+                print('attack image shape ', attack_images.shape)
                 #attack_image = attack_image.unsqueeze(0)
                 #print('attack image shape ', attack_image.shape)
-                attack_out = self.model((attack_image - mean) / std)
-                attack_prob = torch.pow(math.e, attack_out)[:, d1]
+                attack_out = self.model((attack_images - mean) / std)
+                attack_prob = torch.mean(torch.pow(math.e, attack_out)[:, d1]).item()
                 print('attack probability', attack_prob)
                 print('precomputed attack probability', precomputed_probs)
-                continue
                 # attack_prob = torch.pow(math.e, attack_out)[0][d1].item()
                 attack_probs.append(attack_prob)
             for alpha1 in list(range(10)) + list(range(10, 110, 10)) + list(range(100, 1001, 100)) + [2000, 3000] :
                 alpha = alpha1 / 10.
                 for dl in dls:
                     for images, targets in dl:
-                        with torch.no_grad():
-                            images, targets = images.to(self.config.device), targets.to(self.config.device)
-                            d2 = targets[0].item()
-                            perturbed_images = torch.clamp(images + alpha * attack_image, 0., 1.)
-                            # Transform images
-                            perturbed_images = (perturbed_images - mean) / std
-                            output = self.model(perturbed_images)
-                            probs = torch.pow(math.e, output)
-                            # Find predictions by taking argmax of probs along dim 1
-                            preds = torch.argmax(probs, 1)
-                            # Collect stats as noted earlier
-                            stats.accumulate(probs, preds, d1, d2, alpha)
-        stats.finalize()
+                        for attack_image in attack_images:
+                            with torch.no_grad():
+                                images, targets = images.to(self.config.device), targets.to(self.config.device)
+                                d2 = targets[0].item()
+                                perturbed_images = torch.clamp(images + alpha * attack_image, 0., 1.)
+                                # Transform images
+                                perturbed_images = (perturbed_images - mean) / std
+                                output = self.model(perturbed_images)
+                                probs = torch.pow(math.e, output)
+                                # Find predictions by taking argmax of probs along dim 1
+                                preds = torch.argmax(probs, 1)
+                                # Collect stats as noted earlier
+                                stats.accumulate(probs, preds, d1, d2, alpha)
+                        stats.finalize(d1, d2, alpha)
         stats.dump(attack_probs)
 
 
