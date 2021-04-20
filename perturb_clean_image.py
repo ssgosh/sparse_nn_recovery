@@ -2,6 +2,7 @@ import math
 import sys
 
 import matplotlib
+import pickle
 import torch
 import torch.nn.functional as F
 import torchvision.transforms
@@ -40,13 +41,13 @@ class Stats:
         avg_prob_something_else = 0. if attack_something_else == 0. else torch.sum(probs[something_else]).item() / attack_something_else
 
         n = probs.shape[0]
-        sd['success'] = attack_success / n
-        sd['failure'] = attack_failure / n
-        sd['something_else'] = attack_something_else / n
+        sd['frac_attack_class'] = attack_success / n
+        sd['frac_actual_class'] = attack_failure / n
+        sd['frac_other_class'] = attack_something_else / n
 
-        sd['prob_success'] = avg_prob_success
-        sd['prob_failure'] = avg_prob_failure
-        sd['prob_something_else'] = avg_prob_something_else
+        sd['prob_attack_class'] = avg_prob_success
+        sd['prob_actual_class'] = avg_prob_failure
+        sd['prob_other_class'] = avg_prob_something_else
 
     def get_stats_dict(self, d1, d2, alpha):
         if d1 not in self.stats:
@@ -61,9 +62,13 @@ class Stats:
         pass
 
     def dump(self, attack_probs):
+        with open('sparse_attack_stats.p', 'wb') as f:
+            pickle.dump(self.stats, f)
+            pickle.dump(attack_probs, f)
+
         for d1 in self.stats:
             print(f'class of attack image : {d1}, prob = {attack_probs[d1]:.4f}')
-            print('Fraction of successful attacks for dataset images of different classes for various alpha')
+            print('Fraction of dataset images classified as attack class, for different ground truth classes and various alpha')
             print('alpha\t', '\t'.join([f'{d2}' for d2 in self.stats[d1]]))
             # print('||')
             alphas = list(self.stats[d1][0].keys())
@@ -141,7 +146,7 @@ class ImageAttack:
             targets = self.dataset.targets.detach()
             # images = torch.tensor(self.dataset.images)
             dls = []
-            n = 10
+            n = 1
             for d in range(10):
                 idx = (targets == d).nonzero().squeeze(-1)
                 perm = torch.randperm(idx.shape[0])
