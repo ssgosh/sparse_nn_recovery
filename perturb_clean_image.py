@@ -80,7 +80,7 @@ class Stats:
 
 
 class ImageAttack:
-    def __init__(self):
+    def __init__(self, ckpt_type='dataset'):
         self.dataset_helper: DatasetHelper = DatasetHelperFactory.get('mnist', non_sparse=False)
         self.config = Config()
         self.dataset_helper.setup_config(self.config)
@@ -91,9 +91,15 @@ class ImageAttack:
         #print(self.dataset[0][0].shape)
         #print(torch.max(self.dataset[0][0]).item(), torch.min(self.dataset[0][0]).item())
         self.num = len(self.dataset)
-        image_dict = torch.load('ckpt/attack/images_list.pt')
-        self.sparse_attack_images = image_dict['images'][1].to(self.config.device)
-        self.attack_targets = image_dict['targets'].to(self.config.device)
+        self.is_dataset = ckpt_type == 'dataset'
+        if ckpt_type == 'dataset':
+            image_dict = torch.load('ckpt/attack/images_0000.pt')
+            self.sparse_attack_images = image_dict['images'].to(self.config.device)
+            self.attack_targets = image_dict['targets'].to(self.config.device)
+        else:
+            image_dict = torch.load('ckpt/attack/images_list.pt')
+            self.sparse_attack_images = image_dict['images'][1].to(self.config.device)
+            self.attack_targets = image_dict['targets'].to(self.config.device)
 
         self.config.discriminator_model_file = 'ckpt/mnist_cnn.pt'
         self.model = self.dataset_helper.get_model('max-entropy', device=self.config.device, config=self.config, load=True)
@@ -108,20 +114,29 @@ class ImageAttack:
             plotter.plot_single_digit(image, target, 'Plain Dataset Image', filtered=True, show=True, transform=False)
         return image, target
 
-    def choose_attack_image(self, d, show=False):
-        # d = 5
-        attack_image = self.sparse_attack_images[d]
-        # attack_image = attack_image.permute((1, 2, 0))
-        attack_target = self.attack_targets[d]
-        assert d == attack_target
+    def choose_attack_image(self, d, show=False, num=1):
+        if not self.is_dataset:
+            # d = 5
+            attack_image = self.sparse_attack_images[d]
+            # attack_image = attack_image.permute((1, 2, 0))
+            attack_target = self.attack_targets[d]
+            assert d == attack_target
+        else:
+            idx = (self.attack_targets == d).nonzero().squeeze(-1)
+            perm = torch.randperm(idx.shape[0])
+            idx = idx[perm[0:num]]
+            attack_image = self.sparse_attack_images[idx].detach().clone()
+            attack_target = self.attack_targets[idx].detach().clone()
+
         attack_image = attack_image * self.std + self.mean
         epsilon = 1. / 256
         #print(f'Num less than epsilon ({epsilon}) = ', torch.sum(torch.logical_and(attack_image < epsilon, attack_image > 0.)).item())
-        print(f'Num less than epsilon ({epsilon}) = ', torch.sum( ((attack_image < epsilon) * (attack_image > 0.)) > 0.).item())
+        print(f'Num less than epsilon ({epsilon}) = ', torch.mean(torch.sum( ((attack_image < epsilon) * (attack_image > 0.)) > 0., dim=(1, 2, 3))).item())
         attack_image[attack_image < epsilon] = 0
         #print(f'Num less than epsilon ({epsilon}) = ', torch.sum(torch.logical_and(attack_image < epsilon, attack_image > 0.)).item())
-        print(f'Num less than epsilon ({epsilon}) = ', torch.sum( ((attack_image < epsilon) * (attack_image > 0.)) > 0.).item())
-        print(f'Sparsity = ', torch.sum(attack_image > 0.).item())
+        print(f'Num less than epsilon ({epsilon}) = ', torch.mean(torch.sum( ((attack_image < epsilon) * (attack_image > 0.)) > 0., dim=(1, 2, 3))).item())
+        # print(f'Num less than epsilon ({epsilon}) = ', torch.sum( ((attack_image < epsilon) * (attack_image > 0.)) > 0.).item())
+        print(f'Sparsity = ', torch.mean(torch.sum(attack_image > 0., dim=(1, 2, 3))).item())
         if show:
             print('Attack image shape: ', attack_image.shape)
             print('Attack image min, max:', attack_image.min(), attack_image.max())
