@@ -81,6 +81,8 @@ class Stats:
 class ImageAttack:
     def __init__(self):
         self.dataset_helper: DatasetHelper = DatasetHelperFactory.get('mnist', non_sparse=False)
+        self.config = Config()
+        self.dataset_helper.setup_config(self.config)
         plotter.set_image_zero_one()
         self.dataset = self.dataset_helper.get_dataset(which='train', transform=torchvision.transforms.ToTensor())
         self.mean, self.std = self.dataset_helper.get_mean_std_correct_dims(include_batch=False)
@@ -89,13 +91,11 @@ class ImageAttack:
         #print(torch.max(self.dataset[0][0]).item(), torch.min(self.dataset[0][0]).item())
         self.num = len(self.dataset)
         image_dict = torch.load('ckpt/attack/images_list.pt')
-        self.sparse_attack_images = image_dict['images'][1]
-        self.attack_targets = image_dict['targets']
+        self.sparse_attack_images = image_dict['images'][1].to(self.config.device)
+        self.attack_targets = image_dict['targets'].to(self.config.device)
 
-        self.config = Config()
-        self.dataset_helper.setup_config(self.config)
         self.config.discriminator_model_file = 'ckpt/mnist_cnn.pt'
-        self.model = self.dataset_helper.get_model('max-entropy', device='cpu', config=self.config, load=True)
+        self.model = self.dataset_helper.get_model('max-entropy', device=self.config.device, config=self.config, load=True)
         self.model.train(False)
 
     def choose_image(self, show=False):
@@ -182,11 +182,12 @@ class ImageAttack:
                 attack_out = self.model((attack_image - mean) / std)
                 attack_prob = torch.pow(math.e, attack_out)[0][d1].item()
                 attack_probs.append(attack_prob)
-            for alpha1 in list(range(10)) + list(range(10, 110, 10)) + list(range(100, 1001, 100)):
+            for alpha1 in list(range(10)) + list(range(10, 110, 10)) + list(range(100, 1001, 100)) + [2000, 3000] :
                 alpha = alpha1 / 10.
                 for dl in dls:
                     for images, targets in dl:
                         with torch.no_grad():
+                            images, targets = images.to(self.config.device), targets.to(self.config.device)
                             d2 = targets[0].item()
                             perturbed_images = torch.clamp(images + alpha * attack_image, 0., 1.)
                             # Transform images
