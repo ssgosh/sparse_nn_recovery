@@ -169,7 +169,7 @@ def plot_multiple_images_varying_penalty_single_digit(filename, images_list, tar
         title = "%d : %s" % (targets[index], labels[i])
         #plot_image_on_axis(ax, image, title, fig, vmin=-0.5, vmax=2.0)
         #plot_image_on_axis(ax, image, title, fig, vmin=mnist_zero, vmax=mnist_one)
-        plot_image_on_axis(ax, image, title, fig, vmin=mnist_zero, vmax=mnist_one)
+        plot_image_on_axis(ax, image, title, fig, vmin=0., vmax=1.)
 
     plot.tight_layout(pad=2.)
     plot.savefig(filename)
