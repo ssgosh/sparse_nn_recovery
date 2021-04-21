@@ -442,6 +442,7 @@ def main():
                 raise ValueError("invalid train_mode : " + args.train_mode)
             test(model, device, test_loader)
             ckpt_saver.save_model(model, epoch, config.model_classname)
+            self.ckpt_saver.save_everything(model, optimizer, scheduler, {}, epoch)
             scheduler.step()
     else:
         adversarial_trainer.train_loop(args.epochs, args.train_mode, args.pretrain, args.num_pretrain_epochs, config)
