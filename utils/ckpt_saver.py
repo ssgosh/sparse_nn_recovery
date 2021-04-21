@@ -16,7 +16,7 @@ class CkptSaver:
         print("Writing images to : ", path)
         assert not path.exists()
         path.parent.mkdir(parents=True, exist_ok=True)
-        torch.save({'images': images, 'targets': targets, 'probs' : probs}, path)
+        torch.save({'images': images, 'targets': targets, 'probs': probs}, path)
 
     def load_images(self, mode, dataset_epoch, device=None):
         path = self.get_image_ckpt_path(mode, dataset_epoch)
@@ -31,6 +31,10 @@ class CkptSaver:
     def get_model_ckpt_path(self, epoch, suffix):
         suffix = f"{suffix}_" if suffix else ""
         return self.ckpt_dir / 'model' / f'model_{suffix}{epoch:0>4d}.pt'
+
+    def get_ckpt_path(self, key, epoch, suffix):
+        suffix = f"{suffix}_" if suffix else ""
+        return self.ckpt_dir / f'{key}' / f'{key}_{suffix}{epoch:0>4d}.pt'
 
     def save_model(self, model, epoch, suffix=None):
         save_path = self.get_model_ckpt_path(epoch, suffix)
@@ -49,9 +53,27 @@ class CkptSaver:
         model.load_state_dict(state_dict)
         return model
 
-
     def load_latest_model(self, model_class):
         pass
 
     def load_best_model(self, model_class):
         pass
+
+    def save_key(self, obj, key, epoch, suffix=None):
+        save_path = self.get_ckpt_path(key, epoch, suffix=suffix)
+        save_path.parent.mkdir(exist_ok=True, parents=True)
+        print(f"Saving {key} to : ", save_path)
+        torch.save(obj.state_dict(), save_path)
+
+    def save_everything(self, model, opt, sched, metrics, epoch, suffix=None):
+        key = 'model_opt_sched'
+        save_path = self.get_ckpt_path(key, epoch, suffix=suffix)
+        save_path.parent.mkdir(exist_ok=True, parents=True)
+        print(f"Saving {key} to : ", save_path)
+        torch.save({
+            'model' : model.state_dict(),
+            'optimizer' : opt.state_dict(),
+            'scheduler' : sched,
+            'epoch' : epoch,
+            'metrics' : metrics
+        }, save_path)

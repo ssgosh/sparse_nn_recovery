@@ -14,6 +14,7 @@ from datasets.dataset_helper_factory import DatasetHelperFactory
 
 import sys
 
+from utils.ckpt_saver import CkptSaver
 from utils.metrics_helper import MetricsHelper
 
 class ShouldBreak(Exception):
@@ -91,7 +92,7 @@ class AdversarialTrainer:
         self.device = device
         self.early_epoch = early_epoch
         self.num_batches_early_epoch = num_batches_early_epoch
-        self.ckpt_saver = self.sparse_input_dataset_recoverer.ckpt_saver
+        self.ckpt_saver : CkptSaver = self.sparse_input_dataset_recoverer.ckpt_saver
         self.test_loader = test_loader
         self.valid_loader = self.test_loader    # For now, validation data is just test data. Will change later
         self.lr_scheduler_model = lr_scheduler_model
@@ -456,7 +457,9 @@ class AdversarialTrainer:
                         m=config.num_adversarial_images_epoch_mode)
                     self.post_epoch_stuff(generated, epoch)
             self.validate()
-            self.ckpt_saver.save_model(self.model, epoch, config.model_classname)
+            self.ckpt_saver.save_everything(self.model, self.opt_model, self.lr_scheduler_model, {}, epoch)
+            # self.ckpt_saver.save_model(self.model, epoch, config.model_classname)
+            # self.ckpt_saver.save_optimizer_scheduler(self.opt_model, self.lr_scheduler_model, epoch)
             self.lr_scheduler_model.step()
 
     def log_stats(self, stats, epoch):
