@@ -382,9 +382,9 @@ def main():
         #sys.exit(0)
 
     load = False
-    if config.dataset.lower() == 'cifar':
-        load = True
-        # config.discriminator_model_file =
+    #if config.dataset.lower() == 'cifar':
+    #    load = True
+    #    # config.discriminator_model_file =
     model = dataset_helper.get_model(config.adversarial_classification_mode, device, load=load, config=config)
     optimizer, scheduler = dataset_helper.get_optimizer_scheduler(config, model)
     if args.train_mode == 'adversarial-continuous':

@@ -56,12 +56,15 @@ class CIFARDatasetHelper(DatasetHelper):
         if model_mode == 'fake-classes':
             raise ValueError(f"Model mode {model_mode} not supported for CIFAR10")
         elif model_mode == 'max-entropy':
-            assert load
-            print('Loading model from', config.discriminator_model_file)
-            model = ResNet18().to(device)
-            checkpoint = torch.load(config.discriminator_model_file, map_location=torch.device(device))
-            model_state_dict = torchutils.load_data_parallel_state_dict_as_normal(checkpoint['net'])
-            model.load_state_dict(model_state_dict)
+            if load:
+                print('Loading model from', config.discriminator_model_file)
+                model = ResNet18().to(device)
+                checkpoint = torch.load(config.discriminator_model_file, map_location=torch.device(device))
+                model_state_dict = torchutils.load_data_parallel_state_dict_as_normal(checkpoint['net'])
+                model.load_state_dict(model_state_dict)
+            else:
+                print('Creating new ResNet18 model')
+                model = ResNet18().to(device)
         else:
             raise ValueError(f"Invalid model mode {model_mode}")
         # model = MLPNet().to(device)
