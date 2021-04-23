@@ -144,7 +144,10 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
     def get_batched_epsilon(self):
         mean, std = self.get_mean_std_correct_dims(include_batch=True)
         epsilon = torch.ones_like(mean) / 256.
+        print(epsilon, epsilon.shape)
         epsilon = (epsilon - mean) / std
+        print(epsilon, epsilon.shape)
+        return epsilon
 
     def get_optimizer_scheduler(self, config, model):
         raise NotImplementedError('Please implement this in a sublcass')
