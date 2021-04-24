@@ -74,6 +74,8 @@ class AdversarialTrainer:
                             help='Disable annealing of L1 penalty used for recovering sparse adversarial images ')
         parser.add_argument('--lambda-annealing-factor', type=float, default=0.5,
                             help='L1 penalty is multiplied by this factor when annealing')
+        parser.add_argument('--adv-data-generation-steps', type=int, default=1,
+                            help='L1 penalty is multiplied by this factor when annealing')
 
     def __init__(self, real_data_train_loader, real_data_train_samples, sparse_input_dataset_recoverer: SparseInputDatasetRecoverer,
                  model, opt_model, adv_training_batch_size, device, log_interval, dry_run, early_epoch,
@@ -89,6 +91,8 @@ class AdversarialTrainer:
         self.opt_model = opt_model
         self.next_real_batch = 0
         self.epoch = 0
+        self.next_adv_generation_epoch = 0
+        self.adv_data_generation_steps = config.adv_data_generation_steps
         self.device = device
         self.early_epoch = early_epoch
         self.num_batches_early_epoch = num_batches_early_epoch
@@ -194,8 +198,8 @@ class AdversarialTrainer:
     # def train_one_epoch_adversarial(self):
     #    pass
 
-    def generate_m_images_train_one_epoch_adversarial(self, m):
-        adversarial_train_loader, generated = self.dataset_mgr.get_new_train_loader(m)
+    def generate_m_images_train_one_epoch_adversarial(self, m, generate_new):
+        adversarial_train_loader, generated = self.dataset_mgr.get_new_train_loader(m, generate_new)
         if generated:
             self.test_and_return_metrics(
                 DataLoader(self.dataset_mgr.dmerger.last_generated_train.dataset, batch_size=self.test_loader.batch_size),
@@ -442,6 +446,7 @@ class AdversarialTrainer:
             if pretrain and epoch < num_pretrain_epochs :
                 print(f'Pre-training epoch #{epoch}')
                 self.train_one_epoch_real()
+                self.next_adv_generation_epoch += 1
                 # train(args, model, device, train_loader, optimizer, epoch)
             else:
                 print(f'Adversarial Training epoch #{epoch}')
@@ -454,7 +459,7 @@ class AdversarialTrainer:
                     self.pre_epoch_stuff(epoch)
                     self.dataset_mgr.dataset_epoch = epoch
                     generated = self.generate_m_images_train_one_epoch_adversarial(
-                        m=config.num_adversarial_images_epoch_mode)
+                        m=config.num_adversarial_images_epoch_mode, generate_new=(epoch == self.next_adv_generation_epoch))
                     self.post_epoch_stuff(generated, epoch)
             self.validate()
             self.ckpt_saver.save_everything(self.model, self.opt_model, self.lr_scheduler_model, {}, epoch)
@@ -482,4 +487,6 @@ class AdversarialTrainer:
     def post_epoch_stuff(self, generated, epoch):
         if not generated and self.lambda_annealing:
             self.sparse_input_dataset_recoverer.sparse_input_recoverer.anneal_lambda(self.lambda_annealing_factor)
+        if generated:
+            self.next_adv_generation_epoch += self.adv_data_generation_steps
 
