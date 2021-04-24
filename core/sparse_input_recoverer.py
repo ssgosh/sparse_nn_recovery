@@ -94,7 +94,12 @@ class SparseInputRecoverer:
                 #torch.clip(images, self.image_zero, self.image_one, out=images)
                 #torch.clamp(images, self.image_zero, self.image_one, out=images)
                 clip_tensor_range(images, self.batched_image_zero, self.batched_image_one, out=images)
-                images[images < self.batched_epsilon] = 0
+                # Get eps1 in the same shape as images via broadcasting addition to a zero tensor
+                # with the same shape as images
+                eps1 = torch.zeros_like(images) + self.batched_epsilon
+                # The index "images < eps1" is now valid for both: the tensor images and eps1, since they're
+                # the same shape.
+                images[images < eps1] = eps1[images < eps1]
 
     # include_layer: boolean vector of whether to include a layer's l1 penalty
     def recover_image_batch(self, model, images, targets, num_steps, include_layer, penalty_mode,
