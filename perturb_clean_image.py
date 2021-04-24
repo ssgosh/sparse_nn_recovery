@@ -19,7 +19,7 @@ from utils import plotter
 # Fake config class
 class Config:
     def __init__(self):
-        self.device = 'cpu'
+        self.device = 'cuda'
 
 
 class Stats:
@@ -128,7 +128,7 @@ class ImageAttack:
             plotter.plot_single_digit(image, target, 'Plain Dataset Image', filtered=True, show=True, transform=False)
         return image, target
 
-    def choose_attack_image(self, d, show=False, num=10):
+    def choose_attack_image(self, d, show=False, num=100):
         if not self.is_dataset:
             # d = 5
             attack_image = self.sparse_attack_images[d]
@@ -186,7 +186,7 @@ class ImageAttack:
             targets = self.dataset.targets.detach()
             # images = torch.tensor(self.dataset.images)
             dls = []
-            n = 1
+            n = 100
             for d in range(10):
                 idx = (targets == d).nonzero().squeeze(-1)
                 perm = torch.randperm(idx.shape[0])

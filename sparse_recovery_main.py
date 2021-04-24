@@ -69,7 +69,7 @@ def add_main_script_arguments():
 
 
 def setup_config(config):
-    use_cuda = False
+    use_cuda = True
     config.device = torch.device("cuda" if use_cuda else "cpu")
     # This will change when we support multiple datasets
     dh = DatasetHelperFactory.get(config.dataset)
@@ -154,7 +154,7 @@ def main():
             batch_size=config.recovery_batch_size,
             sparsity_mode=config.recovery_penalty_mode,
             num_real_classes=dh.get_num_classes(),
-            dataset_len=32,
+            dataset_len=2048,
             each_entry_shape=dh.get_each_entry_shape(),
             device=config.device, ckpt_saver=ckpt_saver, config=config)
         images, targets, probs = dataset_recoverer.recover_image_dataset(mode='train', dataset_epoch=0)
