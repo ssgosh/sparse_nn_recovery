@@ -137,6 +137,17 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
         return self.get_correct_dims(mean, include_batch, self.device), self.get_correct_dims(std, include_batch,
                 self.device)
 
+    # Transforms epsilon = 1/256 using channel-specific transformation.
+    # Pixels below this value are clipped to 0 in order to promote sparsity.
+    # This makes sense for RGB or greyscale images, which have a resolution of only 1/256
+    # Returns a tensor of shape [1, c, 1, 1]
+    def get_batched_epsilon(self):
+        mean, std = self.get_mean_std_correct_dims(include_batch=True)
+        epsilon = torch.ones_like(mean) / 256.
+        print(epsilon, epsilon.shape)
+        epsilon = (epsilon - mean) / std
+        print(epsilon, epsilon.shape)
+        return epsilon
+
     def get_optimizer_scheduler(self, config, model):
         raise NotImplementedError('Please implement this in a sublcass')
-
