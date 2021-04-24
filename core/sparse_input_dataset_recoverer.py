@@ -10,6 +10,7 @@ from icontract import ensure
 from core.sparse_input_recoverer import SparseInputRecoverer
 from core.tblabels import TBLabels
 from datasets.dataset_helper_factory import DatasetHelperFactory
+from utils import image_processor
 
 from utils.torchutils import get_cross, safe_clone
 
@@ -28,6 +29,8 @@ class SparseInputDatasetRecoverer:
                             required=False, help='Prune Low Probability Images from adversarial dataset')
         parser.add_argument('--recovery-low-prob-threshold', type=float, default=0.9, required=False,
                             help='Generated adversarial images with probability less than this will be pruned')
+        parser.add_argument('--recovery-sparsity-threshold', type=int, default=100, required=False,
+                            help='Generated adversarial images with sparsity greater than this will be pruned')
 
     def __init__(self, sparse_input_recoverer : SparseInputRecoverer, model, num_recovery_steps, batch_size,
                  sparsity_mode, num_real_classes, dataset_len, each_entry_shape, device, ckpt_saver, config):
@@ -52,6 +55,7 @@ class SparseInputDatasetRecoverer:
         # Prune the recovered dataset for low-probability images
         self.prune = config.recovery_prune_low_prob
         self.low_prob_threshold = config.recovery_low_prob_threshold
+        self.sparsity_threshold = config.recovery_sparsity_threshold
 
     def recover_image_dataset_internal(self, model, output_shape, num_real_classes, batch_size, num_steps,
                                        include_layer_map, sparsity_mode, device, mode, dataset_epoch, prune):
@@ -166,7 +170,8 @@ class SparseInputDatasetRecoverer:
             self.ckpt_saver.save_images(mode, '', images_tensor, targets_tensor, probs_tensor, dataset_epoch)
 
             if self.prune:
-                images_tensor, targets_tensor, probs_tensor = self.prune_images(images_tensor, targets_tensor, probs_tensor)
+                sparsity_tensor = image_processor.get_sparsity_batch(images_tensor, self.batched_image_zero)
+                images_tensor, targets_tensor, probs_tensor, sparsity_tensor = self.prune_images(images_tensor, targets_tensor, probs_tensor, sparsity_tensor)
                 self.ckpt_saver.save_images(mode, 'pruned', images_tensor, targets_tensor, probs_tensor, dataset_epoch)
             #self.dataset_epoch += 1
 
@@ -197,10 +202,13 @@ class SparseInputDatasetRecoverer:
                                                    self.num_recovery_steps, self.include_layer_map, self.sparsity_mode,
                                                    self.device, mode, dataset_epoch, self.prune)
 
-    def prune_images(self, images_tensor, targets_tensor, probs_tensor):
+    def prune_images(self, images_tensor, targets_tensor, probs_tensor, sparsity_tensor):
         keep = (probs_tensor >= self.low_prob_threshold)
+        keep1 = (sparsity_tensor <= self.sparsity_threshold)
+        keep = keep * keep1
         img = safe_clone(images_tensor[keep])
         tgt = safe_clone(targets_tensor[keep])
         probs = safe_clone(probs_tensor[keep])
-        return img, tgt, probs
+        sparsity = safe_clone(sparsity_tensor[keep])
+        return img, tgt, probs, sparsity
 
