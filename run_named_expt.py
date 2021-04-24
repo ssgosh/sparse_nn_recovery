@@ -106,10 +106,11 @@ class NamedExpt:
             assert args.dataset.lower() == 'cifar'
             cmd = cmd + \
                     f'--sparse-dataset ' \
-                    f'--epochs 200 ' \
-                    f'--num-pretrain-epochs 0 ' \
-                    f'--recovery-batch-size 128 ' \
-                    f'--num-adversarial-images-epoch-mode 1024'
+                    f'--epochs 350 ' \
+                    f'--num-pretrain-epochs 200 ' \
+                    f'--recovery-batch-size 256 ' \
+                    f'--num-adversarial-images-epoch-mode 1024 ' \
+                    f'--recovery-num-steps 3500 '
         elif args.expt == 'pretrain-MNIST_B':
             cmd = cmd + \
                     f'--dataset MNIST_B ' \
