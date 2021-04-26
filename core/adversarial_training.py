@@ -72,10 +72,12 @@ class AdversarialTrainer:
                                  'if no adversarial images generated in last epoch')
         parser.add_argument('--no-lambda-annealing', action='store_false', default=True, dest='lambda_annealing',
                             help='Disable annealing of L1 penalty used for recovering sparse adversarial images ')
-        parser.add_argument('--lambda-annealing-factor', type=float, default=0.5,
+        parser.add_argument('--lambda-annealing-factor', type=float, default=0.5, metavar='',
                             help='L1 penalty is multiplied by this factor when annealing')
-        parser.add_argument('--adv-data-generation-steps', type=int, default=1,
-                            help='L1 penalty is multiplied by this factor when annealing')
+        parser.add_argument('--adv-data-generation-steps', type=int, default=1, metavar='',
+                            help='New adversarial data is generated in intervals of these many epochs')
+        parser.add_argument('--adv-loss-weight', type=float, default=1.0, metavar='',
+                            help='Weight given to loss on adversarial examples in a batch. Weight of real examples is 1.0')
 
     def __init__(self, real_data_train_loader, real_data_train_samples, sparse_input_dataset_recoverer: SparseInputDatasetRecoverer,
                  model, opt_model, adv_training_batch_size, device, log_interval, dry_run, early_epoch,
@@ -102,7 +104,8 @@ class AdversarialTrainer:
         self.lr_scheduler_model = lr_scheduler_model
         self.adversarial_classification_mode = adversarial_classification_mode
         self.adv_use_soft_labels = adversarial_classification_mode == 'max-entropy'
-        self.adv_criterion = F.kl_div if self.adv_use_soft_labels else F.nll_loss
+        #self.adv_criterion = F.kl_div if self.adv_use_soft_labels else F.nll_loss
+        self.adv_loss_weight = config.adv_loss_weight
 
         # Use a fixed iterator to iterate over the training dataset
         self.real_data_train_iterator = iter(self.real_data_train_loader)
@@ -170,7 +173,7 @@ class AdversarialTrainer:
 
         real_loss = F.nll_loss(real_output, real_targets)
         adv_loss = F.kl_div(adv_output, adv_soft_labels, reduction='batchmean') if self.adv_use_soft_labels else F.nll_loss(adv_output, adv_targets)
-        loss = real_loss + adv_loss + self.model.get_weight_decay()
+        loss = real_loss + self.adv_loss_weight * adv_loss + self.model.get_weight_decay()
 
         loss.backward()
         self.opt_model.step()

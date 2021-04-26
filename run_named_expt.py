@@ -110,7 +110,9 @@ class NamedExpt:
                     f'--num-pretrain-epochs 200 ' \
                     f'--recovery-batch-size 256 ' \
                     f'--num-adversarial-images-epoch-mode 1024 ' \
-                    f'--recovery-num-steps 3500 '
+                    f'--recovery-num-steps 3500 ' \
+                    f'--batch-size 128 ' \
+                    f'--adv-loss-weight 0.1 '
         elif args.expt == 'pretrain-MNIST_B':
             cmd = cmd + \
                     f'--dataset MNIST_B ' \
