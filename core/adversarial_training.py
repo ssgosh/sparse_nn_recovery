@@ -199,6 +199,7 @@ class AdversarialTrainer:
     #    pass
 
     def generate_m_images_train_one_epoch_adversarial(self, m, generate_new):
+        print('generate_new =', generate_new)
         adversarial_train_loader, generated = self.dataset_mgr.get_new_train_loader(m, generate_new)
         if generated:
             self.test_and_return_metrics(
@@ -458,9 +459,11 @@ class AdversarialTrainer:
                 elif train_mode == 'adversarial-epoch':
                     self.pre_epoch_stuff(epoch)
                     self.dataset_mgr.dataset_epoch = epoch
+                    print(f'epoch = {epoch}, next_adv_generation_epoch = {self.next_adv_generation_epoch}')
+                    intended_to_generate = (epoch == self.next_adv_generation_epoch)
                     generated = self.generate_m_images_train_one_epoch_adversarial(
-                        m=config.num_adversarial_images_epoch_mode, generate_new=(epoch == self.next_adv_generation_epoch))
-                    self.post_epoch_stuff(generated, epoch)
+                        m=config.num_adversarial_images_epoch_mode, generate_new=intended_to_generate)
+                    self.post_epoch_stuff(intended_to_generate, generated, epoch)
             self.validate()
             self.ckpt_saver.save_everything(self.model, self.opt_model, self.lr_scheduler_model, {}, epoch)
             # self.ckpt_saver.save_model(self.model, epoch, config.model_classname)
@@ -484,9 +487,11 @@ class AdversarialTrainer:
                           scalars={'lambda': self.sparse_input_dataset_recoverer.sparse_input_recoverer.recovery_lambd},
                           global_step=epoch)
 
-    def post_epoch_stuff(self, generated, epoch):
-        if not generated and self.lambda_annealing:
+    def post_epoch_stuff(self, intended_to_generate, generated, epoch):
+        if intended_to_generate and not generated and self.lambda_annealing:
             self.sparse_input_dataset_recoverer.sparse_input_recoverer.anneal_lambda(self.lambda_annealing_factor)
-        if generated:
-            self.next_adv_generation_epoch += self.adv_data_generation_steps
+        if epoch >= self.next_adv_generation_epoch:
+            print(f'Current epoch: {epoch}, next_adv_generation_epoch before update: {self.next_adv_generation_epoch}')
+            self.next_adv_generation_epoch = epoch + self.adv_data_generation_steps
+            print(f'next_adv_generation_epoch after update: {self.next_adv_generation_epoch}')
 
