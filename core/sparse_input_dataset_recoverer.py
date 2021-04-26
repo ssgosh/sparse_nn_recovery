@@ -25,8 +25,10 @@ class SparseInputDatasetRecoverer:
     def add_command_line_arguments(parser: argparse.ArgumentParser):
         parser.add_argument('--recovery-batch-size', type=int, default=1024, required=False, metavar='N',
                             help='Batch size for image generation')
-        parser.add_argument('--recovery-prune-low-prob', action='store_true', dest='recovery_prune_low_prob', default=True,
-                            required=False, help='Prune Low Probability Images from adversarial dataset')
+        parser.add_argument('--recovery-prune', action='store_true', dest='recovery_prune', default=True,
+                            required=False, help='Prune Low Probability or non-sparse Images from adversarial dataset')
+        parser.add_argument('--no-recovery-prune', action='store_false', dest='recovery_prune', default=True,
+                            required=False, help='Disable pruning of low probability or non-sparse images from adversarial dataset')
         parser.add_argument('--recovery-low-prob-threshold', type=float, default=0.9, required=False,
                             help='Generated adversarial images with probability less than this will be pruned')
         parser.add_argument('--recovery-sparsity-threshold', type=int, default=100, required=False,
@@ -53,7 +55,7 @@ class SparseInputDatasetRecoverer:
         self.batched_image_one = self.sparse_input_recoverer.batched_image_one
 
         # Prune the recovered dataset for low-probability images
-        self.prune = config.recovery_prune_low_prob
+        self.prune = config.recovery_prune
         self.low_prob_threshold = config.recovery_low_prob_threshold
         self.sparsity_threshold = config.recovery_sparsity_threshold
 
@@ -169,7 +171,7 @@ class SparseInputDatasetRecoverer:
             # Save to ckpt dir
             self.ckpt_saver.save_images(mode, '', images_tensor, targets_tensor, probs_tensor, dataset_epoch)
 
-            if self.prune:
+            if prune:
                 sparsity_tensor = image_processor.get_sparsity_batch(images_tensor, self.batched_image_zero)
                 images_tensor, targets_tensor, probs_tensor, sparsity_tensor = self.prune_images(images_tensor, targets_tensor, probs_tensor, sparsity_tensor)
                 self.ckpt_saver.save_images(mode, 'pruned', images_tensor, targets_tensor, probs_tensor, dataset_epoch)
