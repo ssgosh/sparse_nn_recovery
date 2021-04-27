@@ -107,7 +107,7 @@ class NamedExpt:
             cmd = cmd + \
                     f'--sparse-dataset ' \
                     f'--epochs 350 ' \
-                    f'--num-pretrain-epochs 200 ' \
+                    f'--num-pretrain-epochs 50 ' \
                     f'--recovery-batch-size 256 ' \
                     f'--num-adversarial-images-epoch-mode 1024 ' \
                     f'--recovery-num-steps 3500 ' \
