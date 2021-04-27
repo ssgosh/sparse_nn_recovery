@@ -444,7 +444,8 @@ class AdversarialTrainer:
 
     def train_loop(self, start_epoch, end_epoch, train_mode, pretrain, num_pretrain_epochs, config):
         assert train_mode in [ 'adversarial-epoch', 'adversarial-batches' ]
-        if pretrain : print(f'Pretraining for {num_pretrain_epochs} epochs')
+        if pretrain and start_epoch < num_pretrain_epochs: print(f'Pretraining till epoch {num_pretrain_epochs - 1}')
+        else: print(f'Not pretraining; Pretrain : {pretrain}, start_epoch : {start_epoch}, num_pretrain_epochs : {num_pretrain_epochs}')
         self.epoch = start_epoch
         for epoch in range(start_epoch, end_epoch):
             self.log_real_train_images_to_tensorboard()
