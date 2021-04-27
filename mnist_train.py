@@ -206,6 +206,7 @@ def main():
     parser.add_argument('--early-epoch', action='store_true', default=False, dest='early_epoch', help='Finish epoch early (for debugging)')
     parser.add_argument('--num-batches-early-epoch', type=int, default=10, metavar='N', help='Number of batches before epoch finishes')
     parser.add_argument('--dump-config', action='store_true', default=False, required=False, help='Print config json and exit')
+    parser.add_argument('--resume-epoch', type=int, default=None, required=False, help='Resume from checkpoint for this saved epoch')
 
 
     # Arguments specific to adversarial training
@@ -387,6 +388,11 @@ def main():
     #    # config.discriminator_model_file =
     model = dataset_helper.get_model(config.adversarial_classification_mode, device, load=load, config=config)
     optimizer, scheduler = dataset_helper.get_optimizer_scheduler(config, model)
+    start_epoch = 0
+    if args.resume_epoch is not None:
+        model, optimizer, scheduler = ckpt_saver.load_evertything(model, optimizer, scheduler, args.resume_epoch)
+        start_epoch = args.resume_epoch + 1
+
     if args.train_mode == 'adversarial-continuous':
         optD = optimizer
         optG = optim.Adam([images], lr=args.generator_lr)
@@ -429,7 +435,7 @@ def main():
         sys.exit(0)
 
     if args.train_mode not in ['adversarial-batches', 'adversarial-epoch']:
-        for epoch in range(0, args.epochs):
+        for epoch in range(start_epoch, args.epochs):
             # Perform pre-training for 1 epoch in adversarial mode
             if args.train_mode == 'normal' or epoch == 0:
                 if args.train_mode == 'adversarial-continuous':
@@ -442,10 +448,10 @@ def main():
                 raise ValueError("invalid train_mode : " + args.train_mode)
             test(model, device, test_loader)
             ckpt_saver.save_model(model, epoch, config.model_classname)
-            self.ckpt_saver.save_everything(model, optimizer, scheduler, {}, epoch)
+            ckpt_saver.save_everything(model, optimizer, scheduler, {}, epoch)
             scheduler.step()
     else:
-        adversarial_trainer.train_loop(args.epochs, args.train_mode, args.pretrain, args.num_pretrain_epochs, config)
+        adversarial_trainer.train_loop(start_epoch, args.epochs, args.train_mode, args.pretrain, args.num_pretrain_epochs, config)
 
     if args.save_model:
         save_path = config.ckpt_save_path
@@ -454,6 +460,7 @@ def main():
         torch.save(model.state_dict(), save_path)
 
     tbh.close()
+
 
 if __name__ == '__main__':
     main()

@@ -92,7 +92,7 @@ class AdversarialTrainer:
         self.model = model
         self.opt_model = opt_model
         self.next_real_batch = 0
-        self.epoch = 0
+        self.epoch : int = None
         self.next_adv_generation_epoch = 0
         self.adv_data_generation_steps = config.adv_data_generation_steps
         self.device = device
@@ -442,10 +442,11 @@ class AdversarialTrainer:
 
         return metrics
 
-    def train_loop(self, num_epochs, train_mode, pretrain, num_pretrain_epochs, config):
+    def train_loop(self, start_epoch, end_epoch, train_mode, pretrain, num_pretrain_epochs, config):
         assert train_mode in [ 'adversarial-epoch', 'adversarial-batches' ]
         if pretrain : print(f'Pretraining for {num_pretrain_epochs} epochs')
-        for epoch in range(0, num_epochs):
+        self.epoch = start_epoch
+        for epoch in range(start_epoch, end_epoch):
             self.log_real_train_images_to_tensorboard()
             if pretrain and epoch < num_pretrain_epochs :
                 print(f'Pre-training epoch #{epoch}')
