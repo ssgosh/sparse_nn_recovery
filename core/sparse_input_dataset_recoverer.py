@@ -74,10 +74,10 @@ class SparseInputDatasetRecoverer:
         start = 0  # self.dataset_epoch * num_batches
         end = start + num_batches
         # or 'all', which will include images, or 'none', which will not log anything
-        # self.sparse_input_recoverer.tensorboard_logging = 'stats_only' if mode == 'train' else 'none'
+        self.sparse_input_recoverer.tensorboard_logging = 'stats_only' if mode == 'train' else 'none'
         # Disable this because tensorboard files are growing too large
         # and we don't seem to be focusing on these internal stats anyway
-        self.sparse_input_recoverer.tensorboard_logging = 'none'
+        # self.sparse_input_recoverer.tensorboard_logging = 'none'
         for batch_idx in range(start, end):
             image_batch = torch.randn(batch_shape).to(device)
             targets_batch = torch.randint(low=0, high=num_real_classes, size=(batch_size,)).to(device)
@@ -168,13 +168,13 @@ class SparseInputDatasetRecoverer:
                 # Log unconfident images
                 log_images_sorted()
 
+            sparsity_tensor = image_processor.get_sparsity_batch(images_tensor, self.batched_image_zero)
             # Save to ckpt dir
-            self.ckpt_saver.save_images(mode, '', images_tensor, targets_tensor, probs_tensor, dataset_epoch)
+            self.ckpt_saver.save_images(mode, '', images_tensor, targets_tensor, probs_tensor, sparsity_tensor, dataset_epoch)
 
             if prune:
-                sparsity_tensor = image_processor.get_sparsity_batch(images_tensor, self.batched_image_zero)
                 images_tensor, targets_tensor, probs_tensor, sparsity_tensor = self.prune_images(images_tensor, targets_tensor, probs_tensor, sparsity_tensor)
-                self.ckpt_saver.save_images(mode, 'pruned', images_tensor, targets_tensor, probs_tensor, dataset_epoch)
+                self.ckpt_saver.save_images(mode, 'pruned', images_tensor, targets_tensor, probs_tensor, sparsity_tensor, dataset_epoch)
             #self.dataset_epoch += 1
 
         return images_tensor, targets_tensor, probs_tensor
