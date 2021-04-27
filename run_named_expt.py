@@ -115,7 +115,7 @@ class NamedExpt:
                     f'--adv-loss-weight 0.1 ' \
                     f'--no-lambda-annealing ' \
                     f'--adv-data-generation-steps 10 ' \
-                    f'--recovery-sparsity-threshold 300'
+                    f'--recovery-sparsity-threshold 600'
         elif args.expt == 'pretrain-MNIST_B':
             cmd = cmd + \
                     f'--dataset MNIST_B ' \
