@@ -17,7 +17,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('--dataset', type=str, default='MNIST',
                     metavar='D',
                     help='Dataset to give stats on (e.g. MNIST)')
-stats_opts = ['mean_std', 'zero_one']
+stats_opts = ['mean_std', 'zero_one', 'sparsity']
 parser.add_argument('--stats', type=str, required=True, choices=stats_opts,
                     help='Which stats')
 parser.add_argument('--which', type=str, default='train',
@@ -63,3 +63,33 @@ if config.stats == 'mean_std':
 elif config.stats == 'zero_one':
     zero, one = dh.compute_transform_low_high()
     print(f'zero = {zero}, one = {one}')
+
+elif config.stats == 'sparsity':
+    zeros = torch.zeros_like(dh.get_zero_correct_dims())
+    train = dh.get_dataset(which='train', transform='without_transform')
+    dl = DataLoader(train, batch_size=len(train))
+    #idx = torch.randperm(torch.arange(len(train)))
+    images, targets = next(iter(dl))
+    n = len(zeros.shape)
+    per_channel_sparsity = torch.sum(images > zeros, dim=list(range(2, n))).float()
+    sparsity = torch.sum(images > zeros, dim=list(range(1, n))).float()
+
+    #torch.mean(, dim=0)
+
+    def print_hist(hist, bins, min, max):
+        step = (max - min) / 10
+        for i in range(bins):
+            print(f'{min + i*step} - {min + (i+1)*step} : {hist[i]}')
+
+    def print_sparsity(msg, sparsity):
+        mean = torch.mean(sparsity, dim=0).numpy()
+        median = torch.median(sparsity, dim=0).values.numpy()
+        std = torch.std(sparsity, dim=0).numpy()
+        max = torch.max(sparsity, dim=0).values.numpy()
+        min = torch.min(sparsity, dim=0).values.numpy()
+        hist = torch.histc(sparsity, bins=10, min=0, max=500)
+        print(msg, f'mean = {mean}, median = {median}, std = {std}, min = {min}, max = {max}')
+        print_hist(hist, 10, 0, 500)
+
+    print_sparsity('Total sparisty', sparsity)
+    print_sparsity('Per-channel sparsity: ', per_channel_sparsity)
