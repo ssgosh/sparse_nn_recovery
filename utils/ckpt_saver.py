@@ -11,12 +11,12 @@ class CkptSaver:
         suffix = '' if not suffix else f'{suffix}_'
         return self.ckpt_dir / 'images' / mode / f'images_{suffix}{dataset_epoch:0>4d}.pt'
 
-    def save_images(self, mode, suffix, images, targets, probs, dataset_epoch):
+    def save_images(self, mode, suffix, images, targets, probs, sparsity, dataset_epoch):
         path = self.get_image_ckpt_path(mode, suffix, dataset_epoch)
         print("Writing images to : ", path)
         assert not path.exists()
         path.parent.mkdir(parents=True, exist_ok=True)
-        torch.save({'images': images, 'targets': targets, 'probs': probs}, path)
+        torch.save({'images': images, 'targets': targets, 'probs': probs, 'sparsity' : sparsity}, path)
 
     def load_images(self, mode, dataset_epoch, device=None):
         path = self.get_image_ckpt_path(mode, dataset_epoch)
