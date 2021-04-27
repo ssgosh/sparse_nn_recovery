@@ -17,6 +17,7 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
         self.name = name
         self.subset = subset
         self.non_sparse = non_sparse
+        self.device = 'cpu'     # Device is cpu by default
 
     def get_dataset(self, which='train', transform=None) -> Dataset:
         """
@@ -52,6 +53,7 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
         zero, one = self.get_transformed_zero_one()
         config.image_zero = zero
         config.image_one = one
+        self.device = config.device
         self.update_config(config)
 
     # XXX: Rename method to get_num_real_classes and update usage.
@@ -74,17 +76,17 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
 
     def get_zero_correct_dims(self, include_batch=True):
         zero, one = self.get_transformed_zero_one()
-        return self.get_correct_dims(zero, include_batch)
+        return self.get_correct_dims(zero, include_batch, self.device)
 
-    def get_one_correct_dims(self, include_batch=True):
+    def get_one_correct_dims(self, include_batch=True): 
         zero, one = self.get_transformed_zero_one()
-        return self.get_correct_dims(one, include_batch)
+        return self.get_correct_dims(one, include_batch, self.device)
 
     # Returns a tensor of shape [1, c, 1, 1] or [c, 1, 1], where c = len(val) or 1 if val is a number
-    def get_correct_dims(self, val, include_batch):
-        z = torch.tensor(val)
+    def get_correct_dims(self, val, include_batch, device):
+        z = torch.tensor(val, device=device)
         if len(z.shape) == 0:
-            z = torch.tensor([val])
+            z = torch.tensor([val], device=device)
         if include_batch:
             z = z.unsqueeze(0).unsqueeze(2).unsqueeze(3)
         else:
@@ -132,7 +134,20 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
     # Returns mean and std in shape [1, c, 1, 1] for easy tensor operations later
     def get_mean_std_correct_dims(self, include_batch):
         mean, std = self.get_mean_std()
-        return self.get_correct_dims(mean, include_batch), self.get_correct_dims(std, include_batch)
+        return self.get_correct_dims(mean, include_batch, self.device), self.get_correct_dims(std, include_batch,
+                self.device)
+
+    # Transforms epsilon = 1/256 using channel-specific transformation.
+    # Pixels below this value are clipped to 0 in order to promote sparsity.
+    # This makes sense for RGB or greyscale images, which have a resolution of only 1/256
+    # Returns a tensor of shape [1, c, 1, 1]
+    def get_batched_epsilon(self):
+        mean, std = self.get_mean_std_correct_dims(include_batch=True)
+        epsilon = torch.ones_like(mean) / 256.
+        print(epsilon, epsilon.shape)
+        epsilon = (epsilon - mean) / std
+        print(epsilon, epsilon.shape)
+        return epsilon
 
     def get_optimizer_scheduler(self, config, model):
         raise NotImplementedError('Please implement this in a sublcass')

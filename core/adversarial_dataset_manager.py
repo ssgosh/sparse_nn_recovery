@@ -156,12 +156,14 @@ class AdversarialDatasetManager:
             return DataLoader(TensorDataset(images, targets, fake_class_targets),
                               **{'batch_size' : batch_size})
 
-    def get_new_train_loader(self, m):
-        generated = self.generate_train_test_validation_dataset(m)
-        if generated:
-            self.dataset_generation_epochs.append(self.dataset_epoch)
-        assert len(self.train_sample) == self.dataset_count
-        assert len(self.valid) == self.dataset_count
-        assert len(self.test) == self.dataset_count
+    def get_new_train_loader(self, m, generate_new):
+        generated = False
+        if generate_new:
+            generated = self.generate_train_test_validation_dataset(m)
+            if generated:
+                self.dataset_generation_epochs.append(self.dataset_epoch)
+            assert len(self.train_sample) == self.dataset_count
+            assert len(self.valid) == self.dataset_count
+            assert len(self.test) == self.dataset_count
         return self.train, generated
 

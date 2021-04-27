@@ -7,9 +7,11 @@ import sys
 import numpy as np
 import torch
 
+from core.sparse_input_dataset_recoverer import SparseInputDatasetRecoverer
 from utils import plotter
 from utils import runs_helper as rh
 from datasets.dataset_helper_factory import DatasetHelperFactory
+from utils.ckpt_saver import CkptSaver
 from utils.tensorboard_helper import TensorBoardHelper
 
 from core.sparse_input_recoverer import SparseInputRecoverer
@@ -44,7 +46,7 @@ def add_main_script_arguments():
     parser = argparse.ArgumentParser(description='Recover images from a '
                                                  'discriminative model by gradient descent on input')
     parser.add_argument('--mode', type=str, default='all-digits', required=False,
-                        help='Image recovery mode: "single-digit" or "all-digits"')
+                        help='Image recovery mode: "single-digit" or "all-digits" or "dataset"')
     parser.add_argument('--dataset', type=str, default='mnist', required=False, choices=['mnist', 'cifar'],
                         help='Which dataset images to recover')
     parser.add_argument('--run-dir', type=str, default=None, required=False,
@@ -67,6 +69,8 @@ def add_main_script_arguments():
 
 
 def setup_config(config):
+    use_cuda = True
+    config.device = torch.device("cuda" if use_cuda else "cpu")
     # This will change when we support multiple datasets
     dh = DatasetHelperFactory.get(config.dataset)
     dh.setup_config(config)
@@ -82,7 +86,9 @@ def setup_config(config):
 def setup_everything(argv):
     parser = add_main_script_arguments()
     SparseInputRecoverer.add_command_line_arguments(parser)
+    SparseInputDatasetRecoverer.add_command_line_arguments(parser)
     config = parser.parse_args(argv)
+    config.device = 'cuda' if torch.cuda.is_available() else 'cpu'
     config, include_layer, labels, dh = setup_config(config)
 
     rh.setup_run_dir(config, 'image_runs')
@@ -90,7 +96,7 @@ def setup_everything(argv):
     plotter.set_image_zero_one()
 
     # model = load_model(config)
-    model = dh.get_model('max-entropy', device='cpu', config=config, load=True)
+    model = dh.get_model('max-entropy', device=config.device, config=config, load=True)
 
     tbh = TensorBoardHelper(config.run_dir)
 
@@ -102,7 +108,7 @@ def setup_everything(argv):
 def main():
     config, include_layer, labels, model, tbh, sparse_input_recoverer, dh = setup_everything(sys.argv[1:])
     #initial_image = torch.randn(1, 1, 28, 28)
-    initial_image = torch.randn( *( [1] + list(dh.get_each_entry_shape()) ) )
+    initial_image = torch.randn( *( [1] + list(dh.get_each_entry_shape()) ) ).to(config.device)
     #images_list = torch.load("images_list.pt")
     #post_processed_images_list = torch.load("post_processed_images_list.pt")
 
@@ -111,7 +117,7 @@ def main():
 
     if config.mode == 'all-digits':
         n = 10
-        targets = torch.tensor(range(n))
+        targets = torch.tensor(range(n), device=config.device)
         config.num_targets = n
         config.targets = targets
         labels = ['no penalty', 'input only']
@@ -129,13 +135,37 @@ def main():
         # torch.save(post_processed_images_list, f"{config.run_dir}/ckpt/post_processed_images_list.pt")
     elif config.mode == 'single-digit':
         n = 1
-        targets = torch.tensor([config.digit])
+        targets = torch.tensor([config.digit], device=config.device)
         config.num_targets = n
         config.targets = targets
         label = config.recovery_penalty_mode
         recovered_image = sparse_input_recoverer.recover_and_plot_single_digit(
             initial_image, label, targets, include_layer=include_layer, model=model)
         torch.save(recovered_image, f"{config.run_dir}/ckpt/recovered_image.pt")
+    elif config.mode == 'dataset':
+        ckpt_saver = CkptSaver(f"{config.run_dir}/ckpt")
+        sparse_input_recoverer.tensorboard_logging = False
+        # config.recovery_batch_size = 32
+        # config.recovery_prune_low_prob = 32
+        dataset_recoverer = SparseInputDatasetRecoverer(
+            sparse_input_recoverer,
+            model,
+            num_recovery_steps=config.recovery_num_steps,
+            batch_size=config.recovery_batch_size,
+            sparsity_mode=config.recovery_penalty_mode,
+            num_real_classes=dh.get_num_classes(),
+            dataset_len=2048,
+            each_entry_shape=dh.get_each_entry_shape(),
+            device=config.device, ckpt_saver=ckpt_saver, config=config)
+        images, targets, probs = dataset_recoverer.recover_image_dataset(mode='train', dataset_epoch=0)
+        torch.save({'images' : images, 'targets' : targets, 'probs' : probs, 'labels' : [config.recovery_penalty_mode]},
+                   f"{config.run_dir}/ckpt/images_list.pt")
+        # dataset_recoverer = SparseInputDatasetRecoverer(sparse_input_recoverer, model, num_recovery_steps=kk,
+        #                                                 batch_size=bs, sparsity_mode=config.recovery_penalty_mode,
+        #                                                 num_real_classes=10, dataset_len=n,
+        #                                                 each_entry_shape=(1, 28, 28), device='cpu',
+        #                                                 ckpt_saver=ckpt_saver, config=config)
+
     else:
         raise ValueError("Invalid mode %s" % config.mode)
 

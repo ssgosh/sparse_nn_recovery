@@ -68,6 +68,7 @@ class SparseInputRecoverer:
         self.recovery_lambd_layers = config.recovery_lambd_layers
         self.verbose = verbose
         self.config = config
+        self.device = config.device
         self.tbh = tbh
         # Following are either floats or list of floats
         self.image_zero = config.image_zero
@@ -75,6 +76,7 @@ class SparseInputRecoverer:
         # Following are of shape [1, c, 1, 1], where c is the number of channels of the dataset
         self.batched_image_zero = DatasetHelperFactory.get().get_zero_correct_dims()
         self.batched_image_one = DatasetHelperFactory.get().get_one_correct_dims()
+        self.batched_epsilon = DatasetHelperFactory.get().get_batched_epsilon()
 
         self.metrics_helper = MetricsHelper.get() # MetricsHelper(self.image_zero, self.image_one)
         # 'all' : both images and stats
@@ -92,6 +94,15 @@ class SparseInputRecoverer:
                 #torch.clip(images, self.image_zero, self.image_one, out=images)
                 #torch.clamp(images, self.image_zero, self.image_one, out=images)
                 clip_tensor_range(images, self.batched_image_zero, self.batched_image_one, out=images)
+                # Get eps1 and image_zero in the same shape as images via broadcasting addition to a zero tensor
+                # with the same shape as images.
+                zeros = torch.zeros_like(images)
+                eps1 = zeros + self.batched_epsilon
+                image_zero = zeros + self.batched_image_zero
+                # The index "images < eps1" is now valid for both: the tensor images and image_zero, since they're
+                # the same shape.
+                idx = images < eps1
+                images[idx] = image_zero[idx]
 
     # include_layer: boolean vector of whether to include a layer's l1 penalty
     def recover_image_batch(self, model, images, targets, num_steps, include_layer, penalty_mode,
@@ -154,15 +165,15 @@ class SparseInputRecoverer:
         if include_likelihood:
             nll_loss = F.nll_loss(output, targets)
         else:
-            nll_loss = torch.tensor(0.)
+            nll_loss = torch.tensor(0., device=self.device)
         losses[f"nll_loss"] = nll_loss.item()
         # include l1 penalty only if it's given as true for that layer
-        l1_loss = torch.tensor(0.)
+        l1_loss = torch.tensor(0., device=self.device)
         if include_layer[0]:
             l1_loss = lambd * (torch.norm(images - self.batched_image_zero, 1)
                                / torch.numel(images))
         losses[f"input_l1_loss"] = l1_loss.item()
-        l1_layers = torch.tensor(0.)
+        l1_layers = torch.tensor(0., device=self.device)
         for idx, (include, lamb, l1) in enumerate(zip(include_layer[1:], lambd_layers,
                                                       model.all_l1)):
             if include:
@@ -197,7 +208,7 @@ class SparseInputRecoverer:
         transformed_low, transformed_high = self.image_zero, self.image_one
         n = targets.shape[0]
         for label in labels:
-            images = torch.zeros([n] + list(initial_image.shape[1:]))
+            images = torch.zeros([n] + list(initial_image.shape[1:]), device=self.device)
             images += initial_image  # Use same initial image for each digit
             images_list.append(images)
             self.recover_image_batch(model, images, targets, num_steps, include_layer[label],
@@ -255,7 +266,7 @@ class SparseInputRecoverer:
 
     def recover_and_plot_single_image(self, initial_image, digit, model, include_layer):
         label = "input only"
-        targets = torch.tensor([digit])
+        targets = torch.tensor([digit], device=self.device)
         self.recover_image_batch(model, initial_image, targets, 2000, include_layer[label],
                                  label)
         plotter.show_image(initial_image[0][0])

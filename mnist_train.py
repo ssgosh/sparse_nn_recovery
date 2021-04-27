@@ -236,6 +236,11 @@ def main():
     args = parser.parse_args()
 
     config = args
+
+    use_cuda = not args.no_cuda and torch.cuda.is_available()
+    device = torch.device("cuda" if use_cuda else "cpu")
+    config.device = device
+
     SparseInputRecoverer.setup_default_config(config)
     # dataset name is 'MNIST'
     #config.dataset_name = 'mnist'
@@ -260,11 +265,7 @@ def main():
     config_dict['generator_include_likelihood'] = True
     config_dict['generator_include_layer'] = include_layer[args.generator_mode]
 
-    use_cuda = not args.no_cuda and torch.cuda.is_available()
-
     torch.manual_seed(args.seed)
-
-    device = torch.device("cuda" if use_cuda else "cpu")
 
     train_kwargs = {'batch_size': args.batch_size}
     test_kwargs = {'batch_size': args.test_batch_size}
@@ -381,9 +382,9 @@ def main():
         #sys.exit(0)
 
     load = False
-    if config.dataset.lower() == 'cifar':
-        load = True
-        # config.discriminator_model_file =
+    #if config.dataset.lower() == 'cifar':
+    #    load = True
+    #    # config.discriminator_model_file =
     model = dataset_helper.get_model(config.adversarial_classification_mode, device, load=load, config=config)
     optimizer, scheduler = dataset_helper.get_optimizer_scheduler(config, model)
     if args.train_mode == 'adversarial-continuous':
@@ -441,6 +442,7 @@ def main():
                 raise ValueError("invalid train_mode : " + args.train_mode)
             test(model, device, test_loader)
             ckpt_saver.save_model(model, epoch, config.model_classname)
+            self.ckpt_saver.save_everything(model, optimizer, scheduler, {}, epoch)
             scheduler.step()
     else:
         adversarial_trainer.train_loop(args.epochs, args.train_mode, args.pretrain, args.num_pretrain_epochs, config)

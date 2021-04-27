@@ -42,6 +42,7 @@ class NamedExpt:
             'quick-opt', # For quickly testing if the optimization is somewhat working, with minimal number of epochs, batches etc
             'full-sparse',  # For full expt, with data loaded in normal mode
             'full-non-sparse',  # For full expt, with data loaded in non-sparse mode (add constant pixel)
+            'full-cifar', # For full cifar-10 expts, with epochs etc set for cifar dataset
             'pretrain-MNIST_B', # For pretraining on dataset B
         ]
         self.parser = argparse.ArgumentParser(description='Named Experiments', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -62,7 +63,7 @@ class NamedExpt:
 
         # Create runs dir here, so that we can write to <run-dir>/logfile.txt
         args.run_dir = None
-        args.run_suffix = f"_{args.expt}"
+        args.run_suffix = f"_{args.expt}_{args.dataset}"
         rh.setup_run_dir(args, 'train_runs')
 
         # Save git information in the run directory before proceeding
@@ -101,6 +102,20 @@ class NamedExpt:
         elif args.expt == 'full-non-sparse':
             cmd = cmd + \
                     f'--non-sparse-dataset ' 
+        elif args.expt == 'full-cifar':
+            assert args.dataset.lower() == 'cifar'
+            cmd = cmd + \
+                    f'--sparse-dataset ' \
+                    f'--epochs 350 ' \
+                    f'--num-pretrain-epochs 50 ' \
+                    f'--recovery-batch-size 256 ' \
+                    f'--num-adversarial-images-epoch-mode 1024 ' \
+                    f'--recovery-num-steps 3500 ' \
+                    f'--batch-size 128 ' \
+                    f'--adv-loss-weight 0.1 ' \
+                    f'--no-lambda-annealing ' \
+                    f'--adv-data-generation-steps 10 ' \
+                    f'--recovery-sparsity-threshold 600'
         elif args.expt == 'pretrain-MNIST_B':
             cmd = cmd + \
                     f'--dataset MNIST_B ' \
@@ -162,3 +177,4 @@ class NamedExpt:
 if __name__ == '__main__':
     expt = NamedExpt()
     expt.main()
+
