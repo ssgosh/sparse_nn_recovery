@@ -34,8 +34,10 @@ def mega_loop():
     pgd = 'recovery-enable-pgd' # or 'enable-pgd'
 
 
-    for penalty_mode in ["input only", "all layers"]:
-        for pgd in ['enable-pgd', 'disable-pgd']:
+    # for penalty_mode in ["input only", "all layers"]:
+    for penalty_mode in ["input only", ]:
+        for pgd in ['enable-pgd', ]:
+        # for pgd in ['enable-pgd', 'disable-pgd']:
             if penalty_mode == 'input only' and pgd == 'disable-pgd':
                 continue
             print(penalty_mode, pgd)
