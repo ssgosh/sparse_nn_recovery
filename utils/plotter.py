@@ -97,7 +97,10 @@ def plot_multiple_images_varying_penalty(filename, images_list, targets,
         assert images.shape[0] == ncols
         for j in range(ncols):
             image = images[j]
-            ax = axes[i][j]
+            if nrows > 1:
+                ax = axes[i][j]
+            else:
+                ax = axes[j]
             title = "%d : %s" % (targets[j], labels[i])
             #plot_image_on_axis(ax, image, title, fig)
             # We will first transform the image to the range (0, 1)

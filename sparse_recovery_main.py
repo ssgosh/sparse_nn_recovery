@@ -126,7 +126,8 @@ def main():
         targets = torch.tensor(range(n), device=config.device)
         config.num_targets = n
         config.targets = targets
-        labels = ['no penalty', 'input only']
+        # labels = ['no penalty', 'input only']
+        labels = ['input only']
         images_list, post_processed_images_list = sparse_input_recoverer.recover_and_plot_images_varying_penalty(
             initial_image,
             include_likelihood=config.recovery_include_likelihood,
