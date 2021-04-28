@@ -1,33 +1,11 @@
 import argparse
 import os
 import signal
-import subprocess
-import sys
 from subprocess import Popen, PIPE, STDOUT
 
 from utils import runs_helper as rh
+from utils.gitutils import save_git_info
 from utils.seed_mgr import SeedManager
-
-
-def log_cmd(cmd, f):
-    out = subprocess.run(['-c', cmd], shell=True, capture_output=True)
-    f.write(out.stdout)
-
-
-def save_git_info(diff_file):
-    with open(diff_file, 'wb') as f:
-        f.write(bytes("\n**************   Git Branch Information   **********:\n", 'utf-8'))
-        cmd = 'git branch -vv'
-        log_cmd(cmd, f)
-
-        f.write(bytes("\n**************   Git Log Information   **********:\n", 'utf-8'))
-        # cmd = 'git log --oneline --graph'.split()
-        cmd = 'git log --oneline --graph | head -20'
-        log_cmd(cmd, f)
-
-        f.write(bytes("\n**************   Git Diff with HEAD   **********:\n", 'utf-8'))
-        cmd = 'git diff HEAD'
-        log_cmd(cmd, f)
 
 
 class NamedExpt:
