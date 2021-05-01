@@ -1,3 +1,4 @@
+import sys
 import subprocess
 
 
@@ -20,3 +21,8 @@ def save_git_info(diff_file):
 def log_cmd(cmd, f):
     out = subprocess.run(['-c', cmd], shell=True, capture_output=True)
     f.write(out.stdout)
+
+if __name__ == '__main__':
+    fname = sys.argv[1]
+    save_git_info(fname)
+

@@ -3,6 +3,7 @@ from __future__ import print_function
 import argparse
 import json
 import sys
+import os
 
 import jsonpickle
 import numpy as np
@@ -71,7 +72,7 @@ def add_main_script_arguments():
 
 
 def setup_config(config):
-    use_cuda = False
+    use_cuda = True
     config.device = torch.device("cuda" if use_cuda else "cpu")
     # This will change when we support multiple datasets
     dh = DatasetHelperFactory.get(config.dataset)
@@ -120,7 +121,8 @@ def main():
     config_str = jsonpickle.encode(vars(config), indent=2)
     with open(f"{config.run_dir}/config.json" , 'w') as f:
         f.write(config_str)
-    save_git_info(f'{config.run_dir}/gitinfo.diff')
+    #save_git_info(f'{config.run_dir}/gitinfo.diff')
+    os.system(f"python3.8 utils/gitutils.py {config.run_dir}/gitinfo.diff")
     if config.mode == 'all-digits':
         n = 10
         targets = torch.tensor(range(n), device=config.device)
