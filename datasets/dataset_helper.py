@@ -143,7 +143,9 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
     # Returns a tensor of shape [1, c, 1, 1]
     def get_batched_epsilon(self):
         mean, std = self.get_mean_std_correct_dims(include_batch=True)
-        epsilon = torch.ones_like(mean) / 256.
+        # epsilon = torch.ones_like(mean) / 256.
+        # Set epsilon to 0.1 to make small pixel values go to 0
+        epsilon = 0.1 * torch.ones_like(mean)
         print(epsilon, epsilon.shape)
         epsilon = (epsilon - mean) / std
         print(epsilon, epsilon.shape)

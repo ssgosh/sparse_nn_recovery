@@ -443,6 +443,8 @@ class AdversarialTrainer:
         return metrics
 
     def train_loop(self, start_epoch, end_epoch, train_mode, pretrain, num_pretrain_epochs, config):
+        print(f'Testing before starting adversarial training, epoch #{start_epoch}')
+        self.validate()
         assert train_mode in [ 'adversarial-epoch', 'adversarial-batches' ]
         if pretrain and start_epoch < num_pretrain_epochs: print(f'Pretraining till epoch {num_pretrain_epochs - 1}')
         else: print(f'Not pretraining; Pretrain : {pretrain}, start_epoch : {start_epoch}, num_pretrain_epochs : {num_pretrain_epochs}')

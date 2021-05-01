@@ -180,7 +180,7 @@ def main():
 
     parser = argparse.ArgumentParser(description='Modified PyTorch MNIST Example', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    available_train_modes = ['normal', 'adversarial-continuous', 'adversarial-epoch', 'adversarial-batches']
+    available_train_modes = ['normal', 'adversarial-continuous', 'adversarial-epoch', 'adversarial-batches', 'test']
     parser.add_argument('--train-mode', type=str, default='normal', metavar='MODE', choices=available_train_modes,
                         help='Training mode. One of: ' + ', '.join(available_train_modes))
     parser.add_argument('--name', type=str, default='')
@@ -434,7 +434,12 @@ def main():
         print(config_str)
         sys.exit(0)
 
-    if args.train_mode not in ['adversarial-batches', 'adversarial-epoch']:
+    if args.train_mode == 'test':
+        print('Testing only, no training')
+        test(model, device, test_loader)
+    elif args.train_mode not in ['adversarial-batches', 'adversarial-epoch']:
+        print('Testing before training:')
+        test(model, device, test_loader)
         for epoch in range(start_epoch, args.epochs):
             # Perform pre-training for 1 epoch in adversarial mode
             if args.train_mode == 'normal' or epoch == 0:
