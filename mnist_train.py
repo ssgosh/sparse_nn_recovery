@@ -207,6 +207,7 @@ def main():
     parser.add_argument('--num-batches-early-epoch', type=int, default=10, metavar='N', help='Number of batches before epoch finishes')
     parser.add_argument('--dump-config', action='store_true', default=False, required=False, help='Print config json and exit')
     parser.add_argument('--resume-epoch', type=int, default=None, required=False, help='Resume from checkpoint for this saved epoch')
+    parser.add_argument('--load-model', action='store_true', default=False, required=False, help='Load model from default location')
 
 
     # Arguments specific to adversarial training
@@ -382,11 +383,12 @@ def main():
         #print(batch_a[0], batch_b[0], batch_c[0])
         #sys.exit(0)
 
+    assert not (args.load_model and (args.resume_epoch is not None))
     load = False
     #if config.dataset.lower() == 'cifar':
     #    load = True
     #    # config.discriminator_model_file =
-    model = dataset_helper.get_model(config.adversarial_classification_mode, device, load=load, config=config)
+    model = dataset_helper.get_model(config.adversarial_classification_mode, device, load=args.load_model, config=config)
     optimizer, scheduler = dataset_helper.get_optimizer_scheduler(config, model)
     start_epoch = 0
     if args.resume_epoch is not None:
