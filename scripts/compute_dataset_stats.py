@@ -1,6 +1,9 @@
 """Computes the mean and std of an entire dataset"""
 import sys
 
+import torchvision
+import torch.nn.functional as F
+
 sys.path.insert(0, ".")
 import argparse
 
@@ -17,7 +20,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('--dataset', type=str, default='MNIST',
                     metavar='D',
                     help='Dataset to give stats on (e.g. MNIST)')
-stats_opts = ['mean_std', 'zero_one', 'sparsity']
+stats_opts = ['mean_std', 'zero_one', 'sparsity', 'view-images']
 parser.add_argument('--stats', type=str, required=True, choices=stats_opts,
                     help='Which stats')
 parser.add_argument('--which', type=str, default='train',
@@ -93,3 +96,20 @@ elif config.stats == 'sparsity':
 
     print_sparsity('Total sparisty', sparsity)
     print_sparsity('Per-channel sparsity: ', per_channel_sparsity)
+elif config.stats == 'view-images':
+    # Sample 100 images from the dataset and view them
+    if config.dataset.lower() == 'external_b' or config.dataset.lower() == 'external_b_non_sparse':
+        ds = dh.get_dataset(which='valid', transform=None)
+        dl = DataLoader(ds, batch_size=len(ds), shuffle=True)
+        images, targets = next(iter(dl))
+
+        # dh.get_regular_batch()
+        images, targets = dh.get_regular_batch(images, targets, dh.get_num_classes(), 10)
+        images = dh.undo_transform_images(images)
+        img_grid = torchvision.utils.make_grid(images, nrow=10, pad_value=1.0, padding=2)
+        img_grid = torch.unsqueeze(img_grid, 0)
+        img_grid = F.interpolate(img_grid, scale_factor=3.0).squeeze(0)
+
+        torchvision.utils.save_image(img_grid, f'{config.dataset}_samples.png')
+    else:
+        assert False
