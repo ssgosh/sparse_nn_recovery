@@ -76,6 +76,10 @@ class AdversarialTrainer:
                             help='L1 penalty is multiplied by this factor when annealing')
         parser.add_argument('--adv-data-generation-steps', type=int, default=1, metavar='',
                             help='New adversarial data is generated in intervals of these many epochs')
+        parser.add_argument('--train-fresh-network', action='store_true', default=False, target='train_fresh_network',
+                            help='Trains a new randomly initialized network post adversarial data generation')
+        parser.add_argument('--train-same-network', action='store_false', default=False, target='train_fresh_network',
+                            help='Continues training the same network post adversarial data generation')
         parser.add_argument('--adv-loss-weight', type=float, default=1.0, metavar='',
                             help='Weight given to loss on adversarial examples in a batch. Weight of real examples is 1.0')
 
@@ -85,6 +89,7 @@ class AdversarialTrainer:
                  test_loader : DataLoader, lr_scheduler_model : StepLR,
                  adversarial_classification_mode : str,
                  config):
+        self.config = config
         self.adv_training_batch_size = adv_training_batch_size  # Same batch size is used for both real and adversarial training
         self.real_data_train_loader = real_data_train_loader
         self.real_data_train_samples = real_data_train_samples
@@ -123,6 +128,8 @@ class AdversarialTrainer:
 
         self.lambda_annealing = config.lambda_annealing
         self.lambda_annealing_factor = config.lambda_annealing_factor
+
+        self.train_fresh_network = config.train_fresh_network
 
     # Train model on the given batch. Used for real data or adversarial data training
     def train_one_batch(self, batch_inputs, batch_targets):
@@ -220,6 +227,11 @@ class AdversarialTrainer:
             print('Proceeding with real data training instead')
             self.train_one_epoch_real()
             return
+        if generate_new and self.train_fresh_network:
+            print('Creating fresh network for training with adversarial data')
+            dh = DatasetHelperFactory.get()
+            self.model = dh.get_model(self.config.adversarial_classification_mode, self.device, load=False, config=self.config)
+            self.sparse_input_dataset_recoverer.model = self.model
         # Now train
         self.model.train()
         # Note that we're using the loader here directly and not the cached iterator.
@@ -495,6 +507,8 @@ class AdversarialTrainer:
                           global_step=epoch)
 
     def post_epoch_stuff(self, intended_to_generate, generated, epoch):
+        if intended_to_generate and not generated:
+            print(f'Could not generate any adversarial data in epoch #{epoch}')
         if intended_to_generate and not generated and self.lambda_annealing:
             self.sparse_input_dataset_recoverer.sparse_input_recoverer.anneal_lambda(self.lambda_annealing_factor)
         if epoch >= self.next_adv_generation_epoch:
