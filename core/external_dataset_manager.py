@@ -15,15 +15,15 @@ class ExternalDatasetManager:
 
         if config.dataset.lower() not in ['cifar']:
             if not config.non_sparse_dataset:
-                self.add_dataset('external_B')
+                self.add_dataset('external_B', non_sparse=False)
             else:
-                self.add_dataset('external_B_non_sparse')
+                self.add_dataset('external_B_non_sparse', non_sparse=True)
 
-    def add_dataset(self, dataset_name):
-        self.add_dataset_(dataset_name, which='test')
-        self.add_dataset_(dataset_name, which='valid')
+    def add_dataset(self, dataset_name, non_sparse):
+        self.add_dataset_(dataset_name, which='test', non_sparse=non_sparse)
+        self.add_dataset_(dataset_name, which='valid', non_sparse=non_sparse)
 
-    def add_dataset_(self, dataset_name, which):
+    def add_dataset_(self, dataset_name, which, non_sparse):
         if which == 'test':
             loaders = self.test_loaders
             names = self.test_names
@@ -35,7 +35,7 @@ class ExternalDatasetManager:
 
         loaders.append(
             DataLoader(
-                DatasetHelperFactory.get_new(dataset_name, non_sparse=False).get_dataset(which),
+                DatasetHelperFactory.get_new(dataset_name, non_sparse=non_sparse).get_dataset(which),
                 **{'batch_size' : self.test_batch_size}
             )
         )

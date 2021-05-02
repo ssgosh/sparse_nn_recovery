@@ -40,6 +40,7 @@ class CkptSaver:
         save_path = self.get_model_ckpt_path(epoch, suffix)
         save_path.parent.mkdir(exist_ok=True, parents=True)
         print("Saving model to : ", save_path)
+        assert not save_path.exists()
         torch.save(model.state_dict(), save_path)
 
     def load_model_from_path(self, model_class, path):
@@ -70,6 +71,7 @@ class CkptSaver:
         save_path = self.get_ckpt_path(key, epoch, suffix=suffix)
         save_path.parent.mkdir(exist_ok=True, parents=True)
         print(f"Saving {key} to : ", save_path)
+        assert not save_path.exists()
         torch.save({
             'model' : model.state_dict(),
             'optimizer' : opt.state_dict(),
@@ -77,3 +79,16 @@ class CkptSaver:
             'epoch' : epoch,
             'metrics' : metrics
         }, save_path)
+
+    def load_evertything(self, model, optimizer, scheduler, resume_epoch, suffix=None):
+        key = 'model_opt_sched'
+        load_path = self.get_ckpt_path(key, resume_epoch, suffix=suffix)
+        print(f'Loading model, optimizer, scheduler from : {load_path}')
+        all_dict = torch.load(load_path)
+        assert all_dict['epoch'] == resume_epoch, f"all_dict['epoch'] = {all_dict['epoch']}, resume_epoch = {resume_epoch}"
+        print(f'Metrics : {all_dict["metrics"]}')
+        model.load_state_dict(all_dict['model'])
+        optimizer.load_state_dict(all_dict['optimizer'])
+        scheduler = all_dict['scheduler']
+        return model, optimizer, scheduler
+

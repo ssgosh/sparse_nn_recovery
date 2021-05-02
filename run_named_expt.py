@@ -1,33 +1,11 @@
 import argparse
 import os
 import signal
-import subprocess
-import sys
 from subprocess import Popen, PIPE, STDOUT
 
 from utils import runs_helper as rh
+from utils.gitutils import save_git_info
 from utils.seed_mgr import SeedManager
-
-
-def log_cmd(cmd, f):
-    out = subprocess.run(['-c', cmd], shell=True, capture_output=True)
-    f.write(out.stdout)
-
-
-def save_git_info(diff_file):
-    with open(diff_file, 'wb') as f:
-        f.write(bytes("\n**************   Git Branch Information   **********:\n", 'utf-8'))
-        cmd = 'git branch -vv'
-        log_cmd(cmd, f)
-
-        f.write(bytes("\n**************   Git Log Information   **********:\n", 'utf-8'))
-        # cmd = 'git log --oneline --graph'.split()
-        cmd = 'git log --oneline --graph | head -20'
-        log_cmd(cmd, f)
-
-        f.write(bytes("\n**************   Git Diff with HEAD   **********:\n", 'utf-8'))
-        cmd = 'git diff HEAD'
-        log_cmd(cmd, f)
 
 
 class NamedExpt:
@@ -48,6 +26,8 @@ class NamedExpt:
         self.parser = argparse.ArgumentParser(description='Named Experiments', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         self.parser.add_argument('--expt', type=str, metavar='MODE', choices=self.names, required=True, help='One of: ' + ', '.join(self.names))
         self.parser.add_argument('--dataset', type=str, metavar='', default='MNIST_A')
+        self.parser.add_argument('--resume-dir', type=str, required=False, metavar='', default=None)
+        self.parser.add_argument('--resume-epoch', type=int, required=False, metavar='', default=None)
 
     def main(self):
         #args = self.parser.parse_args()
@@ -61,10 +41,14 @@ class NamedExpt:
         name = args.expt
         dataset = args.dataset
 
-        # Create runs dir here, so that we can write to <run-dir>/logfile.txt
-        args.run_dir = None
-        args.run_suffix = f"_{args.expt}_{args.dataset}"
-        rh.setup_run_dir(args, 'train_runs')
+        if args.resume_epoch is not None:
+            assert args.resume_dir is not None
+            args.run_dir = args.resume_dir
+        else:
+            # Create runs dir here, so that we can write to <run-dir>/logfile.txt
+            args.run_dir = None
+            args.run_suffix = f"_{args.expt}_{args.dataset}"
+            rh.setup_run_dir(args, 'train_runs')
 
         # Save git information in the run directory before proceeding
         save_git_info(f'{args.run_dir}/gitinfo.diff')
@@ -77,6 +61,8 @@ class NamedExpt:
               f'--run-dir {args.run_dir} ' \
               f'--train-mode adversarial-epoch ' \
               f'--dataset {dataset} '
+        if args.resume_epoch is not None:
+            cmd = cmd + f'--resume-epoch {args.resume_epoch} '
         if name in ['quick', 'quick-debug',]:
             cmd = cmd + \
                   f'--early-epoch ' \

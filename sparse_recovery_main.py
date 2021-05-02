@@ -3,7 +3,9 @@ from __future__ import print_function
 import argparse
 import json
 import sys
+import os
 
+import jsonpickle
 import numpy as np
 import torch
 
@@ -12,6 +14,7 @@ from utils import plotter
 from utils import runs_helper as rh
 from datasets.dataset_helper_factory import DatasetHelperFactory
 from utils.ckpt_saver import CkptSaver
+from utils.gitutils import save_git_info
 from utils.tensorboard_helper import TensorBoardHelper
 
 from core.sparse_input_recoverer import SparseInputRecoverer
@@ -115,12 +118,18 @@ def main():
     #generate_multi_plot_all_digits(images_list,
     #        post_processed_images_list, targets, labels)
 
+    config_str = jsonpickle.encode(vars(config), indent=2)
+    with open(f"{config.run_dir}/config.json" , 'w') as f:
+        f.write(config_str)
+    #save_git_info(f'{config.run_dir}/gitinfo.diff')
+    os.system(f"python3.8 utils/gitutils.py {config.run_dir}/gitinfo.diff")
     if config.mode == 'all-digits':
         n = 10
         targets = torch.tensor(range(n), device=config.device)
         config.num_targets = n
         config.targets = targets
-        labels = ['no penalty', 'input only']
+        # labels = ['no penalty', 'input only']
+        labels = ['input only']
         images_list, post_processed_images_list = sparse_input_recoverer.recover_and_plot_images_varying_penalty(
             initial_image,
             include_likelihood=config.recovery_include_likelihood,

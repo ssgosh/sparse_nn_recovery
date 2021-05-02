@@ -180,7 +180,7 @@ def main():
 
     parser = argparse.ArgumentParser(description='Modified PyTorch MNIST Example', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    available_train_modes = ['normal', 'adversarial-continuous', 'adversarial-epoch', 'adversarial-batches']
+    available_train_modes = ['normal', 'adversarial-continuous', 'adversarial-epoch', 'adversarial-batches', 'test']
     parser.add_argument('--train-mode', type=str, default='normal', metavar='MODE', choices=available_train_modes,
                         help='Training mode. One of: ' + ', '.join(available_train_modes))
     parser.add_argument('--name', type=str, default='')
@@ -206,6 +206,8 @@ def main():
     parser.add_argument('--early-epoch', action='store_true', default=False, dest='early_epoch', help='Finish epoch early (for debugging)')
     parser.add_argument('--num-batches-early-epoch', type=int, default=10, metavar='N', help='Number of batches before epoch finishes')
     parser.add_argument('--dump-config', action='store_true', default=False, required=False, help='Print config json and exit')
+    parser.add_argument('--resume-epoch', type=int, default=None, required=False, help='Resume from checkpoint for this saved epoch')
+    parser.add_argument('--load-model', action='store_true', default=False, required=False, help='Load model from default location')
 
 
     # Arguments specific to adversarial training
@@ -381,12 +383,18 @@ def main():
         #print(batch_a[0], batch_b[0], batch_c[0])
         #sys.exit(0)
 
+    assert not (args.load_model and (args.resume_epoch is not None))
     load = False
     #if config.dataset.lower() == 'cifar':
     #    load = True
     #    # config.discriminator_model_file =
-    model = dataset_helper.get_model(config.adversarial_classification_mode, device, load=load, config=config)
+    model = dataset_helper.get_model(config.adversarial_classification_mode, device, load=args.load_model, config=config)
     optimizer, scheduler = dataset_helper.get_optimizer_scheduler(config, model)
+    start_epoch = 0
+    if args.resume_epoch is not None:
+        model, optimizer, scheduler = ckpt_saver.load_evertything(model, optimizer, scheduler, args.resume_epoch)
+        start_epoch = args.resume_epoch + 1
+
     if args.train_mode == 'adversarial-continuous':
         optD = optimizer
         optG = optim.Adam([images], lr=args.generator_lr)
@@ -428,8 +436,13 @@ def main():
         print(config_str)
         sys.exit(0)
 
-    if args.train_mode not in ['adversarial-batches', 'adversarial-epoch']:
-        for epoch in range(0, args.epochs):
+    if args.train_mode == 'test':
+        print('Testing only, no training')
+        test(model, device, test_loader)
+    elif args.train_mode not in ['adversarial-batches', 'adversarial-epoch']:
+        print('Testing before training:')
+        test(model, device, test_loader)
+        for epoch in range(start_epoch, args.epochs):
             # Perform pre-training for 1 epoch in adversarial mode
             if args.train_mode == 'normal' or epoch == 0:
                 if args.train_mode == 'adversarial-continuous':
@@ -442,10 +455,10 @@ def main():
                 raise ValueError("invalid train_mode : " + args.train_mode)
             test(model, device, test_loader)
             ckpt_saver.save_model(model, epoch, config.model_classname)
-            self.ckpt_saver.save_everything(model, optimizer, scheduler, {}, epoch)
+            ckpt_saver.save_everything(model, optimizer, scheduler, {}, epoch)
             scheduler.step()
     else:
-        adversarial_trainer.train_loop(args.epochs, args.train_mode, args.pretrain, args.num_pretrain_epochs, config)
+        adversarial_trainer.train_loop(start_epoch, args.epochs, args.train_mode, args.pretrain, args.num_pretrain_epochs, config)
 
     if args.save_model:
         save_path = config.ckpt_save_path
@@ -454,6 +467,7 @@ def main():
         torch.save(model.state_dict(), save_path)
 
     tbh.close()
+
 
 if __name__ == '__main__':
     main()
