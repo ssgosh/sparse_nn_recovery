@@ -76,9 +76,9 @@ class AdversarialTrainer:
                             help='L1 penalty is multiplied by this factor when annealing')
         parser.add_argument('--adv-data-generation-steps', type=int, default=1, metavar='',
                             help='New adversarial data is generated in intervals of these many epochs')
-        parser.add_argument('--train-fresh-network', action='store_true', default=False, target='train_fresh_network',
+        parser.add_argument('--train-fresh-network', action='store_true', default=False, dest='train_fresh_network',
                             help='Trains a new randomly initialized network post adversarial data generation')
-        parser.add_argument('--train-same-network', action='store_false', default=False, target='train_fresh_network',
+        parser.add_argument('--train-same-network', action='store_false', default=False, dest='train_fresh_network',
                             help='Continues training the same network post adversarial data generation')
         parser.add_argument('--adv-loss-weight', type=float, default=1.0, metavar='',
                             help='Weight given to loss on adversarial examples in a batch. Weight of real examples is 1.0')
@@ -230,8 +230,15 @@ class AdversarialTrainer:
         if generate_new and self.train_fresh_network:
             print('Creating fresh network for training with adversarial data')
             dh = DatasetHelperFactory.get()
+            # This call gets a new appropriate model
             self.model = dh.get_model(self.config.adversarial_classification_mode, self.device, load=False, config=self.config)
+            # Gets an appropriate optimizer and scheduler initialized to starting values
+            # opt_model points to the newly created models' parameters.
+            self.opt_model, self.lr_scheduler_model = dh.get_optimizer_scheduler(self.config, self.model)
+            # This needs to be set as well, so that newer adversarial data is generated using the new model
             self.sparse_input_dataset_recoverer.model = self.model
+            print('Validating before starting training with fresh network')
+            self.validate()
         # Now train
         self.model.train()
         # Note that we're using the loader here directly and not the cached iterator.
@@ -455,12 +462,12 @@ class AdversarialTrainer:
         return metrics
 
     def train_loop(self, start_epoch, end_epoch, train_mode, pretrain, num_pretrain_epochs, config):
-        print(f'Testing before starting adversarial training, epoch #{start_epoch}')
-        self.validate()
         assert train_mode in [ 'adversarial-epoch', 'adversarial-batches' ]
+        self.epoch = start_epoch
+        print(f'Testing before starting adversarial training, epoch #{self.epoch}')
+        self.validate()
         if pretrain and start_epoch < num_pretrain_epochs: print(f'Pretraining till epoch {num_pretrain_epochs - 1}')
         else: print(f'Not pretraining; Pretrain : {pretrain}, start_epoch : {start_epoch}, num_pretrain_epochs : {num_pretrain_epochs}')
-        self.epoch = start_epoch
         for epoch in range(start_epoch, end_epoch):
             self.log_real_train_images_to_tensorboard()
             if pretrain and epoch < num_pretrain_epochs :
