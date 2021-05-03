@@ -173,7 +173,8 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
     def get_regular_batch(self, images, targets, num_classes, num_per_class):
         entries = []
         tgt_entries = []
-        shape = images.shape
+        # shape = images.shape
+        shape = self.get_each_entry_shape()
         image_zero = self.get_zero_correct_dims(include_batch=False)
         image_one = self.get_one_correct_dims(include_batch=False)
         for cls in range(num_classes):

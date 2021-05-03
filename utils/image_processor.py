@@ -11,7 +11,7 @@ def save_grid_of_images(filename, images, targets, dh):
     images = dh.undo_transform_images(images)
     img_grid = torchvision.utils.make_grid(images, nrow=10, pad_value=1.0, padding=2)
     img_grid = torch.unsqueeze(img_grid, 0)
-    img_grid = F.interpolate(img_grid, scale_factor=3.0).squeeze(0)
+    img_grid = F.interpolate(img_grid, scale_factor=4.0).squeeze(0)
 
     torchvision.utils.save_image(img_grid, filename)
 
