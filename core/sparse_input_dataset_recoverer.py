@@ -74,7 +74,7 @@ class SparseInputDatasetRecoverer:
         start = 0  # self.dataset_epoch * num_batches
         end = start + num_batches
         # or 'all', which will include images, or 'none', which will not log anything
-        self.sparse_input_recoverer.tensorboard_logging = 'stats_only' if mode == 'train' else 'none'
+        self.sparse_input_recoverer.tensorboard_logging = 'stats_only' if mode == 'train' else 'all' if mode == 'all' else 'none'
         # Disable this because tensorboard files are growing too large
         # and we don't seem to be focusing on these internal stats anyway
         # self.sparse_input_recoverer.tensorboard_logging = 'none'
