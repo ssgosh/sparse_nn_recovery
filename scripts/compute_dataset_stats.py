@@ -1,16 +1,14 @@
 """Computes the mean and std of an entire dataset"""
 import sys
-
-import torchvision
-import torch.nn.functional as F
-
 sys.path.insert(0, ".")
+
 import argparse
 
 import torch
 from torch.utils.data import DataLoader
 
 from datasets.dataset_helper_factory import DatasetHelperFactory
+from utils.image_processor import save_grid_of_images
 
 parser = argparse.ArgumentParser(
     description='Computes the mean and std of an entire dataset',
@@ -102,14 +100,7 @@ elif config.stats == 'view-images':
         ds = dh.get_dataset(which='valid', transform=None)
         dl = DataLoader(ds, batch_size=len(ds), shuffle=True)
         images, targets = next(iter(dl))
+        save_grid_of_images(f'{config.dataset}_samples.png', images, targets, dh)
 
-        # dh.get_regular_batch()
-        images, targets = dh.get_regular_batch(images, targets, dh.get_num_classes(), 10)
-        images = dh.undo_transform_images(images)
-        img_grid = torchvision.utils.make_grid(images, nrow=10, pad_value=1.0, padding=2)
-        img_grid = torch.unsqueeze(img_grid, 0)
-        img_grid = F.interpolate(img_grid, scale_factor=3.0).squeeze(0)
-
-        torchvision.utils.save_image(img_grid, f'{config.dataset}_samples.png')
     else:
         assert False

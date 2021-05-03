@@ -1,7 +1,19 @@
 import torch
 
 # high-pass and low-pass filter for images
+import torchvision
+import torch.nn.functional as F
 from icontract import require
+
+def save_grid_of_images(filename, images, targets, dh):
+    # dh.get_regular_batch()
+    images, targets = dh.get_regular_batch(images, targets, dh.get_num_classes(), 10)
+    images = dh.undo_transform_images(images)
+    img_grid = torchvision.utils.make_grid(images, nrow=10, pad_value=1.0, padding=2)
+    img_grid = torch.unsqueeze(img_grid, 0)
+    img_grid = F.interpolate(img_grid, scale_factor=3.0).squeeze(0)
+
+    torchvision.utils.save_image(img_grid, filename)
 
 
 def post_process_images(images, mode='mean_median', low=None, high=None):
