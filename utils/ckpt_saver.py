@@ -7,7 +7,7 @@ class CkptSaver:
         self.ckpt_dir = pathlib.Path(ckpt_dir)
 
     def get_image_ckpt_path(self, mode, suffix, dataset_epoch):
-        assert mode in ['train', 'test', 'valid']
+        assert mode in ['train', 'test', 'valid', 'all']
         suffix = '' if not suffix else f'{suffix}_'
         return self.ckpt_dir / 'images' / mode / f'images_{suffix}{dataset_epoch:0>4d}.pt'
 
