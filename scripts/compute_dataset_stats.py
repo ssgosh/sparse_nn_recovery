@@ -1,13 +1,14 @@
 """Computes the mean and std of an entire dataset"""
 import sys
-
 sys.path.insert(0, ".")
+
 import argparse
 
 import torch
 from torch.utils.data import DataLoader
 
 from datasets.dataset_helper_factory import DatasetHelperFactory
+from utils.image_processor import save_grid_of_images
 
 parser = argparse.ArgumentParser(
     description='Computes the mean and std of an entire dataset',
@@ -17,7 +18,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('--dataset', type=str, default='MNIST',
                     metavar='D',
                     help='Dataset to give stats on (e.g. MNIST)')
-stats_opts = ['mean_std', 'zero_one', 'sparsity']
+stats_opts = ['mean_std', 'zero_one', 'sparsity', 'view-images']
 parser.add_argument('--stats', type=str, required=True, choices=stats_opts,
                     help='Which stats')
 parser.add_argument('--which', type=str, default='train',
@@ -93,3 +94,13 @@ elif config.stats == 'sparsity':
 
     print_sparsity('Total sparisty', sparsity)
     print_sparsity('Per-channel sparsity: ', per_channel_sparsity)
+elif config.stats == 'view-images':
+    # Sample 100 images from the dataset and view them
+    if config.dataset.lower() == 'external_b' or config.dataset.lower() == 'external_b_non_sparse':
+        ds = dh.get_dataset(which='valid', transform=None)
+        dl = DataLoader(ds, batch_size=len(ds), shuffle=True)
+        images, targets = next(iter(dl))
+        save_grid_of_images(f'{config.dataset}_samples.png', images, targets, dh)
+
+    else:
+        assert False

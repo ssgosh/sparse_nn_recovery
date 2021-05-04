@@ -11,6 +11,9 @@ from datasets.non_sparse_normalization_mixin import NonSparseNormalizationMixin
 # Abstraction for Dataset-specific functionality, such as transformations,
 # values of transformed zero and one pixel values. Also provides a singleton for the datasethelper
 # Used in the main scripts.
+from utils.torchutils import get_cross
+
+
 class DatasetHelper(ABC, NonSparseNormalizationMixin):
 
     def __init__(self, name, subset, non_sparse):
@@ -153,3 +156,42 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
 
     def get_optimizer_scheduler(self, config, model):
         raise NotImplementedError('Please implement this in a sublcass')
+
+    # Takes batch of multi-channel images with pixels in the range [0, 1]
+    # Performs mean-std transformation
+    def transform_images(self, images):
+        mean, std = self.get_mean_std_correct_dims(include_batch=True)
+        return (images - mean) / std
+
+    # Takes a batch of multi-channel images with pixels normalized by mean and std
+    # Undoes that transform
+    def undo_transform_images(self, images):
+        mean, std = self.get_mean_std_correct_dims(include_batch=True)
+        return mean + images * std
+
+    # Get a batch of 100 images with 10 images per class
+    def get_regular_batch(self, images, targets, num_classes, num_per_class):
+        entries = []
+        tgt_entries = []
+        # shape = images.shape
+        shape = self.get_each_entry_shape()
+        image_zero = self.get_zero_correct_dims(include_batch=False)
+        image_one = self.get_one_correct_dims(include_batch=False)
+        for cls in range(num_classes):
+            count = 0
+            i = 0
+            while count < num_per_class and i < targets.shape[0]:
+                if targets[i].item() == cls:
+                    entries.append(images[i])
+                    tgt_entries.append(targets[i])
+                    count += 1
+                i += 1
+            # Append cross X images if not enough entries for this class
+            # All-zero images can be produced easily by our optimization algo,
+            # But cross image is hard to be produced by accident
+            for j in range(count, num_per_class):
+                cross = get_cross(shape[2], shape[0], targets)
+                entries.append(cross * image_one + image_zero)
+                tgt_entries.append(torch.tensor(cls, device=targets.device))
+
+        return torch.stack(entries), torch.stack(tgt_entries)

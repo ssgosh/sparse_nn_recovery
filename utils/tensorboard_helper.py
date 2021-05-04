@@ -71,6 +71,7 @@ class TensorBoardHelper:
         #print(size)
         img_grid = torch.unsqueeze(img_grid, 0)
         #print(img_grid.shape)
+        # Scales the image to be a bit larger
         img_grid = F.interpolate(img_grid, scale_factor=3.0).squeeze(0)
         #print(img_grid.shape)
         #sys.exit(1)

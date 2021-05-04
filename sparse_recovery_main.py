@@ -15,6 +15,7 @@ from utils import runs_helper as rh
 from datasets.dataset_helper_factory import DatasetHelperFactory
 from utils.ckpt_saver import CkptSaver
 from utils.gitutils import save_git_info
+from utils.image_processor import save_grid_of_images
 from utils.tensorboard_helper import TensorBoardHelper
 
 from core.sparse_input_recoverer import SparseInputRecoverer
@@ -49,7 +50,7 @@ def add_main_script_arguments():
     parser = argparse.ArgumentParser(description='Recover images from a '
                                                  'discriminative model by gradient descent on input')
     parser.add_argument('--mode', type=str, default='all-digits', required=False,
-                        help='Image recovery mode: "single-digit" or "all-digits" or "dataset"')
+                        help='Image recovery mode: "single-digit" or "all-digits" or "gen-dataset"')
     parser.add_argument('--dataset', type=str, default='mnist', required=False, choices=['mnist', 'cifar'],
                         help='Which dataset images to recover')
     parser.add_argument('--run-dir', type=str, default=None, required=False,
@@ -68,11 +69,14 @@ def add_main_script_arguments():
     parser.add_argument('--dump-config', action='store_true',
                         default=False, required=False,
                         help='Print config json and exit')
+    parser.add_argument('--dataset-len', type=int, metavar='L',
+                        default=128, required=False,
+                        help='How many images to generate in dataset mode')
     return parser
 
 
 def setup_config(config):
-    use_cuda = True
+    use_cuda = torch.cuda.is_available()
     config.device = torch.device("cuda" if use_cuda else "cpu")
     # This will change when we support multiple datasets
     dh = DatasetHelperFactory.get(config.dataset)
@@ -94,6 +98,7 @@ def setup_everything(argv):
     config.device = 'cuda' if torch.cuda.is_available() else 'cpu'
     config, include_layer, labels, dh = setup_config(config)
 
+    config.run_suffix = f'_{config.mode}_{config.dataset}'
     rh.setup_run_dir(config, 'image_runs')
     plotter.set_run_dir(config.run_dir)
     plotter.set_image_zero_one()
@@ -105,6 +110,8 @@ def setup_everything(argv):
 
     sparse_input_recoverer = SparseInputRecoverer(config, tbh, verbose=True)
 
+    tbh.log_config_as_text(config)
+    tbh.flush()
     return config, include_layer, labels, model, tbh, sparse_input_recoverer, dh
 
 
@@ -151,11 +158,13 @@ def main():
         recovered_image = sparse_input_recoverer.recover_and_plot_single_digit(
             initial_image, label, targets, include_layer=include_layer, model=model)
         torch.save(recovered_image, f"{config.run_dir}/ckpt/recovered_image.pt")
-    elif config.mode == 'dataset':
+    elif config.mode == 'gen-dataset':
         ckpt_saver = CkptSaver(f"{config.run_dir}/ckpt")
         sparse_input_recoverer.tensorboard_logging = False
         # config.recovery_batch_size = 32
         # config.recovery_prune_low_prob = 32
+        if config.recovery_batch_size > config.dataset_len:
+            config.recovery_batch_size = config.dataset_len
         dataset_recoverer = SparseInputDatasetRecoverer(
             sparse_input_recoverer,
             model,
@@ -163,12 +172,13 @@ def main():
             batch_size=config.recovery_batch_size,
             sparsity_mode=config.recovery_penalty_mode,
             num_real_classes=dh.get_num_classes(),
-            dataset_len=2048,
+            dataset_len=config.dataset_len,
             each_entry_shape=dh.get_each_entry_shape(),
             device=config.device, ckpt_saver=ckpt_saver, config=config)
-        images, targets, probs = dataset_recoverer.recover_image_dataset(mode='train', dataset_epoch=0)
+        images, targets, probs = dataset_recoverer.recover_image_dataset(mode='all', dataset_epoch=0)
         torch.save({'images' : images, 'targets' : targets, 'probs' : probs, 'labels' : [config.recovery_penalty_mode]},
                    f"{config.run_dir}/ckpt/images_list.pt")
+        save_grid_of_images(f"{config.run_dir}/output/samples.png", images, targets, dh)
         # dataset_recoverer = SparseInputDatasetRecoverer(sparse_input_recoverer, model, num_recovery_steps=kk,
         #                                                 batch_size=bs, sparsity_mode=config.recovery_penalty_mode,
         #                                                 num_real_classes=10, dataset_len=n,
