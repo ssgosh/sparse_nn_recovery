@@ -134,7 +134,7 @@ class SparseInputRecoverer:
             self.clip_if_needed(images)
 
             if self.verbose and i % 100 == 0:
-                print("Iter: ", i, ", Loss: %.3f" % loss.item(),
+                print("Iter: ", i, ", Loss: %.3f" % loss.item() / images.shape[0],
                       f"Prob of {targets[0]} %.3f" %
                       pow(math.e, output[0][targets[0].item()].item()),
                       "images median, mean, std, min, max: %.3f, %.3f, %.3f, %.3f, %.3f" % (
