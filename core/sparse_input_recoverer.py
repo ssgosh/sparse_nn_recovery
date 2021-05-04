@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import argparse
 import math
+from functools import reduce
 
 import torch
 import torch.nn.functional as F
@@ -152,41 +153,55 @@ class SparseInputRecoverer:
 
 
     def forward(self, model, images, targets, include_layer, include_likelihood):
-        # lambda for input
-        #lambd = self.config.recovery_lambd
+        batch_size = images.shape[0]
+        numel = reduce((lambda a, b: a * b), images.shape[1:])
         lambd = self.recovery_lambd
-        # lambd = 0.01
-        # lambda for each layer
-        #lambd_layers = self.config.recovery_lambd_layers  # [0.1, 0.1, 0.1]
-        lambd_layers = self.recovery_lambd_layers  # [0.1, 0.1, 0.1]
-        # lambd_layers = [0.01, 0.01, 0.01]
-        # lambd2 = 1.
+        lambd_layers = self.recovery_lambd_layers
         losses = {}
         probs = {}
         sparsity = {}
         output = model(images)
         if include_likelihood:
-            nll_loss = F.nll_loss(output, targets)
+            # nll_loss = F.nll_loss(output, targets)
+            # NOTE: We use sum here instead of mean
+            #   This is so that the optimizer's parameters such as epsilon and learning rate do not have to change
+            #   with batch size. Gradient of the loss for a particular image in the bath will be invariant of the number
+            #   of images in the batch.
+            #   The annoyance we face from this is that the loss values now scale linearly with the batch size.
+            #   Hence during debugging, we must keep in mind what the batch size is, and scale the loss with the batch size.
+            #   One can also scale it manually during reporting. This is what we will do.
+            #
+            # NOTE:  Also note that if we were updating the model and not the input, then it would make sense to take
+            #   the mean and not the sum. There, the batch is used to get an estimate of the gradient, which is why
+            #   loss should be averaged. Otherwise, the learning rate etc will have to be changed with batch size in
+            #   that case.
+            #   Here, it is more helpful to think of batching as a means of performing
+            #   batch-processing / parallelization of computation of gradient of many inputs in a single shot.
+            nll_loss = F.nll_loss(output, targets, reduction='sum')
         else:
             nll_loss = torch.tensor(0., device=self.device)
-        losses[f"nll_loss"] = nll_loss.item()
+        losses[f"nll_loss"] = nll_loss.item() / batch_size
         # include l1 penalty only if it's given as true for that layer
         l1_loss = torch.tensor(0., device=self.device)
         if include_layer[0]:
-            l1_loss = lambd * (torch.norm(images - self.batched_image_zero, 1)
-                               / torch.numel(images))
-        losses[f"input_l1_loss"] = l1_loss.item()
+            # l1_loss = lambd * (torch.norm(images - self.batched_image_zero, 1)
+            #                    / torch.numel(images))
+            # NOTE: Similar to the nll_loss, we again use the sum of l1 norms of all images in the batch, instead of the mean.
+            #   Note that nll_loss and l1_loss should both either use sum or mean - otherwise, lambda will vary with the
+            #   batch size used.
+            l1_loss = lambd * torch.norm(images - self.batched_image_zero, 1) / numel
+        losses[f"input_l1_loss"] = l1_loss.item() / batch_size
         l1_layers = torch.tensor(0., device=self.device)
         for idx, (include, lamb, l1) in enumerate(zip(include_layer[1:], lambd_layers,
                                                       model.all_l1)):
             if include:
                 layer_loss = lamb * l1
                 l1_layers += layer_loss
-                losses[f"layer_{idx}_l1_loss"] = layer_loss.item()
-        losses[f"hidden_layers_l1_loss"] = l1_layers.item()
-        losses[f"all_layers_l1_loss"] = l1_loss.item() + l1_layers.item()
+                losses[f"layer_{idx}_l1_loss"] = layer_loss.item() / batch_size
+        losses[f"hidden_layers_l1_loss"] = l1_layers.item() / batch_size
+        losses[f"all_layers_l1_loss"] = (l1_loss.item() + l1_layers.item() ) / batch_size
         loss = nll_loss + l1_loss + l1_layers
-        losses[f"total_loss"] = loss.item()
+        losses[f"total_loss"] = loss.item() / batch_size
         self.metrics_helper.compute_probs(output, probs, targets)
         self.metrics_helper.compute_sparsities(images, model, targets, sparsity)
 
