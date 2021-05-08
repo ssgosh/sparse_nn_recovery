@@ -22,6 +22,7 @@ class NamedExpt:
             'full-non-sparse',  # For full expt, with data loaded in non-sparse mode (add constant pixel)
             'full-cifar', # For full cifar-10 expts, with epochs etc set for cifar dataset
             'pretrain-MNIST_B', # For pretraining on dataset B
+            'adv-train-fresh-full', # Train new network after adv data generation
         ]
         self.parser = argparse.ArgumentParser(description='Named Experiments', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         self.parser.add_argument('--expt', type=str, metavar='MODE', choices=self.names, required=True, help='One of: ' + ', '.join(self.names))
@@ -88,6 +89,21 @@ class NamedExpt:
         elif args.expt == 'full-non-sparse':
             cmd = cmd + \
                     f'--non-sparse-dataset ' 
+        elif args.expt in [ 'adv-train-fresh-full']:
+            if 'mnist' in dataset.lower():
+                epochs = 100
+                adv_data_gen_epochs = 20
+                num_pretrain_epochs = 20
+            elif 'cifar' in dataset.lower():
+                epochs = 1000
+                adv_data_gen_epochs = 200
+                num_pretrain_epochs = 200
+            cmd = cmd + \
+                    f'--epochs {epochs} ' \
+                    f'--adv-data-generation-steps {adv_data_gen_epochs} ' \
+                    f'--num-pretrain-epochs {num_pretrain_epochs} ' \
+                    f'--no-lambda-annealing ' \
+                    f'--train-fresh-network '
         elif args.expt == 'full-cifar':
             assert args.dataset.lower() == 'cifar'
             cmd = cmd + \
