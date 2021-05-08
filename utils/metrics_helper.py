@@ -70,7 +70,7 @@ class MetricsHelper:
         self.numel = 0
         self.per_class_numel_probs = {} # torch.zeros(size=(num_total_classes,))
         self.per_class_numel_sparsity = {}
-        self.num_model_layers = False
+        self.num_model_layers = 0
 
         self.initialized = False    # Someone has to add some metrics using accumulate_batch_stats() for this to happen.
         self.finalized = False
@@ -272,17 +272,17 @@ class MetricsHelper:
 
         #print(json.dumps(sparsity, indent=2))
         #print(json.dumps(count, indent=2))
-        for j, layer in enumerate(model.get_layers()):
-            batch_sparsity = imp.get_sparsity_batch(layer, zero=0.)
-            for i in range(n):
-                #_accumulate_val_in_dict(count, targets[i].item(), 1)
-                key = f"class_{targets[i]}/sparsity/layer_{j + 1}"
-                val = batch_sparsity[i].item()
-                _accumulate_val_in_dict(self.per_class, key, val)
+        #for j, layer in enumerate(model.get_layers()):
+        #    batch_sparsity = imp.get_sparsity_batch(layer, zero=0.)
+        #    for i in range(n):
+        #        #_accumulate_val_in_dict(count, targets[i].item(), 1)
+        #        key = f"class_{targets[i]}/sparsity/layer_{j + 1}"
+        #        val = batch_sparsity[i].item()
+        #        _accumulate_val_in_dict(self.per_class, key, val)
 
-            # for tgt in count:
-            #     key = f"class_{tgt}/sparsity/layer_{j + 1}"
-            #     sparsity[key] /= count[tgt]
-        self.num_model_layers = len(model.get_layers())
+        #    # for tgt in count:
+        #    #     key = f"class_{tgt}/sparsity/layer_{j + 1}"
+        #    #     sparsity[key] /= count[tgt]
+        #self.num_model_layers = len(model.get_layers())
         #print(json.dumps(sparsity, indent=2))
         #print(json.dumps(count, indent=2))
