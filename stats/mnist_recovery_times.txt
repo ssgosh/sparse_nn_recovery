@@ -1,0 +1,7 @@
+bs = 32, time = 117.69698915909976 seconds
+bs = 64, time = 83.71944121387787 seconds
+bs = 128, time = 66.3599062950816 seconds
+bs = 256, time = 55.640285424888134 seconds
+bs = 512, time = 51.592313383938745 seconds
+bs = 1024, time = 49.47924597701058 seconds
+bs = 2048, time = 47.751787565881386 seconds
