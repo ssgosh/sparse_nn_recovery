@@ -191,16 +191,17 @@ class SparseInputRecoverer:
             #   batch size used.
             l1_loss = lambd * torch.norm(images - self.batched_image_zero, 1) / numel
         losses[f"input_l1_loss"] = l1_loss.item() / batch_size
-        l1_layers = torch.tensor(0., device=self.device)
-        for idx, (include, lamb, l1) in enumerate(zip(include_layer[1:], lambd_layers,
-                                                      model.all_l1)):
-            if include:
-                layer_loss = lamb * l1
-                l1_layers += layer_loss
-                losses[f"layer_{idx}_l1_loss"] = layer_loss.item() / batch_size
-        losses[f"hidden_layers_l1_loss"] = l1_layers.item() / batch_size
-        losses[f"all_layers_l1_loss"] = (l1_loss.item() + l1_layers.item() ) / batch_size
-        loss = nll_loss + l1_loss + l1_layers
+        #l1_layers = torch.tensor(0., device=self.device)
+        # Removing these due to DataParallel. Internal layer l1 loss is unused anyway
+        #for idx, (include, lamb, l1) in enumerate(zip(include_layer[1:], lambd_layers,
+        #                                              model.all_l1)):
+        #    if include:
+        #        layer_loss = lamb * l1
+        #        l1_layers += layer_loss
+        #        losses[f"layer_{idx}_l1_loss"] = layer_loss.item() / batch_size
+        #losses[f"hidden_layers_l1_loss"] = l1_layers.item() / batch_size
+        #losses[f"all_layers_l1_loss"] = (l1_loss.item() + l1_layers.item() ) / batch_size
+        loss = nll_loss + l1_loss #+ l1_layers
         losses[f"total_loss"] = loss.item() / batch_size
         self.metrics_helper.compute_probs(output, probs, targets)
         self.metrics_helper.compute_sparsities(images, model, targets, sparsity)

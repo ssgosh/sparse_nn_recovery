@@ -108,18 +108,21 @@ class MetricsHelper:
 
         #print(json.dumps(sparsity, indent=2))
         #print(json.dumps(count, indent=2))
-        for j, layer in enumerate(model.get_layers()):
-            batch_sparsity = imp.get_sparsity_batch(layer, zero=0.)
-            count = {}
-            for i in range(n):
-                _accumulate_val_in_dict(count, targets[i].item(), 1)
-                key = f"class_{targets[i]}/sparsity/layer_{j + 1}"
-                val = batch_sparsity[i].item()
-                _accumulate_val_in_dict(sparsity, key, val)
 
-            for tgt in count:
-                key = f"class_{tgt}/sparsity/layer_{j + 1}"
-                sparsity[key] /= count[tgt]
+        # Removing due to DataParallel
+        # for j, layer in enumerate(model.get_layers()):
+        #     batch_sparsity = imp.get_sparsity_batch(layer, zero=0.)
+        #     count = {}
+        #     for i in range(n):
+        #         _accumulate_val_in_dict(count, targets[i].item(), 1)
+        #         key = f"class_{targets[i]}/sparsity/layer_{j + 1}"
+        #         val = batch_sparsity[i].item()
+        #         _accumulate_val_in_dict(sparsity, key, val)
+
+        #     for tgt in count:
+        #         key = f"class_{tgt}/sparsity/layer_{j + 1}"
+        #         sparsity[key] /= count[tgt]
+
         #print(json.dumps(sparsity, indent=2))
         #print(json.dumps(count, indent=2))
 
