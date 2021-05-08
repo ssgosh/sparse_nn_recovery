@@ -468,6 +468,7 @@ class AdversarialTrainer:
         self.validate()
         if pretrain and start_epoch < num_pretrain_epochs: print(f'Pretraining till epoch {num_pretrain_epochs - 1}')
         else: print(f'Not pretraining; Pretrain : {pretrain}, start_epoch : {start_epoch}, num_pretrain_epochs : {num_pretrain_epochs}')
+        self.next_adv_generation_epoch = start_epoch
         for epoch in range(start_epoch, end_epoch):
             self.log_real_train_images_to_tensorboard()
             if pretrain and epoch < num_pretrain_epochs :
