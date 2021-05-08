@@ -137,7 +137,7 @@ class AdversarialTrainer:
         self.opt_model.zero_grad()
         output = self.model(data)
         real_loss = F.nll_loss(output, target)
-        loss = real_loss + self.model.get_weight_decay()
+        loss = real_loss #+ self.model.get_weight_decay()
         loss.backward()
         self.opt_model.step()
         self.logger.log_batch(loss.item())
@@ -180,7 +180,7 @@ class AdversarialTrainer:
 
         real_loss = F.nll_loss(real_output, real_targets)
         adv_loss = F.kl_div(adv_output, adv_soft_labels, reduction='batchmean') if self.adv_use_soft_labels else F.nll_loss(adv_output, adv_targets)
-        loss = real_loss + self.adv_loss_weight * adv_loss + self.model.get_weight_decay()
+        loss = real_loss + self.adv_loss_weight * adv_loss #+ self.model.get_weight_decay()
 
         loss.backward()
         self.opt_model.step()

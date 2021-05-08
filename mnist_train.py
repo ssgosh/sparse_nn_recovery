@@ -242,6 +242,7 @@ def main():
 
     use_cuda = not args.no_cuda and torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
+    config.use_cuda = use_cuda
     config.device = device
 
     SparseInputRecoverer.setup_default_config(config)

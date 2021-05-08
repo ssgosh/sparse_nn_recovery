@@ -101,6 +101,7 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
         model = self.get_model_(model_mode, device, config, load)
         if config.use_cuda:
             model = torch.nn.DataParallel(model)
+            torch.backends.cudnn.benchmark = True
         return model
 
     @abstractmethod
