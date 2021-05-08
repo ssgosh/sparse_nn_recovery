@@ -104,9 +104,9 @@ class NamedExpt:
                 epochs = 1000
                 adv_data_gen_epochs = 200
                 num_pretrain_epochs = 200
-                num_adversarial_images_epoch_mode = 2048
+                num_adversarial_images_epoch_mode = 3*1024
                 batch_size = 128
-                recovery_batch_size = 256
+                recovery_batch_size = 3*512
                 recovery_num_steps = 3500
                 recovery_sparsity_threshold = 100
                 adv_loss_weight = 0.1
