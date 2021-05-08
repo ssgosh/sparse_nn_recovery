@@ -94,14 +94,32 @@ class NamedExpt:
                 epochs = 100
                 adv_data_gen_epochs = 20
                 num_pretrain_epochs = 20
+                num_adversarial_images_epoch_mode = 2048
+                batch_size = 64
+                recovery_batch_size = 256
+                recovery_num_steps = 1000
+                recovery_sparsity_threshold = 100
+                adv_loss_weight = 1.0
             elif 'cifar' in dataset.lower():
                 epochs = 1000
                 adv_data_gen_epochs = 200
                 num_pretrain_epochs = 200
+                num_adversarial_images_epoch_mode = 2048
+                batch_size = 128
+                recovery_batch_size = 256
+                recovery_num_steps = 3500
+                recovery_sparsity_threshold = 100
+                adv_loss_weight = 0.1
             cmd = cmd + \
                     f'--epochs {epochs} ' \
                     f'--adv-data-generation-steps {adv_data_gen_epochs} ' \
                     f'--num-pretrain-epochs {num_pretrain_epochs} ' \
+                    f'--num-adversarial-images-epoch-mode {num_adversarial_images_epoch_mode} ' \
+                    f'--batch-size {batch_size} ' \
+                    f'--recovery-batch-size {recovery_batch_size} ' \
+                    f'--recovery-num-steps {recovery_num_steps} ' \
+                    f'--recovery-sparsity-threshold {recovery_sparsity_threshold} ' \
+                    f'--adv-loss-weight {adv_loss_weight} ' \
                     f'--no-lambda-annealing ' \
                     f'--train-fresh-network '
         elif args.expt == 'full-cifar':
@@ -110,6 +128,7 @@ class NamedExpt:
                     f'--sparse-dataset ' \
                     f'--epochs 350 ' \
                     f'--num-pretrain-epochs 50 ' \
+                    f'--batch-size 128 ' \
                     f'--recovery-batch-size 256 ' \
                     f'--num-adversarial-images-epoch-mode 1024 ' \
                     f'--recovery-num-steps 3500 ' \

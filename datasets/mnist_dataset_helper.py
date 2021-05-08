@@ -32,7 +32,8 @@ class MNISTdatasetHelper(DatasetHelper, ):
         self.non_sparse_one =  { 0.3 : 2.533843517303467 }
 
     def get_dataset_(self, path, which, transform):
-        return datasets.MNIST(path, train=(which == 'train'), transform=transform)
+        return datasets.MNIST(path, train=(which == 'train'),
+                transform=transform, download=True)
 
 
     def get_num_classes(self):
