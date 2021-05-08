@@ -7,6 +7,7 @@ import matplotlib
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+import torch.backends.cudnn as cudnn
 import matplotlib.pyplot as plot
 from matplotlib.pyplot import imshow
 from torch.utils.data import Subset, DataLoader
@@ -272,7 +273,7 @@ def main():
     train_kwargs = {'batch_size': args.batch_size}
     test_kwargs = {'batch_size': args.test_batch_size}
     if use_cuda:
-        cuda_kwargs = {'num_workers': 1,
+        cuda_kwargs = {'num_workers': 3,
                        'pin_memory': True,
                        'shuffle': True}
         train_kwargs.update(cuda_kwargs)

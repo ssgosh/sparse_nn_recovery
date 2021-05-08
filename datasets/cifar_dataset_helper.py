@@ -51,7 +51,7 @@ class CIFARDatasetHelper(DatasetHelper):
     def get_each_entry_shape(self):
         return (3, 32, 32)
 
-    def get_model(self, model_mode, device, config=None, load=False):
+    def get_model_(self, model_mode, device, config=None, load=False):
         model = None
         if model_mode == 'fake-classes':
             raise ValueError(f"Model mode {model_mode} not supported for CIFAR10")

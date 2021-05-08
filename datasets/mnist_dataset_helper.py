@@ -42,7 +42,7 @@ class MNISTdatasetHelper(DatasetHelper, ):
     def get_each_entry_shape(self):
         return (1, 28, 28)
 
-    def get_model(self, model_mode, device, config=None, load=False):
+    def get_model_(self, model_mode, device, config=None, load=False):
         if model_mode == 'fake-classes': model = ExampleCNNNet(20).to(device)
         elif model_mode == 'max-entropy': model = ExampleCNNNet(10).to(device)
         else: raise ValueError(f"Invalid model mode {model_mode}")
