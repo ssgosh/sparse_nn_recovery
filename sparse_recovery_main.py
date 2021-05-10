@@ -178,7 +178,7 @@ def main():
         images, targets, probs = dataset_recoverer.recover_image_dataset(mode='train', dataset_epoch=0)
         torch.save({'images' : images, 'targets' : targets, 'probs' : probs, 'labels' : [config.recovery_penalty_mode]},
                    f"{config.run_dir}/ckpt/images_list.pt")
-        save_grid_of_images(f"{config.run_dir}/output/samples.png", images, targets, dh)
+        save_grid_of_images(f"{config.run_dir}/output/samples.png", images, targets, dh, sf=20.0)
         # dataset_recoverer = SparseInputDatasetRecoverer(sparse_input_recoverer, model, num_recovery_steps=kk,
         #                                                 batch_size=bs, sparsity_mode=config.recovery_penalty_mode,
         #                                                 num_real_classes=10, dataset_len=n,
