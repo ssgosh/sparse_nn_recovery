@@ -98,7 +98,7 @@ def setup_everything(argv):
     config.device = 'cuda' if torch.cuda.is_available() else 'cpu'
     config, include_layer, labels, dh = setup_config(config)
 
-    config.run_suffix = f'_{config.mode}_{config.dataset}'
+    if not config.run_suffix: config.run_suffix = f'_{config.mode}_{config.dataset}'
     rh.setup_run_dir(config, 'image_runs')
     plotter.set_run_dir(config.run_dir)
     plotter.set_image_zero_one()
@@ -175,7 +175,7 @@ def main():
             dataset_len=config.dataset_len,
             each_entry_shape=dh.get_each_entry_shape(),
             device=config.device, ckpt_saver=ckpt_saver, config=config)
-        images, targets, probs = dataset_recoverer.recover_image_dataset(mode='train', dataset_epoch=0)
+        images, targets, probs = dataset_recoverer.recover_image_dataset(mode='all', dataset_epoch=0)
         torch.save({'images' : images, 'targets' : targets, 'probs' : probs, 'labels' : [config.recovery_penalty_mode]},
                    f"{config.run_dir}/ckpt/images_list.pt")
         save_grid_of_images(f"{config.run_dir}/output/samples.png", images, targets, dh, sf=20.0)
