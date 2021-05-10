@@ -76,8 +76,8 @@ def add_main_script_arguments():
 
 
 def setup_config(config):
-    use_cuda = torch.cuda.is_available()
-    config.device = torch.device("cuda" if use_cuda else "cpu")
+    config.use_cuda = torch.cuda.is_available()
+    config.device = torch.device("cuda" if config.use_cuda else "cpu")
     # This will change when we support multiple datasets
     dh = DatasetHelperFactory.get(config.dataset)
     dh.setup_config(config)
@@ -129,7 +129,7 @@ def main():
     with open(f"{config.run_dir}/config.json" , 'w') as f:
         f.write(config_str)
     #save_git_info(f'{config.run_dir}/gitinfo.diff')
-    os.system(f"python3.8 utils/gitutils.py {config.run_dir}/gitinfo.diff")
+    os.system(f"python3.9 utils/gitutils.py {config.run_dir}/gitinfo.diff")
     if config.mode == 'all-digits':
         n = 10
         targets = torch.tensor(range(n), device=config.device)
@@ -175,7 +175,7 @@ def main():
             dataset_len=config.dataset_len,
             each_entry_shape=dh.get_each_entry_shape(),
             device=config.device, ckpt_saver=ckpt_saver, config=config)
-        images, targets, probs = dataset_recoverer.recover_image_dataset(mode='all', dataset_epoch=0)
+        images, targets, probs = dataset_recoverer.recover_image_dataset(mode='train', dataset_epoch=0)
         torch.save({'images' : images, 'targets' : targets, 'probs' : probs, 'labels' : [config.recovery_penalty_mode]},
                    f"{config.run_dir}/ckpt/images_list.pt")
         save_grid_of_images(f"{config.run_dir}/output/samples.png", images, targets, dh)
