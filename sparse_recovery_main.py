@@ -176,7 +176,7 @@ def main():
             dataset_len=config.dataset_len,
             each_entry_shape=dh.get_each_entry_shape(),
             device=config.device, ckpt_saver=ckpt_saver, config=config)
-        images, targets, probs = dataset_recoverer.recover_image_dataset(mode='all', dataset_epoch=0)
+        images, targets, probs = dataset_recoverer.recover_image_dataset(mode='train', dataset_epoch=0)
         torch.save({'images' : images, 'targets' : targets, 'probs' : probs, 'labels' : [config.recovery_penalty_mode]},
                    f"{config.run_dir}/ckpt/images_list.pt")
         save_grid_of_images(f"{config.run_dir}/output/samples.png", images, targets, dh, sf=20.0)

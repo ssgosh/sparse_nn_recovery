@@ -65,8 +65,8 @@ def mega_loop():
     #dmf = 'train_runs/0039-May11_16-44-34_full-non-sparse_mnist/ckpt/model_opt_sched/model_opt_sched_0019.pt'
     #sparse_dataset = '--non-sparse-dataset'
     sparse_dataset = ''
-    dataset_len = 100
-    batch_size = 100
+    dataset_len = 3*512
+    batch_size = 3*512
     digits = list(range(10))
     #digits = [0]
     #lambdas = [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 50.0, 100.0]

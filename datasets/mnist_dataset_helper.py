@@ -61,6 +61,8 @@ class MNISTdatasetHelper(DatasetHelper, ):
     def update_config(self, config):
         config.model_classname = 'ExampleCNNNet'
         config.mnist_lr_step_size = 1
+        if not hasattr(config, 'discriminator_model_file') or config.discriminator_model_file is None:
+            config.discriminator_model_file = 'ckpt/mnist_cnn.pt'
 
     def get_optimizer_scheduler(self, config, model):
         optimizer = optim.Adadelta(model.parameters(), lr=config.lr)

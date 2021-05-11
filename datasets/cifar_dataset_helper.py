@@ -76,7 +76,7 @@ class CIFARDatasetHelper(DatasetHelper):
 
     def update_config(self, config):
         config.model_classname = 'ResNet18'
-        if not hasattr(config, 'discriminator_model_file'):
+        if not hasattr(config, 'discriminator_model_file') or config.discriminator_model_file is None:
             config.discriminator_model_file = 'ckpt/ResNet18/ckpt.pth'
         config.cifar_lr = 0.1
         config.cifar_momentum = 0.9

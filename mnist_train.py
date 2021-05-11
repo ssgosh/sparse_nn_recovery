@@ -207,6 +207,9 @@ def main():
     parser.add_argument('--dump-config', action='store_true', default=False, required=False, help='Print config json and exit')
     parser.add_argument('--resume-epoch', type=int, default=None, required=False, help='Resume from checkpoint for this saved epoch')
     parser.add_argument('--load-model', action='store_true', default=False, required=False, help='Load model from default location')
+    parser.add_argument('--discriminator-model-file', type=str, metavar='DMF',
+                        default=None, required=False,
+                        help='Discriminator model file')
 
 
     # Arguments specific to adversarial training
