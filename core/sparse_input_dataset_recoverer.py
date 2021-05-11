@@ -33,6 +33,8 @@ class SparseInputDatasetRecoverer:
                             help='Generated adversarial images with probability less than this will be pruned')
         parser.add_argument('--recovery-sparsity-threshold', type=int, default=100, required=False,
                             help='Generated adversarial images with sparsity greater than this will be pruned')
+        parser.add_argument('--recovery-balance-classes', action='store_true', default=False, required=False, dest='recovery_balance_classes',
+                            help='Balance the number of classes in each recovery batch')
 
     def __init__(self, sparse_input_recoverer : SparseInputRecoverer, model, num_recovery_steps, batch_size,
                  sparsity_mode, num_real_classes, dataset_len, each_entry_shape, device, ckpt_saver, config):
@@ -59,8 +61,11 @@ class SparseInputDatasetRecoverer:
         self.low_prob_threshold = config.recovery_low_prob_threshold
         self.sparsity_threshold = config.recovery_sparsity_threshold
 
+        self.balance_classes = config.recovery_balance_classes
+
     def recover_image_dataset_internal(self, model, output_shape, num_real_classes, batch_size, num_steps,
-                                       include_layer_map, sparsity_mode, device, mode, dataset_epoch, prune):
+                                       include_layer_map, sparsity_mode, device, mode, dataset_epoch, prune,
+                                       balance_classes):
         assert output_shape[0] % batch_size == 0,\
             f"Number of images to generate not divisible by image recovery " \
             f"batch size: output_shape[0] = {output_shape[0]}, batch_size = {batch_size} "
@@ -80,7 +85,15 @@ class SparseInputDatasetRecoverer:
         # self.sparse_input_recoverer.tensorboard_logging = 'none'
         for batch_idx in range(start, end):
             image_batch = torch.randn(batch_shape).to(device)
-            targets_batch = torch.randint(low=0, high=num_real_classes, size=(batch_size,)).to(device)
+            if not balance_classes:
+                targets_batch = torch.randint(low=0, high=num_real_classes, size=(batch_size,)).to(device)
+            else:
+                assert batch_size >= num_real_classes
+                num_per_class = [(batch_size / num_real_classes) for cl in range(num_real_classes)]
+                for cl in range(batch_size % num_real_classes):
+                    num_per_class[cl] += 1
+                targets_batch = torch.cat([torch.tensor(num_per_class[cl], dtype=torch.int, device=device) for cl in num_per_class])
+
             images.append(image_batch)
             targets.append(targets_batch)
             self.sparse_input_recoverer.tensorboard_label = \
@@ -202,7 +215,7 @@ class SparseInputDatasetRecoverer:
         output_shape = [self.dataset_len] + list(self.each_entry_shape)
         return self.recover_image_dataset_internal(self.model, output_shape, self.num_real_classes, self.batch_size,
                                                    self.num_recovery_steps, self.include_layer_map, self.sparsity_mode,
-                                                   self.device, mode, dataset_epoch, self.prune)
+                                                   self.device, mode, dataset_epoch, self.prune, self.balance_classes)
 
     def prune_images(self, images_tensor, targets_tensor, probs_tensor, sparsity_tensor):
         keep = (probs_tensor >= self.low_prob_threshold)
