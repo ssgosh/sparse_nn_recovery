@@ -49,10 +49,11 @@ def inner_loop_dataset(mode, penalty_mode, num_steps, pgd, digits, lambdas, time
             sys.exit(1)
 
 def mega_loop():
-    dataset = 'cifar'
+    dataset = 'mnist'
     #mode = 'single-digit'
     mode = 'gen-dataset'
-    dmf = 'train_runs/0033-May08_22-02-11_adv-train-fresh-full_cifar/ckpt/model_opt_sched/model_opt_sched_0199.pt'
+    #dmf = 'train_runs/0033-May08_22-02-11_adv-train-fresh-full_cifar/ckpt/model_opt_sched/model_opt_sched_0199.pt'
+    dmf = 'train_runs/0037-May11_16-15-14_full-sparse_mnist/ckpt/model_opt_sched/model_opt_sched_0019.pt'
     dataset_len = 100
     batch_size = 100
     digits = list(range(10))

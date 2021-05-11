@@ -8,6 +8,7 @@ from datasets.dataset_helper import DatasetHelper
 from datasets.non_sparse_normalization_mixin import NonSparseNormalizationMixin
 from models.mnist_model import ExampleCNNNet
 from utils import mnist_helper
+from utils import torchutils
 
 
 class MNISTdatasetHelper(DatasetHelper, ):
@@ -49,6 +50,8 @@ class MNISTdatasetHelper(DatasetHelper, ):
         if load:
             # Load model from state dictionary
             checkpoint = torch.load(config.discriminator_model_file, map_location=torch.device(device))
+            if 'model' in checkpoint:
+                checkpoint = torchutils.load_data_parallel_state_dict_as_normal(checkpoint['model'])
             model.load_state_dict(checkpoint)
         # model = MLPNet().to(device)
         # model = MLPNet3Layer(num_classes=20).to(device)

@@ -136,7 +136,7 @@ def train(args, model, device, train_loader, optimizer, epoch):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         output = model(data)
-        loss = F.nll_loss(output, target) + model.get_weight_decay()
+        loss = F.nll_loss(output, target) #+ model.get_weight_decay()
         loss.backward()
         optimizer.step()
         if batch_idx % args.log_interval == 0:
