@@ -114,7 +114,8 @@ class SparseInputRecoverer:
 
     def recover_image_batch_internal(self, model, images, targets, num_steps, include_layer, penalty_mode,
                                      include_likelihood, batch_idx):
-        optimizer = optim.Adam([images], lr=self.config.recovery_lr, eps=1e-4)
+        lr = self.config.recovery_lr
+        optimizer = optim.Adam([images], lr=lr, eps=1e-4)
         # Results with SGD are really bad. Takes a long time to get to prob 0.9 and  generated images are not sparse
         # Adam is God!
         # optimizer = optim.SGD([images], lr=self.config.recovery_lr, momentum=0.9)
@@ -124,6 +125,10 @@ class SparseInputRecoverer:
         tb_label = penalty_mode if self.tensorboard_label is None else self.tensorboard_label
         start = num_steps * batch_idx + 1
         for i in range(start, start + num_steps):
+            if (i - start) % 50 == 0:
+                lr = lr / 10
+                optimizer = optim.Adam([images], lr=lr, eps=1e-4)
+
             optimizer.zero_grad()
             loss, losses, output, probs, sparsity = self.forward(model, images, targets, include_layer,
                                                                  include_likelihood)

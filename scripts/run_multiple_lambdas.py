@@ -56,10 +56,11 @@ def mega_loop():
     batch_size = 192
     digits = list(range(10))
     #digits = [0]
-    # lambdas = [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 50.0, 100.0]
-    lambdas = [0.1, 0.2]
+    #lambdas = [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 50.0, 100.0]
+    #lambdas = [0.01, 0.02, 0.05]
+    lambdas = [1.0, 2.0, 5.0, 10.0, 20.0, 50.0, 100.0]
     penalty_mode = "input only"
-    num_steps = 3
+    num_steps = 400
     timestamp = time.strftime('%b%d_%H-%M-%S')
     pgd = 'recovery-enable-pgd' # or 'enable-pgd'
 
