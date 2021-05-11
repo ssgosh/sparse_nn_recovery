@@ -73,7 +73,8 @@ class AdversarialDatasetManager:
         self.dataset_generation_epochs = []
 
         # Merges new train data with previous
-        self.dmerger = DatasetMerger(beta=0.7, combine=True)
+        #self.dmerger = DatasetMerger(beta=0.7, combine=True)
+        self.dmerger = DatasetMerger(beta=1.0, combine=True)
 
         self.train_batch_size = train_batch_size
         self.test_batch_size = test_batch_size

@@ -51,7 +51,7 @@ class CIFARDatasetHelper(DatasetHelper):
     def get_each_entry_shape(self):
         return (3, 32, 32)
 
-    def get_model(self, model_mode, device, config=None, load=False):
+    def get_model_(self, model_mode, device, config=None, load=False):
         model = None
         if model_mode == 'fake-classes':
             raise ValueError(f"Model mode {model_mode} not supported for CIFAR10")
@@ -60,7 +60,9 @@ class CIFARDatasetHelper(DatasetHelper):
                 print('Loading model from', config.discriminator_model_file)
                 model = ResNet18().to(device)
                 checkpoint = torch.load(config.discriminator_model_file, map_location=torch.device(device))
-                model_state_dict = torchutils.load_data_parallel_state_dict_as_normal(checkpoint['net'])
+                key = 'net' if 'net' in checkpoint.keys() else 'model' if 'model' in checkpoint.keys() else None
+                assert key, "Neither 'model' nor 'net' in the ckpt dict key"
+                model_state_dict = torchutils.load_data_parallel_state_dict_as_normal(checkpoint[key])
                 model.load_state_dict(model_state_dict)
             else:
                 print('Creating new ResNet18 model')
@@ -74,7 +76,8 @@ class CIFARDatasetHelper(DatasetHelper):
 
     def update_config(self, config):
         config.model_classname = 'ResNet18'
-        config.discriminator_model_file = 'ckpt/ResNet18/ckpt.pth'
+        if not hasattr(config, 'discriminator_model_file') or config.discriminator_model_file is None:
+            config.discriminator_model_file = 'ckpt/ResNet18/ckpt.pth'
         config.cifar_lr = 0.1
         config.cifar_momentum = 0.9
         config.cifar_weight_decay = 5e-4

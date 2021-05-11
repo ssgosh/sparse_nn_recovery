@@ -100,7 +100,7 @@ elif config.stats == 'view-images':
         ds = dh.get_dataset(which='valid', transform=None)
         dl = DataLoader(ds, batch_size=len(ds), shuffle=True)
         images, targets = next(iter(dl))
-        save_grid_of_images(f'{config.dataset}_samples.png', images, targets, dh)
+        save_grid_of_images(f'{config.dataset}_samples.png', images, targets, dh, sf=10.0)
 
     else:
         assert False

@@ -1,3 +1,5 @@
+from functools import reduce
+
 import torch
 from torch.nn import functional as F
 
@@ -55,3 +57,6 @@ def clip_tensor_range(images, batched_image_zero, batched_image_one, out):
     a = torch.min(images, batched_image_one, out=out)
     b = torch.max(a, batched_image_zero, out=out)
     return b
+
+def entry_numel(x):
+    return reduce((lambda a, b: a * b), x.shape[1:])

@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from utils import torchutils
+
 
 class MLPNet(nn.Module):
     def __init__(self):
@@ -92,7 +94,8 @@ class MLPNet3Layer(nn.Module):
         x = self.relu1(x)
 
         # L1 norm computation
-        self.fc1_l1 = torch.norm(x, 1) / torch.numel(x)
+        # self.fc1_l1 = torch.norm(x, 1) / torch.numel(x)
+        self.fc1_l1 = torch.norm(x, 1) / torchutils.entry_numel(x)
         self.all_l1.clear()
         self.all_l1.append(self.fc1_l1)
 
@@ -103,7 +106,8 @@ class MLPNet3Layer(nn.Module):
         x = self.relu2(x)
 
         # Compute l1 here
-        self.fc2_l1 = torch.norm(x, 1) / torch.numel(x)
+        # self.fc2_l1 = torch.norm(x, 1) / torch.numel(x)
+        self.fc2_l1 = torch.norm(x, 1) / torchutils.entry_numel(x)
         self.all_l1.append(self.fc2_l1)
 
         x = self.dropout2(x)
@@ -113,7 +117,8 @@ class MLPNet3Layer(nn.Module):
         x = self.relu3(x)
 
         # Compute l1 here
-        self.fc3_l1 = torch.norm(x, 1) / torch.numel(x)
+        # self.fc3_l1 = torch.norm(x, 1) / torch.numel(x)
+        self.fc3_l1 = torch.norm(x, 1) / torchutils.entry_numel(x)
         self.all_l1.append(self.fc3_l1)
 
         x = self.dropout3(x)

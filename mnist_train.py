@@ -7,6 +7,7 @@ import matplotlib
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+import torch.backends.cudnn as cudnn
 import matplotlib.pyplot as plot
 from matplotlib.pyplot import imshow
 from torch.utils.data import Subset, DataLoader
@@ -135,7 +136,7 @@ def train(args, model, device, train_loader, optimizer, epoch):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         output = model(data)
-        loss = F.nll_loss(output, target) + model.get_weight_decay()
+        loss = F.nll_loss(output, target) #+ model.get_weight_decay()
         loss.backward()
         optimizer.step()
         if batch_idx % args.log_interval == 0:
@@ -185,8 +186,6 @@ def main():
                         help='Training mode. One of: ' + ', '.join(available_train_modes))
     parser.add_argument('--name', type=str, default='')
     parser.add_argument('--dataset', type=str, default='MNIST', metavar='MODE')
-    parser.add_argument('--non-sparse-dataset', action='store_true', default=True, dest='non_sparse_dataset', help='Load dataset in non-sparse mode')
-    parser.add_argument('--sparse-dataset', action='store_false', default=True, dest='non_sparse_dataset', help='Load dataset in sparse mode')
     parser.add_argument('--pretrain', action='store_true', default=True, dest='pretrain', help='Pretrain before adversarial training')
     parser.add_argument('--no-pretrain', action='store_false', default=True, dest='pretrain', help='Do not pretrain')
     parser.add_argument('--batch-size', type=int, default=32, metavar='N', help='input batch size for training')
@@ -208,6 +207,9 @@ def main():
     parser.add_argument('--dump-config', action='store_true', default=False, required=False, help='Print config json and exit')
     parser.add_argument('--resume-epoch', type=int, default=None, required=False, help='Resume from checkpoint for this saved epoch')
     parser.add_argument('--load-model', action='store_true', default=False, required=False, help='Load model from default location')
+    parser.add_argument('--discriminator-model-file', type=str, metavar='DMF',
+                        default=None, required=False,
+                        help='Discriminator model file')
 
 
     # Arguments specific to adversarial training
@@ -234,6 +236,7 @@ def main():
     AdversarialTrainer.add_command_line_arguments(parser)
     SparseInputDatasetRecoverer.add_command_line_arguments(parser)
     SparseInputRecoverer.add_command_line_arguments(parser)
+    DatasetHelperFactory.add_command_line_arguments(parser)
 
     args = parser.parse_args()
 
@@ -241,6 +244,7 @@ def main():
 
     use_cuda = not args.no_cuda and torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
+    config.use_cuda = use_cuda
     config.device = device
 
     SparseInputRecoverer.setup_default_config(config)
@@ -272,7 +276,7 @@ def main():
     train_kwargs = {'batch_size': args.batch_size}
     test_kwargs = {'batch_size': args.test_batch_size}
     if use_cuda:
-        cuda_kwargs = {'num_workers': 1,
+        cuda_kwargs = {'num_workers': 3,
                        'pin_memory': True,
                        'shuffle': True}
         train_kwargs.update(cuda_kwargs)

@@ -2,6 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from utils import torchutils
+
+
 class ExampleCNNNet(nn.Module):
     def __init__(self, num_classes=10):
         #super(Net, self).__init__()
@@ -49,7 +52,8 @@ class ExampleCNNNet(nn.Module):
         # NOTE: This works regardless of batch size or number of channels
         # Could also have computed the norm per-channel and taken the average
         # of that.
-        self.conv1_l1 = torch.norm(x, 1) / torch.numel(x)
+        # self.conv1_l1 = torch.norm(x, 1) / torch.numel(x)
+        self.conv1_l1 = torch.norm(x, 1) / torchutils.entry_numel(x)
         self.all_l1.clear()
         self.all_l1.append(self.conv1_l1)
 
@@ -61,7 +65,8 @@ class ExampleCNNNet(nn.Module):
         self.layers.append(x)
 
         # Compute l1 here
-        self.max_pool2_l1 = torch.norm(x, 1) / torch.numel(x)
+        # self.max_pool2_l1 = torch.norm(x, 1) / torch.numel(x)
+        self.max_pool2_l1 = torch.norm(x, 1) / torchutils.entry_numel(x)
         self.all_l1.append(self.max_pool2_l1)
 
         x = self.dropout1(x)
@@ -73,7 +78,8 @@ class ExampleCNNNet(nn.Module):
         self.layers.append(x)
 
         # Compute l1 here
-        self.fc1_l1 = torch.norm(x, 1) / torch.numel(x)
+        # self.fc1_l1 = torch.norm(x, 1) / torch.numel(x)
+        self.fc1_l1 = torch.norm(x, 1) / torchutils.entry_numel(x)
         self.all_l1.append(self.fc1_l1)
 
         x = self.dropout2(x)

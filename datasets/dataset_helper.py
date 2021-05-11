@@ -96,9 +96,13 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
             z = z.unsqueeze(1).unsqueeze(2)
         return z
 
-    @abstractmethod
+    #@abstractmethod
     def get_model(self, model_mode, device, config=None, load=False):
-        pass
+        model = self.get_model_(model_mode, device, config, load)
+        if config.use_cuda:
+            model = torch.nn.DataParallel(model)
+            torch.backends.cudnn.benchmark = True
+        return model
 
     @abstractmethod
     def update_config(self, config):

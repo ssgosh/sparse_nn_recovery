@@ -72,7 +72,7 @@ class TensorBoardHelper:
         img_grid = torch.unsqueeze(img_grid, 0)
         #print(img_grid.shape)
         # Scales the image to be a bit larger
-        img_grid = F.interpolate(img_grid, scale_factor=3.0).squeeze(0)
+        img_grid = F.interpolate(img_grid, scale_factor=10.0).squeeze(0)
         #print(img_grid.shape)
         #sys.exit(1)
         #resize = torchvision.transforms.Resize(size)
@@ -147,7 +147,7 @@ class TensorBoardHelper:
             #self.writer.add_images(f"{sparsity_mode}/Unfiltered Images", images, dataformats="NCHW",
             #        global_step=global_step)
             self.add_image_grid(images, f"{sparsity_mode}/Unfiltered Images",
-                                filtered=False, num_per_row=3, global_step=global_step)
+                                filtered=False, num_per_row=10, global_step=global_step)
             #add_figure(images, f"{sparsity_mode}/Unfiltered Images", global_step, sparsity_mode)
             # filtered_images = post_process_image_batch(images, self.batch_image_zero, self.batch_image_one)
             # #add_figure(filtered_images, f"{sparsity_mode}/Filtered Images", global_step, sparsity_mode)

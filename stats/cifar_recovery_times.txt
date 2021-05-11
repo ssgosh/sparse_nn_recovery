@@ -1,0 +1,8 @@
+100 iterations of recovery per batch. Time taken to recovery 2048 images.
+bs = 32, time = 122.45552306412719 seconds
+bs = 64, time = 90.30555454804562 seconds
+bs = 128, time = 83.25350524694659 seconds
+bs = 256, time = 79.21631028386764 seconds
+bs = 512, time = 77.48340102797374 seconds
+bs = 1024, time = 77.5404290901497 seconds
+bs = 2048, time = 7.460689035011455 seconds <-- OOM

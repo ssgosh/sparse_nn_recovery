@@ -22,6 +22,7 @@ class NamedExpt:
             'full-non-sparse',  # For full expt, with data loaded in non-sparse mode (add constant pixel)
             'full-cifar', # For full cifar-10 expts, with epochs etc set for cifar dataset
             'pretrain-MNIST_B', # For pretraining on dataset B
+            'adv-train-fresh-full', # Train new network after adv data generation
         ]
         self.parser = argparse.ArgumentParser(description='Named Experiments', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         self.parser.add_argument('--expt', type=str, metavar='MODE', choices=self.names, required=True, help='One of: ' + ', '.join(self.names))
@@ -88,12 +89,58 @@ class NamedExpt:
         elif args.expt == 'full-non-sparse':
             cmd = cmd + \
                     f'--non-sparse-dataset ' 
+        elif args.expt in [ 'adv-train-fresh-full']:
+            if 'mnist' in dataset.lower():
+                epochs = 100
+                adv_data_gen_epochs = 20
+                num_pretrain_epochs = 20
+                num_adversarial_images_epoch_mode = 10240
+                batch_size = 64
+                recovery_batch_size = 2048
+                recovery_num_steps = 1000
+                recovery_sparsity_threshold = 100
+                adv_loss_weight = 1.0
+            elif 'cifar' in dataset.lower():
+                epochs = 1001
+                adv_data_gen_epochs = 200
+                #num_pretrain_epochs = 200
+                num_pretrain_epochs = 0
+                num_adversarial_images_epoch_mode = 3*1024
+                batch_size = 128
+                recovery_batch_size = 3*512
+                recovery_num_steps = 200
+                recovery_sparsity_threshold = 100
+                adv_loss_weight = 0.1
+                recovery_lambda_final = 5.0
+                recovery_step_lambda_at = 50
+                recovery_step_lr_at = 100
+                dmf = 'train_runs/0033-May08_22-02-11_adv-train-fresh-full_cifar/ckpt/model_opt_sched/model_opt_sched_0199.pt'
+                sparse_dataset = '--sparse-dataset'
+            cmd = cmd + \
+                    f'--epochs {epochs} ' \
+                    f'--adv-data-generation-steps {adv_data_gen_epochs} ' \
+                    f'--num-pretrain-epochs {num_pretrain_epochs} ' \
+                    f'--num-adversarial-images-epoch-mode {num_adversarial_images_epoch_mode} ' \
+                    f'--batch-size {batch_size} ' \
+                    f'--recovery-batch-size {recovery_batch_size} ' \
+                    f'--recovery-num-steps {recovery_num_steps} ' \
+                    f'--recovery-sparsity-threshold {recovery_sparsity_threshold} ' \
+                    f'--adv-loss-weight {adv_loss_weight} ' \
+                    f'--no-lambda-annealing ' \
+                    f'--train-fresh-network ' \
+                    f'--recovery-lambda-final {recovery_lambda_final} '\
+                    f'--recovery-step-lambda-at {recovery_step_lambda_at} '\
+                    f'--recovery-step-lr-at {recovery_step_lr_at} ' \
+                    f'--discriminator-model-file {dmf} '\
+                    f'{sparse_dataset} ' \
+                    f'--load-model '
         elif args.expt == 'full-cifar':
             assert args.dataset.lower() == 'cifar'
             cmd = cmd + \
                     f'--sparse-dataset ' \
                     f'--epochs 350 ' \
                     f'--num-pretrain-epochs 50 ' \
+                    f'--batch-size 128 ' \
                     f'--recovery-batch-size 256 ' \
                     f'--num-adversarial-images-epoch-mode 1024 ' \
                     f'--recovery-num-steps 3500 ' \
