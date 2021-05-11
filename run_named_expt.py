@@ -108,7 +108,7 @@ class NamedExpt:
                 num_adversarial_images_epoch_mode = 3*1024
                 batch_size = 128
                 recovery_batch_size = 3*512
-                recovery_num_steps = 3500
+                recovery_num_steps = 200
                 recovery_sparsity_threshold = 100
                 adv_loss_weight = 0.1
                 recovery_lambda_final = 5.0
