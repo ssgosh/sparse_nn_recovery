@@ -94,6 +94,7 @@ def setup_everything(argv):
     parser = add_main_script_arguments()
     SparseInputRecoverer.add_command_line_arguments(parser)
     SparseInputDatasetRecoverer.add_command_line_arguments(parser)
+    DatasetHelperFactory.add_command_line_arguments(parser)
     config = parser.parse_args(argv)
     config.device = 'cuda' if torch.cuda.is_available() else 'cpu'
     config, include_layer, labels, dh = setup_config(config)

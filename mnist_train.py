@@ -186,8 +186,6 @@ def main():
                         help='Training mode. One of: ' + ', '.join(available_train_modes))
     parser.add_argument('--name', type=str, default='')
     parser.add_argument('--dataset', type=str, default='MNIST', metavar='MODE')
-    parser.add_argument('--non-sparse-dataset', action='store_true', default=True, dest='non_sparse_dataset', help='Load dataset in non-sparse mode')
-    parser.add_argument('--sparse-dataset', action='store_false', default=True, dest='non_sparse_dataset', help='Load dataset in sparse mode')
     parser.add_argument('--pretrain', action='store_true', default=True, dest='pretrain', help='Pretrain before adversarial training')
     parser.add_argument('--no-pretrain', action='store_false', default=True, dest='pretrain', help='Do not pretrain')
     parser.add_argument('--batch-size', type=int, default=32, metavar='N', help='input batch size for training')
@@ -235,6 +233,7 @@ def main():
     AdversarialTrainer.add_command_line_arguments(parser)
     SparseInputDatasetRecoverer.add_command_line_arguments(parser)
     SparseInputRecoverer.add_command_line_arguments(parser)
+    DatasetHelperFactory.add_command_line_arguments(parser)
 
     args = parser.parse_args()
 

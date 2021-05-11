@@ -1,3 +1,5 @@
+import argparse
+
 from datasets.cifar_dataset_helper import CIFARDatasetHelper
 from datasets.mnist_dataset_helper import MNISTdatasetHelper
 from datasets.mnist_tensor_dataset_helper import MNISTTensorDatasetHelper
@@ -5,6 +7,13 @@ from datasets.mnist_tensor_dataset_helper import MNISTTensorDatasetHelper
 
 class DatasetHelperFactory:
     dataset = None
+
+    @staticmethod
+    def add_command_line_arguments(parser: argparse.ArgumentParser):
+        parser.add_argument('--non-sparse-dataset', action='store_true', default=True, dest='non_sparse_dataset',
+                            help='Load dataset in non-sparse mode')
+        parser.add_argument('--sparse-dataset', action='store_false', default=True, dest='non_sparse_dataset',
+                            help='Load dataset in sparse mode')
 
     @classmethod
     def get(classobj, dataset_name : str = None, non_sparse : bool = False):
