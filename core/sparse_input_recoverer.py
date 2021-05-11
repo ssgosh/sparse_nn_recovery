@@ -51,6 +51,19 @@ class SparseInputRecoverer:
         parser.add_argument('--recovery-enable-pgd', dest='recovery_use_pgd', action='store_true',
                             default=True, required=False,
                             help='Enable Projected Gradient Descent (clipping)')
+        # Arguments for lambda stepping
+        # The optimization is better for CIFAR if we start with lambda = 100 and step down to lambda = 5.0 after 50
+        # steps.
+        #
+        # Similarly, recovery lr is also stepped down to 1/10th of its initial value
+        parser.add_argument('--recovery-step-lambda-at', type=int, default=None, required=False, metavar='',
+                            help='Change lambda after these many recovery steps at every batch')
+        parser.add_argument('--recovery-lambda-final', type=float, metavar='',
+                            default=None, required=False,
+                            help='L1 penalty lambda on each layer')
+        # Arguments for recovery lr stepping
+        parser.add_argument('--recovery-step-lr-at', type=int, default=None, required=False, metavar='',
+                            help='Change lr after these many recovery steps at every batch')
 
     @staticmethod
     def setup_default_config(config):
@@ -114,6 +127,8 @@ class SparseInputRecoverer:
 
     def recover_image_batch_internal(self, model, images, targets, num_steps, include_layer, penalty_mode,
                                      include_likelihood, batch_idx):
+        lambd = self.recovery_lambd
+        lambd_layers = self.recovery_lambd_layers
         lr = self.config.recovery_lr
         optimizer = optim.Adam([images], lr=lr, eps=1e-4)
         # Results with SGD are really bad. Takes a long time to get to prob 0.9 and  generated images are not sparse
@@ -125,13 +140,22 @@ class SparseInputRecoverer:
         tb_label = penalty_mode if self.tensorboard_label is None else self.tensorboard_label
         start = num_steps * batch_idx + 1
         for i in range(start, start + num_steps):
-            if (i - start) == 200:
-                lr = lr / 10
-                optimizer = optim.Adam([images], lr=lr, eps=1e-4)
+            if self.config.recovery_step_lambda_at is not None:
+                #if (i - start) == 50:
+                if (i - start) == self.config.recovery_step_lambda_at:
+                    #lambd = 5.0
+                    lambd = self.config.recovery_lambda_final
+                    assert lambd is not None
+
+            if self.config.recovery_step_lr_at is not None:
+                #if (i - start) == 100:
+                if (i - start) == self.config.recovery_step_lr_at:
+                    lr = lr / 2
+                    optimizer = optim.Adam([images], lr=lr, eps=1e-4)
 
             optimizer.zero_grad()
             loss, losses, output, probs, sparsity = self.forward(model, images, targets, include_layer,
-                                                                 include_likelihood)
+                                                                 include_likelihood, lambd, lambd_layers)
             loss.backward()
             # step is done after metrics computations.
             # Hence metrics are for the batch as they came in, not as they went out
@@ -157,11 +181,9 @@ class SparseInputRecoverer:
             return compute_probs_tensor(output, targets)[1]
 
 
-    def forward(self, model, images, targets, include_layer, include_likelihood):
+    def forward(self, model, images, targets, include_layer, include_likelihood, lambd, lambd_layers):
         batch_size = images.shape[0]
         numel = reduce((lambda a, b: a * b), images.shape[1:])
-        lambd = self.recovery_lambd
-        lambd_layers = self.recovery_lambd_layers
         losses = {}
         probs = {}
         sparsity = {}
