@@ -40,6 +40,7 @@ def inner_loop_dataset(mode, penalty_mode, num_steps, pgd, digits, lambdas, time
                 f' --discriminator-model-file {dmf} '\
                 f' --dataset-len {dataset_len} ' \
                 f' --recovery-batch-size {batch_size}'\
+                f' --recovery-balance-classes '\
 
         print(cmd)
         out = os.system(cmd)
@@ -52,13 +53,13 @@ def mega_loop():
     #mode = 'single-digit'
     mode = 'gen-dataset'
     dmf = 'train_runs/0033-May08_22-02-11_adv-train-fresh-full_cifar/ckpt/model_opt_sched/model_opt_sched_0199.pt'
-    dataset_len = 192
-    batch_size = 192
+    dataset_len = 100
+    batch_size = 100
     digits = list(range(10))
     #digits = [0]
     #lambdas = [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 50.0, 100.0]
-    #lambdas = [0.01, 0.02, 0.05]
-    lambdas = [1.0, 2.0, 5.0, 10.0, 20.0, 50.0, 100.0]
+    lambdas = [5.0, 10.0, 20.0, 50.0, 100.0]
+    #lambdas = [1.0, 2.0, 5.0, 10.0, 20.0, 50.0, 100.0]
     penalty_mode = "input only"
     num_steps = 400
     timestamp = time.strftime('%b%d_%H-%M-%S')

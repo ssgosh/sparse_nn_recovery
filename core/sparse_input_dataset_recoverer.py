@@ -89,10 +89,13 @@ class SparseInputDatasetRecoverer:
                 targets_batch = torch.randint(low=0, high=num_real_classes, size=(batch_size,)).to(device)
             else:
                 assert batch_size >= num_real_classes
-                num_per_class = [(batch_size / num_real_classes) for cl in range(num_real_classes)]
+                num_per_class = [(batch_size // num_real_classes) for cl in range(num_real_classes)]
+                #print('num_per_class = ', num_per_class)
                 for cl in range(batch_size % num_real_classes):
                     num_per_class[cl] += 1
-                targets_batch = torch.cat([torch.tensor(num_per_class[cl], dtype=torch.int, device=device) for cl in num_per_class])
+                #print('num_per_class = ', num_per_class)
+                targets_batch = torch.cat([torch.full(size=(num_per_class[cl], ), fill_value=cl, dtype=torch.int64, device=device) for cl in
+                    range(num_real_classes)])
 
             images.append(image_batch)
             targets.append(targets_batch)

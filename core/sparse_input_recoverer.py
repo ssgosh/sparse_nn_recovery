@@ -125,7 +125,7 @@ class SparseInputRecoverer:
         tb_label = penalty_mode if self.tensorboard_label is None else self.tensorboard_label
         start = num_steps * batch_idx + 1
         for i in range(start, start + num_steps):
-            if (i - start) % 50 == 0:
+            if (i - start) == 200:
                 lr = lr / 10
                 optimizer = optim.Adam([images], lr=lr, eps=1e-4)
 
