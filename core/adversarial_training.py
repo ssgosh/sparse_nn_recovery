@@ -234,6 +234,12 @@ class AdversarialTrainer:
             self.model = dh.get_model(self.config.adversarial_classification_mode, self.device, load=False, config=self.config)
             # Gets an appropriate optimizer and scheduler initialized to starting values
             # opt_model points to the newly created models' parameters.
+            epochs_left = (self.config.epochs - self.epoch)
+            if self.config.adv_data_generation_steps < epochs_left:
+                self.config.cifar_t_max = self.config.adv_data_generation_steps
+            else:
+                self.config.cifar_t_max = epochs_left
+            print(f'cifar_t_max = {self.config.cifar_t_max}')
             self.opt_model, self.lr_scheduler_model = dh.get_optimizer_scheduler(self.config, self.model)
             # This needs to be set as well, so that newer adversarial data is generated using the new model
             self.sparse_input_dataset_recoverer.model = self.model

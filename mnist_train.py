@@ -393,6 +393,23 @@ def main():
     #    load = True
     #    # config.discriminator_model_file =
     model = dataset_helper.get_model(config.adversarial_classification_mode, device, load=args.load_model, config=config)
+    # T_max for cifar lr scheduler needs to be set correctly
+    # We do not care about resume_epoch here because in case of resumption, we just load everything from the checkpoint
+    if config.train_mode in ['adversarial-epoch', 'adversarial-batches']:
+        if config.pretrain and config.num_pretrain_epochs > 0:
+            config.cifar_t_max = config.num_pretrain_epochs
+        elif config.train_fresh_network:
+            if config.adv_data_generation_steps < config.epochs:
+                config.cifar_t_max = config.adv_data_generation_steps
+            else:
+                config.cifar_t_max = config.epochs
+        else:
+            # If not pretraining and not using a fresh network, then we set T max to the entire number of epochs
+            config.cifar_t_max = config.epochs
+    elif config.train_mode == 'normal':
+        config.cifar_t_max = config.epochs
+
+    print(f'cifar_t_max = {config.cifar_t_max}')
     optimizer, scheduler = dataset_helper.get_optimizer_scheduler(config, model)
     start_epoch = 0
     if args.resume_epoch is not None:

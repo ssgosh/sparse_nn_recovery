@@ -1,6 +1,7 @@
 import argparse
 
 from datasets.cifar_dataset_helper import CIFARDatasetHelper
+from datasets.dataset_helper import DatasetHelper
 from datasets.mnist_dataset_helper import MNISTdatasetHelper
 from datasets.mnist_tensor_dataset_helper import MNISTTensorDatasetHelper
 
@@ -16,7 +17,7 @@ class DatasetHelperFactory:
                             help='Load dataset in sparse mode')
 
     @classmethod
-    def get(classobj, dataset_name : str = None, non_sparse : bool = False):
+    def get(classobj, dataset_name : str = None, non_sparse : bool = False) -> 'DatasetHelper':
         """
         Singleton method. Maintains application-wide train/test dataset
 

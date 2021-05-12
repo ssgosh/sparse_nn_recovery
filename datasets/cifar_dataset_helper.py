@@ -82,9 +82,10 @@ class CIFARDatasetHelper(DatasetHelper):
         config.cifar_momentum = 0.9
         config.cifar_weight_decay = 5e-4
         config.cifar_lr_scheduler = 'CosineAnnealingLR'
-        config.cifar_t_max = 200
+        config.cifar_t_max = None
 
     def get_optimizer_scheduler(self, config, model):
+        assert config.cifar_t_max is not None, f"cifar_t_max = {config.cifar_t_max}"
         optimizer = optim.SGD(model.parameters(), lr=config.cifar_lr,
                               momentum=config.cifar_momentum, weight_decay=config.cifar_weight_decay)
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=config.cifar_t_max)
