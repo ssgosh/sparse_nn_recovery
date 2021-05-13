@@ -60,3 +60,8 @@ def clip_tensor_range(images, batched_image_zero, batched_image_one, out):
 
 def entry_numel(x):
     return reduce((lambda a, b: a * b), x.shape[1:])
+
+def real_or_adv_one_hot_like(targets, is_adv : bool):
+    vals = torch.ones_like(targets) if is_adv else torch.zeros_like(targets)
+    return F.one_hot(vals, num_classes=2).float()
+

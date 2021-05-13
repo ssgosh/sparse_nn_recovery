@@ -11,6 +11,7 @@ from core.mlabels import MLabels
 from core.sparse_input_dataset_recoverer import SparseInputDatasetRecoverer
 from core.tblabels import TBLabels
 from datasets.dataset_helper_factory import DatasetHelperFactory
+from utils.torchutils import real_or_adv_one_hot_like
 
 import sys
 
@@ -155,7 +156,7 @@ class AdversarialTrainer:
         count = 0
         for self.next_real_batch, real_batch in enumerate(self.real_data_train_loader):
             real_images, real_targets = real_batch
-            real_labels = torch.zeros_like(real_targets).float()
+            real_labels = real_or_adv_one_hot_like(real_targets, is_adv=False)
             self.train_one_batch(real_images, real_targets, real_labels)
             count += 1
             if self.early_epoch and count >= self.num_batches_early_epoch:
@@ -176,8 +177,8 @@ class AdversarialTrainer:
 
         # Also provide a feature which tells the model if this data is real or adversarial, to see if it can utilize it
         # or not
-        real_label = torch.zeros_like(real_targets).float()
-        adv_label = torch.ones_like(adv_targets).float()
+        real_label = real_or_adv_one_hot_like(real_targets, is_adv=False)
+        adv_label = real_or_adv_one_hot_like(adv_targets, is_adv=True)
 
         self.opt_model.zero_grad()
 
@@ -455,7 +456,8 @@ class AdversarialTrainer:
                 target = real_classes if use_real_classes else fake_classes
 
                 data, target = data.to(self.device), target.to(self.device)
-                real_or_adv = torch.ones_like(target).float() if adv_data else torch.zeros_like(target).float() 
+                #real_or_adv = torch.ones_like(target).float() if adv_data else torch.zeros_like(target).float() 
+                real_or_adv = real_or_adv_one_hot_like(target, is_adv=adv_data)
                 output = self.model(data, real_or_adv=real_or_adv)
                 adv_soft_labels = get_soft_labels(data) if adv_data else None
                 metrics.accumulate_batch_stats(data, self.model, output, target, adv_data=(adv_data and not pretend_real),

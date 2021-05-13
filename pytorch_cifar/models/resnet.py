@@ -86,11 +86,12 @@ class ResNet(nn.Module):
         linear_num_in = 512*block.expansion
         print(linear_num_in)
         if use_l0_norm:
-            linear_num_in += 1
+            # Going to use one-hot label telling us if the data is real or adv
+            linear_num_in += 2
             print(linear_num_in)
             # Compute 1 threshold solely based on l0 norm
-            self.fc_layer = nn.Linear(1, 1)
-            self.relu = nn.ReLU()
+            #self.fc_layer = nn.Linear(1, 1)
+            #self.relu = nn.ReLU()
         self.linear = nn.Linear(linear_num_in, num_classes)
 
         # Following are needed for integrating with sparse recovery code
@@ -129,7 +130,7 @@ class ResNet(nn.Module):
             #l0_norm = torch.sum(x > self.per_channel_zero.to(x.device), dim=(1,2,3)).float().unsqueeze(1) / torch.numel(x[0])
             #l0_thresh = self.relu(self.fc_layer(l0_norm))
             #out = torch.cat([out, l0_thresh], dim=1)
-            real_or_adv = kwargs['real_or_adv'].unsqueeze(1)
+            real_or_adv = kwargs['real_or_adv']
             #print(f'out.shape = {out.shape}, real_or_adv.shape = {real_or_adv.shape}')
             out = torch.cat([out, real_or_adv], dim=1)
         out = self.linear(out)

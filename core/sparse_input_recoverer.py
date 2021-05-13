@@ -13,7 +13,7 @@ from utils import image_processor as imp
 from utils import plotter
 from utils.metrics_helper import MetricsHelper
 from utils.model_context_manager import model_eval_no_grad, images_require_grad
-from utils.torchutils import compute_probs_tensor, clip_tensor_range
+from utils.torchutils import compute_probs_tensor, clip_tensor_range, real_or_adv_one_hot_like
 
 
 class SparseInputRecoverer:
@@ -187,7 +187,7 @@ class SparseInputRecoverer:
         losses = {}
         probs = {}
         sparsity = {}
-        output = model(images)
+        output = model(images, real_or_adv=real_or_adv_one_hot_like(targets, is_adv=True))
         if include_likelihood:
             # nll_loss = F.nll_loss(output, targets)
             # NOTE: We use sum here instead of mean
