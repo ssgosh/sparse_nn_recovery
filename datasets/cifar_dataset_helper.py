@@ -58,7 +58,7 @@ class CIFARDatasetHelper(DatasetHelper):
         elif model_mode == 'max-entropy':
             if load:
                 print('Loading model from', config.discriminator_model_file)
-                model = ResNet18().to(device)
+                model = ResNet18(per_channel_zero=self.get_zero_correct_dims(), use_l0_norm=True).to(device)
                 checkpoint = torch.load(config.discriminator_model_file, map_location=torch.device(device))
                 key = 'net' if 'net' in checkpoint.keys() else 'model' if 'model' in checkpoint.keys() else None
                 assert key, "Neither 'model' nor 'net' in the ckpt dict key"
@@ -66,7 +66,7 @@ class CIFARDatasetHelper(DatasetHelper):
                 model.load_state_dict(model_state_dict)
             else:
                 print('Creating new ResNet18 model')
-                model = ResNet18().to(device)
+                model = ResNet18(per_channel_zero=self.get_zero_correct_dims(), use_l0_norm=True).to(device)
         else:
             raise ValueError(f"Invalid model mode {model_mode}")
         # model = MLPNet().to(device)
