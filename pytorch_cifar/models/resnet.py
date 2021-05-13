@@ -71,7 +71,7 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=10):
+    def __init__(self, block, num_blocks, num_classes=10, per_channel_zero=None, use_l0_norm=False):
         super(ResNet, self).__init__()
         self.in_planes = 64
 
@@ -82,11 +82,17 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
         self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
         self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
-        self.linear = nn.Linear(512*block.expansion, num_classes)
+
+        linear_num_in = 512*block.expansion
+        if use_l0_norm:
+            linear_num_in += 1
+        self.linear = nn.Linear(, num_classes)
 
         # Following are needed for integrating with sparse recovery code
         self.all_l1 = []
         self.layers = []
+        self.per_channel_zero = per_channel_zero
+        self.use_l0_norm = use_l0_norm
 
     # Needed for integrating with sparse recovery code
     def get_layers(self):
@@ -112,6 +118,10 @@ class ResNet(nn.Module):
         out = self.layer4(out)
         out = F.avg_pool2d(out, 4)
         out = out.view(out.size(0), -1)
+        # Compute l0 norm and concatenate
+        if self.use_l0_norm:
+            l0_norm = torch.sum(x > per_channel_zero, dim=(1,2,3)).float().unsqueeze(1) / torch.numel(x[0])
+            out = torch.cat([out, l0_norm], dim=1)
         out = self.linear(out)
         out = F.log_softmax(out, dim=1)
         return out
