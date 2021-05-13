@@ -132,10 +132,10 @@ class AdversarialTrainer:
         self.train_fresh_network = config.train_fresh_network
 
     # Train model on the given batch. Used for real data or adversarial data training
-    def train_one_batch(self, batch_inputs, batch_targets):
+    def train_one_batch(self, batch_inputs, batch_targets, batch_labels):
         data, target = batch_inputs.to(self.device), batch_targets.to(self.device)
         self.opt_model.zero_grad()
-        output = self.model(data)
+        output = self.model(data, real_or_adv=batch_labels)
         real_loss = F.nll_loss(output, target)
         loss = real_loss #+ self.model.get_weight_decay()
         loss.backward()
@@ -155,7 +155,8 @@ class AdversarialTrainer:
         count = 0
         for self.next_real_batch, real_batch in enumerate(self.real_data_train_loader):
             real_images, real_targets = real_batch
-            self.train_one_batch(real_images, real_targets)
+            real_labels = torch.zeros_like(real_targets).float()
+            self.train_one_batch(real_images, real_targets, real_labels)
             count += 1
             if self.early_epoch and count >= self.num_batches_early_epoch:
                 print(f'\nBreaking due to early epoch after {count} batches')
@@ -173,10 +174,15 @@ class AdversarialTrainer:
         real_targets = real_batch_targets.to(self.device)
         adv_targets = adversarial_batch_targets.to(self.device)
 
+        # Also provide a feature which tells the model if this data is real or adversarial, to see if it can utilize it
+        # or not
+        real_label = torch.zeros_like(real_targets).float()
+        adv_label = torch.ones_like(adv_targets).float()
+
         self.opt_model.zero_grad()
 
-        real_output = self.model(real_data)
-        adv_output = self.model(adv_data)
+        real_output = self.model(real_data, real_or_adv=real_label)
+        adv_output = self.model(adv_data, real_or_adv=adv_label)
 
         real_loss = F.nll_loss(real_output, real_targets)
         adv_loss = F.kl_div(adv_output, adv_soft_labels, reduction='batchmean') if self.adv_use_soft_labels else F.nll_loss(adv_output, adv_targets)
@@ -449,7 +455,8 @@ class AdversarialTrainer:
                 target = real_classes if use_real_classes else fake_classes
 
                 data, target = data.to(self.device), target.to(self.device)
-                output = self.model(data)
+                real_or_adv = torch.ones_like(target).float() if adv_data else torch.zeros_like(target).float() 
+                output = self.model(data, real_or_adv=real_or_adv)
                 adv_soft_labels = get_soft_labels(data) if adv_data else None
                 metrics.accumulate_batch_stats(data, self.model, output, target, adv_data=(adv_data and not pretend_real),
                                                adv_soft_labels=adv_soft_labels, per_class=per_class)
