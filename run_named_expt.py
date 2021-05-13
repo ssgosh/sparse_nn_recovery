@@ -102,9 +102,9 @@ class NamedExpt:
                 adv_loss_weight = 1.0
             elif 'cifar' in dataset.lower():
                 epochs = 401
-                adv_data_gen_epochs = 400
-                #num_pretrain_epochs = 200
-                num_pretrain_epochs = 0
+                adv_data_gen_epochs = 200
+                num_pretrain_epochs = 200
+                #num_pretrain_epochs = 0
                 num_adversarial_images_epoch_mode = 3*1024
                 batch_size = 128
                 recovery_batch_size = 3*512
@@ -116,6 +116,8 @@ class NamedExpt:
                 recovery_step_lr_at = 100
                 dmf = 'train_runs/0033-May08_22-02-11_adv-train-fresh-full_cifar/ckpt/model_opt_sched/model_opt_sched_0199.pt'
                 sparse_dataset = '--sparse-dataset'
+                #load_model = f'--load-model '
+                load_model = f''
             cmd = cmd + \
                     f'--epochs {epochs} ' \
                     f'--adv-data-generation-steps {adv_data_gen_epochs} ' \
@@ -132,8 +134,8 @@ class NamedExpt:
                     f'--recovery-step-lambda-at {recovery_step_lambda_at} '\
                     f'--recovery-step-lr-at {recovery_step_lr_at} ' \
                     f'--discriminator-model-file {dmf} '\
-                    f'{sparse_dataset} ' \
-                    f'--load-model '
+                    f' {sparse_dataset} ' \
+                    f' {load_model} ' 
         elif args.expt == 'full-cifar':
             assert args.dataset.lower() == 'cifar'
             cmd = cmd + \
