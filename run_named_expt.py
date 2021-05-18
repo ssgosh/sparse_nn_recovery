@@ -133,7 +133,7 @@ class NamedExpt:
                     f'--recovery-step-lr-at {recovery_step_lr_at} ' \
                     f'--discriminator-model-file {dmf} '\
                     f'{sparse_dataset} ' \
-                    f'--load-model '
+                    #f'--load-model '
         elif args.expt == 'full-cifar':
             assert args.dataset.lower() == 'cifar'
             cmd = cmd + \
