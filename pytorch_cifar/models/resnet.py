@@ -89,9 +89,10 @@ class ResNet(nn.Module):
             # Going to use one-hot label telling us if the data is real or adv
             linear_num_in += 2
             print(linear_num_in)
+            self.fc = nn.Linear(linear_num_in, linear_num_in)
             # Compute 1 threshold solely based on l0 norm
             #self.fc_layer = nn.Linear(1, 1)
-            #self.relu = nn.ReLU()
+            self.relu = nn.ReLU()
         self.linear = nn.Linear(linear_num_in, num_classes)
 
         # Following are needed for integrating with sparse recovery code
@@ -131,8 +132,13 @@ class ResNet(nn.Module):
             #l0_thresh = self.relu(self.fc_layer(l0_norm))
             #out = torch.cat([out, l0_thresh], dim=1)
             real_or_adv = kwargs['real_or_adv']
+            #print(f'real_or_adv[0] = {real_or_adv[0]}')
             #print(f'out.shape = {out.shape}, real_or_adv.shape = {real_or_adv.shape}')
             out = torch.cat([out, real_or_adv], dim=1)
+            # Do one layer of fully-connected network with non-linearity
+            # This should be helpful in detection of adversarial images
+            out = self.fc(out)
+            out = self.relu(out)
         out = self.linear(out)
         out = F.log_softmax(out, dim=1)
         return out

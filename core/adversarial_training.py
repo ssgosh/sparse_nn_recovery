@@ -157,6 +157,7 @@ class AdversarialTrainer:
         for self.next_real_batch, real_batch in enumerate(self.real_data_train_loader):
             real_images, real_targets = real_batch
             real_labels = real_or_adv_one_hot_like(real_targets, is_adv=False)
+            #print('During real training: is_adv=False')
             self.train_one_batch(real_images, real_targets, real_labels)
             count += 1
             if self.early_epoch and count >= self.num_batches_early_epoch:
@@ -182,7 +183,9 @@ class AdversarialTrainer:
 
         self.opt_model.zero_grad()
 
+        #print('During adv training: Real')
         real_output = self.model(real_data, real_or_adv=real_label)
+        #print('During adv training: Adv')
         adv_output = self.model(adv_data, real_or_adv=adv_label)
 
         real_loss = F.nll_loss(real_output, real_targets)
@@ -458,6 +461,7 @@ class AdversarialTrainer:
                 data, target = data.to(self.device), target.to(self.device)
                 #real_or_adv = torch.ones_like(target).float() if adv_data else torch.zeros_like(target).float() 
                 real_or_adv = real_or_adv_one_hot_like(target, is_adv=adv_data)
+                #print(f'During Testing: is_adv = {adv_data}')
                 output = self.model(data, real_or_adv=real_or_adv)
                 adv_soft_labels = get_soft_labels(data) if adv_data else None
                 metrics.accumulate_batch_stats(data, self.model, output, target, adv_data=(adv_data and not pretend_real),
