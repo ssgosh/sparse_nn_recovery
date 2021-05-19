@@ -90,6 +90,8 @@ class AdversarialTrainer:
                  test_loader : DataLoader, lr_scheduler_model : StepLR,
                  adversarial_classification_mode : str,
                  config):
+        self.del_epoch_lst = [0, 200, 400, 600, 800, 1000]
+        self.del_epoch_lst = [0, 5, 9, ]
         self.config = config
         self.adv_training_batch_size = adv_training_batch_size  # Same batch size is used for both real and adversarial training
         self.real_data_train_loader = real_data_train_loader
@@ -512,6 +514,8 @@ class AdversarialTrainer:
                     self.post_epoch_stuff(intended_to_generate, generated, epoch)
             self.validate()
             self.ckpt_saver.save_everything(self.model, self.opt_model, self.lr_scheduler_model, {}, epoch)
+            if epoch not in self.del_epoch_lst:
+                self.ckpt_saver.del_key('model_opt_sched', epoch - 1)
             # self.ckpt_saver.save_model(self.model, epoch, config.model_classname)
             # self.ckpt_saver.save_optimizer_scheduler(self.opt_model, self.lr_scheduler_model, epoch)
             self.lr_scheduler_model.step()

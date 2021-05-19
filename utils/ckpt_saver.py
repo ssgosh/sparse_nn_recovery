@@ -80,6 +80,11 @@ class CkptSaver:
             'metrics' : metrics
         }, save_path)
 
+    def del_key(self, key, del_epoch, suffix=None):
+        del_path = self.get_ckpt_path(key, del_epoch, suffix=suffix)
+        print(f'Deleting ckpt file : {del_path}')
+        del_path.unlink()
+
     def load_evertything(self, model, optimizer, scheduler, resume_epoch, suffix=None):
         key = 'model_opt_sched'
         load_path = self.get_ckpt_path(key, resume_epoch, suffix=suffix)
