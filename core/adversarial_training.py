@@ -91,7 +91,7 @@ class AdversarialTrainer:
                  adversarial_classification_mode : str,
                  config):
         self.del_epoch_lst = [0, 200, 400, 600, 800, 1000]
-        self.del_epoch_lst = [0, 5, 9, ]
+        #self.del_epoch_lst = [0, 5, 9, ]
         self.config = config
         self.adv_training_batch_size = adv_training_batch_size  # Same batch size is used for both real and adversarial training
         self.real_data_train_loader = real_data_train_loader
