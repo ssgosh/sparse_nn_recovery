@@ -109,9 +109,9 @@ class NamedExpt:
                     sparse_dataset = '--sparse-dataset'
             elif 'cifar' in dataset.lower():
                 epochs = 401
-                adv_data_gen_epochs = 400
-                #num_pretrain_epochs = 200
-                num_pretrain_epochs = 0
+                adv_data_gen_epochs = 200
+                num_pretrain_epochs = 200
+                #num_pretrain_epochs = 0
                 num_adversarial_images_epoch_mode = 3*1024
                 batch_size = 128
                 recovery_lambd = 100.0

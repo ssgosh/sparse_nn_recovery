@@ -4,11 +4,20 @@ from torch import optim
 from torchvision import datasets
 from torchvision.transforms import transforms
 import torch.nn.functional as F
+import math
 
 from datasets.dataset_helper import DatasetHelper
 from pytorch_cifar.models import ResNet18
 from utils import torchutils
 
+class NoOpScheduler:
+    def step(self):
+        pass
+
+# lr is set to the initial value times the return value
+# This sets lr to 0.3^i * initial lr, with i = 0, 1, 2 and so on in steps of 25 epochs
+def lr_func(epoch):
+    return math.pow(0.3, epoch // 25)
 
 class CIFARDatasetHelper(DatasetHelper):
     @require(lambda non_sparse: not non_sparse)
@@ -78,17 +87,26 @@ class CIFARDatasetHelper(DatasetHelper):
         config.model_classname = 'ResNet18'
         if not hasattr(config, 'discriminator_model_file') or config.discriminator_model_file is None:
             config.discriminator_model_file = 'ckpt/ResNet18/ckpt.pth'
-        config.cifar_lr = 0.1
-        config.cifar_momentum = 0.9
-        config.cifar_weight_decay = 5e-4
-        config.cifar_lr_scheduler = 'CosineAnnealingLR'
-        config.cifar_t_max = None
+        self.use_adam = True
+        if self.use_adam:
+            config.cifar_lr = 1e-4
+            config.cifar_weight_decay = 5e-4
+            config.cifar_lr_scheduler = 'NoOp'
+        else:
+            config.cifar_lr = 0.1
+            config.cifar_momentum = 0.9
+            config.cifar_weight_decay = 5e-4
+            config.cifar_lr_scheduler = 'CosineAnnealingLR'
+            config.cifar_t_max = None
 
     def get_optimizer_scheduler(self, config, model):
         assert config.cifar_t_max is not None, f"cifar_t_max = {config.cifar_t_max}"
         print(f'config.cifar_t_max = {config.cifar_t_max}')
-        optimizer = optim.SGD(model.parameters(), lr=config.cifar_lr,
-                              momentum=config.cifar_momentum, weight_decay=config.cifar_weight_decay)
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=config.cifar_t_max)
+        #optimizer = optim.SGD(model.parameters(), lr=config.cifar_lr,
+        #                      momentum=config.cifar_momentum, weight_decay=config.cifar_weight_decay)
+        #scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=config.cifar_t_max)
+        optimizer = optim.Adam(model.parameters(), lr= config.cifar_lr)
+        #scheduler = NoOpScheduler()
+        scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_func)
         return optimizer, scheduler
 
