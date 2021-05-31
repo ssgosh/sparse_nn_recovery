@@ -17,7 +17,7 @@ class NoOpScheduler:
 # lr is set to the initial value times the return value
 # This sets lr to 0.3^i * initial lr, with i = 0, 1, 2 and so on in steps of 25 epochs
 def lr_func(epoch):
-    return math.pow(0.3, epoch // 25)
+    return max(math.pow(0.9, (epoch % 200) // 10), 1e-6)
 
 class CIFARDatasetHelper(DatasetHelper):
     @require(lambda non_sparse: not non_sparse)
