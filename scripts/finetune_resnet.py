@@ -39,8 +39,10 @@ def test(model, test_loader, device):
 
 parser = argparse.ArgumentParser(description='Finetune pretrained resnet on cifar-10', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('--load-path', type=str, default=None, metavar=None, help='Load model from this path')
+parser.add_argument('--no-pretrained', action='store_false', default=True, dest='pretrained', help='Disable using pretrained resnet')
 parser.add_argument('--epochs', type=int, default=1, metavar=None, help='Number of epochs to run for')
 parser.add_argument('--freeze', action='store_true', default=False, help='Freeze all but last layer of model')
+parser.add_argument('--save-path', type=str, default='./ckpt/finetune_resnet.pt', metavar=None, help='Save model from this path')
 args = parser.parse_args()
 load_path = args.load_path
 
@@ -65,7 +67,7 @@ test_loader = torch.utils.data.DataLoader(test_ds, batch_size=1000)
 
 device = torch.device('cuda:1')
 
-model = models.resnet18(pretrained=True).to(device)
+model = models.resnet18(pretrained=args.pretrained).to(device)
 if args.freeze:
     print('Freezing model')
     # Freeze model
@@ -89,5 +91,5 @@ for epoch in range(args.epochs):
     train(model, train_loader, opt, device)
     test(model, test_loader, device)
 
-torch.save({'model' : model.state_dict(), 'opt' : opt.state_dict()}, './ckpt/finetune_resnet.pt')
+torch.save({'model' : model.state_dict(), 'opt' : opt.state_dict()}, args.save_path)
 
