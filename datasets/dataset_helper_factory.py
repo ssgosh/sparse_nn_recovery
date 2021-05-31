@@ -1,5 +1,6 @@
 import argparse
 
+from datasets.cifar_imagenet_dataset_helper import CIFARImageNetDatasetHelper
 from datasets.cifar_dataset_helper import CIFARDatasetHelper
 from datasets.dataset_helper import DatasetHelper
 from datasets.mnist_dataset_helper import MNISTdatasetHelper
@@ -15,6 +16,9 @@ class DatasetHelperFactory:
                             help='Load dataset in non-sparse mode')
         parser.add_argument('--sparse-dataset', action='store_false', default=True, dest='non_sparse_dataset',
                             help='Load dataset in sparse mode')
+        parser.add_argument('--use-imagenet-pretrained-model', action='store_true', default=False,
+                dest='use_imagenet_pretrained_model',
+                help='Use model pretrained on ImageNet')
 
     @classmethod
     def get(classobj, dataset_name : str = None, non_sparse : bool = False) -> 'DatasetHelper':
