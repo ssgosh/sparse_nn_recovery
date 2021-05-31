@@ -13,7 +13,7 @@ class ExternalDatasetManager:
         self.valid_loaders = []
         self.valid_names = []
 
-        if config.dataset.lower() not in ['cifar']:
+        if config.dataset.lower() not in ['cifar', 'cifar_imagenet']:
             if not config.non_sparse_dataset:
                 self.add_dataset('external_B', non_sparse=False)
             else:

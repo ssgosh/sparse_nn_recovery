@@ -50,6 +50,8 @@ class DatasetHelperFactory:
         # non_sparse = 'non_sparse' in dataset_name
         if 'mnist' in dataset_name:
             return MNISTdatasetHelper(name=cased_dataset_name, subset=subset, non_sparse=non_sparse)
+        elif 'cifar_imagenet' in dataset_name:
+            return CIFARImageNetDatasetHelper(name=cased_dataset_name, subset=subset, non_sparse=non_sparse)
         elif 'cifar' in dataset_name:
             return CIFARDatasetHelper(name=cased_dataset_name, subset=subset, non_sparse=non_sparse)
         elif dataset_name == 'external_b':
