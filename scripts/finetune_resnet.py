@@ -1,3 +1,4 @@
+import argparse
 import sys
 import torch
 import torch.nn.functional as F
@@ -36,6 +37,13 @@ def test(model, test_loader, device):
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
 
+parser = argparse.ArgumentParser(description='Finetune pretrained resnet on cifar-10', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument('--load-path', type=str, default=None, metavar=None, help='Load model from this path')
+parser.add_argument('--epochs', type=int, default=1, metavar=None, help='Number of epochs to run for')
+parser.add_argument('--freeze', action='store_true', default=False, help='Freeze all but last layer of model')
+args = parser.parse_args()
+load_path = args.load_path
+
 # Dataset related code
 # Imagenet mean and std
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -55,17 +63,31 @@ test_loader = torch.utils.data.DataLoader(test_ds, batch_size=1000)
 #for images, targets in train_loader:
 #    print(images.shape, targets.shape)
 
-device = torch.device('cuda:0')
+device = torch.device('cuda:1')
+
 model = models.resnet18(pretrained=True).to(device)
-# Freeze model
-for param in model.parameters():
-    param.requires_grad = False
+if args.freeze:
+    print('Freezing model')
+    # Freeze model
+    for param in model.parameters():
+        param.requires_grad = False
 
 # For cifar, only 10 classes. So replace this layer
 model.fc = torch.nn.Linear(512, 10).to(device)
-opt = torch.optim.Adam(model.fc.parameters(), lr=1e-4, weight_decay=5e-4)
-for epoch in range(10):
+if args.freeze:
+    opt = torch.optim.Adam(model.fc.parameters(), lr=1e-4, weight_decay=5e-4)
+else:
+    opt = torch.optim.Adam(model.parameters(), lr=1e-4, weight_decay=5e-4)
+if load_path:
+    print('Loading from ckpt')
+    # Load from ckpt
+    ckpt = torch.load(args.load_path)
+    model.load_state_dict(ckpt['model'])
+    opt.load_state_dict(ckpt['opt'])
+
+for epoch in range(args.epochs):
     train(model, train_loader, opt, device)
     test(model, test_loader, device)
 
+torch.save({'model' : model.state_dict(), 'opt' : opt.state_dict()}, './ckpt/finetune_resnet.pt')
 
