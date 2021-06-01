@@ -51,7 +51,8 @@ def add_main_script_arguments():
                                                  'discriminative model by gradient descent on input')
     parser.add_argument('--mode', type=str, default='all-digits', required=False,
                         help='Image recovery mode: "single-digit" or "all-digits" or "gen-dataset"')
-    parser.add_argument('--dataset', type=str, default='mnist', required=False, choices=['mnist', 'cifar'],
+    parser.add_argument('--dataset', type=str, default='mnist', required=False, choices=['mnist', 'cifar',
+    'cifar_imagenet'],
                         help='Which dataset images to recover')
     parser.add_argument('--run-dir', type=str, default=None, required=False,
                         help='Directory inside which outputs and tensorboard logs will be saved')

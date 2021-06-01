@@ -100,7 +100,7 @@ class DatasetHelper(ABC, NonSparseNormalizationMixin):
     def get_model(self, model_mode, device, config=None, load=False):
         model = self.get_model_(model_mode, device, config, load)
         if config.use_cuda:
-            model = torch.nn.DataParallel(model, device_ids=[1, 2])
+            model = torch.nn.DataParallel(model, device_ids=[0, 1, 2])
             torch.backends.cudnn.benchmark = True
         return model
 

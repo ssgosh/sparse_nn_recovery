@@ -32,21 +32,33 @@ class CIFARImageNetDatasetHelper(CIFARDatasetHelper):
 
     def get_model_(self, model_mode, device, config=None, load=False):
         assert model_mode == 'max-entropy'
-        assert load == False
-        model = models.vgg16(pretrained=config.use_imagenet_pretrained_model).to(device)
-        #model.classifier[6].out_features = 10
-        model.classifier[6] = torch.nn.Linear(4096, 10)
+        #assert load == False
+        if not load:
+            model = models.vgg16(pretrained=config.use_imagenet_pretrained_model).to(device)
+            #model.classifier[6].out_features = 10
+            model.classifier[6] = torch.nn.Linear(4096, 10)
 
-        if config.use_imagenet_pretrained_model:
-            print('Using imagenet pretrained model')
-            print('Freezing conv layers')
-            # freeze conv layers
-            for param in model.features.parameters():
-                param.requires_grad = False
+            if config.use_imagenet_pretrained_model:
+                print('Using imagenet pretrained model')
+                print('Freezing conv layers')
+                # freeze conv layers
+                for param in model.features.parameters():
+                    param.requires_grad = False
 
-        model = ModelLogSoftmax(model).to(device)
-        self.optimizer = optim.SGD(model._model.classifier.parameters(), lr=0.001, momentum=0.9)
-        self.scheduler = torch.optim.lr_scheduler.LambdaLR(self.optimizer, stupid_function)
+            model = ModelLogSoftmax(model).to(device)
+            self.optimizer = optim.SGD(model._model.classifier.parameters(), lr=0.001, momentum=0.9)
+            self.scheduler = torch.optim.lr_scheduler.LambdaLR(self.optimizer, stupid_function)
+        else:
+            model = models.resnet18(pretrained=False).to(device)
+            model.fc = torch.nn.Linear(512, 10).to(device)
+
+            checkpoint = torch.load(config.discriminator_model_file, map_location=torch.device(device))
+            key = 'net' if 'net' in checkpoint.keys() else 'model' if 'model' in checkpoint.keys() else None
+            assert key, "Neither 'model' nor 'net' in the ckpt dict key"
+            model_state_dict = checkpoint[key]
+            #model_state_dict = torchutils.load_data_parallel_state_dict_as_normal(checkpoint[key])
+            model.load_state_dict(model_state_dict)
+            model = ModelLogSoftmax(model).to(device)
         print(model)
         return model
 

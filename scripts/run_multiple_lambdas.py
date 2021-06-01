@@ -54,19 +54,20 @@ def inner_loop_dataset(mode, penalty_mode, num_steps, pgd, digits, lambdas, time
 
 def mega_loop():
     #dataset = 'mnist'
-    dataset = 'cifar'
+    dataset = 'cifar_imagenet'
     #mode = 'single-digit'
     mode = 'gen-dataset'
     # This model files is for CIFAR-10
-    dmf = 'train_runs/0033-May08_22-02-11_adv-train-fresh-full_cifar/ckpt/model_opt_sched/model_opt_sched_0199.pt'
+    #dmf = 'train_runs/0033-May08_22-02-11_adv-train-fresh-full_cifar/ckpt/model_opt_sched/model_opt_sched_0199.pt'
+    dmf = 'ckpt/resnet_from_pretrained.pt'
     # This model file is for MNIST. Trained on full MNIST.
     #dmf = 'train_runs/0037-May11_16-15-14_full-sparse_mnist/ckpt/model_opt_sched/model_opt_sched_0019.pt'
     # This model file is for MNIST in non-sparse mode (0.3 background added to all images). Trained on full MNIST
     #dmf = 'train_runs/0039-May11_16-44-34_full-non-sparse_mnist/ckpt/model_opt_sched/model_opt_sched_0019.pt'
     #sparse_dataset = '--non-sparse-dataset'
     sparse_dataset = ''
-    dataset_len = 3*512
-    batch_size = 3*512
+    dataset_len = 100
+    batch_size = 100
     digits = list(range(10))
     #digits = [0]
     #lambdas = [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 50.0, 100.0]
@@ -78,7 +79,7 @@ def mega_loop():
     timestamp = time.strftime('%b%d_%H-%M-%S')
     pgd = 'recovery-enable-pgd' # or 'enable-pgd'
 
-    if dataset.lower() == 'cifar':
+    if dataset.lower() in ['cifar', 'cifar_imagenet']:
         recovery_lambda_final = 5.0
         recovery_step_lambda_at = 50
         recovery_step_lr_at = 100
